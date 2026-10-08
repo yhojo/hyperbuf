@@ -117,6 +117,7 @@ PoC(Interaction、Rendering、Project navigation、連携プロトコル)で、�
 
 | # | 状態 | メモ |
 | --- | --- | --- |
+| M2 | **完了(2026-10-08)** | `app/macos/`: `HyperBufKit`(`Project`: 範囲・`realpath` による正規化・除外規則・読み取りの制限、`ProjectSearch`、`FSWatcher`(FSEvents)、`StaticFiles`、`ContentSecurityPolicy`、`MimeType`)と、アプリ本体(`SchemeHandler`、`Bridge`、`ProjectSession`、`WebShell`、`ProjectPicker`、`WebRoot`、デバッグ用の `TestHarness`)。PoC の `Host.swift`(437 行)を責務ごとに分けて作り直した。Swift の単体テスト 26 件。`scripts/integration-test.sh` が、実際の WKWebView で全文書を開き、描画・CSP 違反・検索・画像を検査する(検証用の文書集 12 文書と、`docs/` の 8 文書で通る)。`.app` を作る `app/macos/scripts/make-app.sh`(ad-hoc 署名)。**自分たちの `docs/` を、このアプリで読める(ドッグフーディングの開始)**。IPC・URL スキーム・CLI は M4 |
 | M1 | **完了(2026-10-08)** | `core/` に model / keys / fuzzy / pipeline を TypeScript で移し、`app.js`(479 行)を、ミニバッファ・window の描画・コマンド・キー入力・検索・ホストのイベント・起動に分割した。開発用ホストと開発サーバー(`scripts/dev-server.mjs`、127.0.0.1 のみ、プロジェクト外と `.md`・画像以外は返さない)で、ブラウザで PoC と同じ操作ができることを確認した(分割、独立した履歴、Back/Forward、全文書の描画、検索の仮想 buffer、行アンカー、外部更新時の位置の維持)。単体テスト 36 件(PoC の 27 件を引き継ぎ、fixtures のセキュリティ検証文書を使った sanitize のテストなどを追加) |
 | M0 | **完了(2026-10-08)** | `core/`(TypeScript、型検査・Prettier・テスト・esbuild)、`app/macos/` と `cli/`(SwiftPM、Swift 6、`swift format`、Swift Testing)、`emacs/`(ERT)、`protocol/`、`fixtures/`(PoC の文書集とコーパス生成)、`scripts/check.sh`、CI の骨組み。`scripts/check.sh` が全体で通り、意図的に壊すと失敗することを確認した。**CI のワークフローは、GitHub に公開する前で、まだ実行していない**(構文のみ確認) |
 

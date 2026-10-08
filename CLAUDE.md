@@ -27,6 +27,17 @@ Per component (run in the component directory):
 
 Formatters: Prettier (core), `swift format` (Swift; 4-space indent, config in each package's `.swift-format`). Fix with `npm run format` / `swift format format --in-place --recursive Sources Tests --configuration .swift-format`.
 
+Running the macOS app (needs `core/dist`, so build the core first):
+
+```bash
+(cd core && npm run build)
+(cd app/macos && swift run HyperBuf ../../docs)      # opens a project directory (no argument → an Open panel)
+app/macos/scripts/make-app.sh [debug|release]         # builds app/macos/.build/HyperBuf.app (ad-hoc signed, Web core bundled)
+scripts/integration-test.sh [project-dir]             # needs a GUI session: opens every document in a debug HyperBuf and checks rendering, CSP, search, images
+```
+
+Debug builds only: `HYPERBUF_TEST_SCRIPT=<file.js>` runs a script inside the WebView after startup and prints `RESULT: …` (used by the integration test); `HYPERBUF_WEB_ROOT` overrides where the Web core is loaded from.
+
 Build outputs (`dist/`, `.build/`, `node_modules/`, `*.app`) are never committed.
 
 ## What the product is

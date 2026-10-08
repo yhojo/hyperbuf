@@ -2,6 +2,13 @@
 
 README.md に記載した方針・計画を変更した際の記録。新しいものを上に追記する。README は自由に更新してよいが、変更理由をここに残す。
 
+## 2026-10-08 21:16 JST — macOS 向けシェルの決定
+
+- **変更前**（README「Architecture and technology」）: macOS application shell は Tauri 2 / Rust、SwiftUI + WKWebView、Electron の候補で未決定。未決事項に「macOS統合優先か、Web技術の親和性・移植性優先か」。
+- **変更後**: macOS 向けシェルは **SwiftUI + WKWebView** に決定。他OSは各プラットフォームに最適なフレームワークでシェルを書き、共通の Web コアを再利用する。
+- **理由**: Interaction PoC で2案を同一の Web コアで比較し、応答性は同等（SwiftUI が数 ms 速い）、macOS 統合・ビルド・依存で SwiftUI が優位だった。他OSでは、クロスプラットフォーム基盤を共有するより、OS ごとに最適なフレームワークを使うほうが、微妙なバグを避けられるという判断。
+- 関連: `docs/poc-interaction-results.md`、README の技術表と未決事項、CLAUDE.md を更新。
+
 ## 2026-10-08 20:38 JST — Back / Forward のキーとミニバッファ
 
 - **変更前**（README）: Back / Forward のキーは TBD。入力欄の扱いは未定。

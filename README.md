@@ -92,7 +92,7 @@ Hyperbufは、ハッカー文化に根差した **使い込める道具** を目
 
 | Concern | Candidates to evaluate |
 | --- | --- |
-| macOS application shell | Tauri 2 / Rust、SwiftUI + WKWebView、Electron |
+| macOS application shell | **SwiftUI + WKWebView（決定、`docs/poc-interaction-results.md`）**。比較対象: Tauri 2 / Rust、Electron |
 | UI implementation | React + TypeScript、ネイティブUIとの分担 |
 | Markdown pipeline | unified / remark / rehype、および代替実装 |
 | GFM / appearance | remark-gfm、github-markdown-css、独自互換レイヤー |
@@ -127,7 +127,7 @@ Hyperbufは、ハッカー文化に根差した **使い込める道具** を目
 
 ## Open questions
 
-- macOSとの統合を優先するか、Web技術との親和性と移植性を優先するか。
+- 他OSへ移植する場合のシェル（macOSはSwiftUI + WKWebViewに決定済み。他OSは各プラットフォームに最適なフレームワークで、共通のWebコアを再利用する方針）。
 - bufferとwindowのライフサイクルをどこまでEmacsに合わせるか。
 - コピーのためのテキスト選択をキーボードでどう行うか（閲覧画面へのカーソル表示は導入しない方向で、別途検討）。
 - GitHub互換表示の対象範囲をどう定義するか。

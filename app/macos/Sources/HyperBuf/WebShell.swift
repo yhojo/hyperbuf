@@ -26,6 +26,7 @@ struct WebShell: NSViewRepresentable {
         session.webView = view
         context.coordinator.bridge = bridge  // WKUserContentController は、ハンドラを強参照しない
         TestHarness.attach(to: view, bridge: bridge)
+        TestHarness.startCommandChannel(for: view)
         view.load(URLRequest(url: URL(string: "\(ContentSecurityPolicy.scheme)://app/index.html")!))
         return view
     }

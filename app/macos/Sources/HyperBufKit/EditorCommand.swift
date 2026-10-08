@@ -16,7 +16,13 @@ public struct EditorConfig: Sendable, Equatable {
     public static let defaultName = "Emacs"
 
     public static func configURL() -> URL {
-        URL(fileURLWithPath: NSHomeDirectory())
+        #if DEBUG
+            // テスト用: 利用者の実際の設定を使わないよう、デバッグビルドだけ、差し替えられる
+            if let path = ProcessInfo.processInfo.environment["HYPERBUF_CONFIG"] {
+                return URL(fileURLWithPath: path)
+            }
+        #endif
+        return URL(fileURLWithPath: NSHomeDirectory())
             .appendingPathComponent("Library/Application Support/HyperBuf/config.json")
     }
 

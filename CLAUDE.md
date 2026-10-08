@@ -15,7 +15,8 @@ A keyboard-driven macOS viewer (not an editor) for browsing many cross-reference
 ## Key design concepts (from README.md)
 
 - **buffer / window / frame model** borrowed from Emacs: a buffer (document) is separate from a window (view). The same buffer can be shown in multiple windows, each keeping its own scroll position. Splitting is expected to use a split tree (`C-x 2/3/0/1/o`, `C-x b`, `C-x C-f`, `M-x`).
-- **Back/Forward is reference history** (documents, anchors, positions per window), deliberately distinct from buffer-switch history. Its granularity and binding are still open questions.
+- **Back/Forward is reference history** (documents, anchors, positions per window). Buffer switches (`C-x b`) are also pushed onto it; the `C-x b` MRU order is managed separately. Splitting a window copies its history. Granularity and key binding are still open. Details: `docs/interaction-model.md`.
+- The README is a living vision document and may be changed freely, but every change to its stated plan/policy must be logged with a timestamp in `docs/plan-change-log.md`.
 - **Rendering engine must stay loosely coupled** from the viewing/navigation core, so renderer choices can change after PoCs.
 - Planned PoC order: Interaction → Rendering → Project navigation → Integration/hardening.
 

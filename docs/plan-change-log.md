@@ -2,6 +2,14 @@
 
 README.md に記載した方針・計画を変更した際の記録。新しいものを上に追記する。README は自由に更新してよいが、変更理由をここに残す。
 
+## 2026-10-08 22:21 JST — レンダリング層の決定
+
+- **変更前**（README「Architecture and technology」）: Markdown pipeline、GFM、数式、図、シンタックスハイライトは候補を並べた状態で未決定。
+- **変更後**: unified / remark / rehype（remark-gfm、github-markdown-css、rehype-sanitize）、KaTeX、Mermaid、starry-night を採用。MathJax、Graphviz、PlantUML、WaveDrom、D2 は未評価のまま。
+- **理由**: SwiftUI + WKWebView 上で検証し、GitHub の表示と比べて違和感がなく、不信任な HTML・SVG でも無害で、描画性能も問題なかった。starry-night は Shiki より速く、出力が小さく、GitHub と同じ文法・クラス名で互換性が高い。
+- **併せて決定**: 起動時に読む JS（約 1.95 MB）は、体感の問題がないためこのままとする。
+- 関連: `docs/poc-rendering-results.md`、README の技術表、CLAUDE.md を更新。
+
 ## 2026-10-08 21:16 JST — macOS 向けシェルの決定
 
 - **変更前**（README「Architecture and technology」）: macOS application shell は Tauri 2 / Rust、SwiftUI + WKWebView、Electron の候補で未決定。未決事項に「macOS統合優先か、Web技術の親和性・移植性優先か」。

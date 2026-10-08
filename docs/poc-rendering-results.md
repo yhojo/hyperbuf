@@ -1,6 +1,6 @@
 # Rendering PoC 結果
 
-状態: **結果報告** — 実施日 2026-10-08。ブランチ: `poc/rendering`(`78860be`、`8f3cf5a`)。採用する構成は §7 の提案を踏まえてユーザーが決める。
+状態: **結果報告・決定済み** — 実施日 2026-10-08。ブランチ: `poc/rendering`(`78860be`、`8f3cf5a`)。§7 の構成を採用(ユーザー合意、2026-10-08)。
 
 ## 1. 目的と範囲
 
@@ -97,11 +97,10 @@ starry-night は速く、出力が小さい。GitHub と同じ文法・クラス
 
 ## 7. 提案と判断すべき点
 
-**提案: この構成(unified / remark / rehype、remark-gfm、remark-math + KaTeX、starry-night、Mermaid、rehype-sanitize、github-markdown-css)を、レンダリング層の本命とする。** 理由は、GitHub との表示差が確認されず、セキュリティの前提を満たし、性能にも問題がないため。
+**決定(2026-10-08、ユーザー合意): この構成(unified / remark / rehype、remark-gfm、remark-math + KaTeX、starry-night、Mermaid、rehype-sanitize、github-markdown-css)を、レンダリング層として採用する。** 理由は、GitHub との表示差が確認されず、セキュリティの前提を満たし、性能にも問題がないため。
 
-判断が必要な点:
-- **採用の確定:** 上の構成を採用してよいか。README の技術表を「決定」に更新する。
-- **起動時に読む JS が約 1.95 MB。** 現時点で体感の問題は報告されていないが、気になる場合は、starry-night の文法を絞る、言語を遅延ロードするなどの余地がある。
+残された点:
+- **起動時に読む JS が約 1.95 MB。** 現時点で体感の問題は報告されていないため、このままとする。気になる場合は、starry-night の文法を絞る、言語を遅延ロードするなどの余地がある。
 - **Mermaid が約 5 MB。** 遅延ロードなので普段は影響しない。必要な図種別だけに絞る選択肢もある。
 - **README に挙げた他の候補(MathJax、Graphviz、PlantUML、WaveDrom、D2)は未評価。** MathJax は KaTeX で要件を満たしたため比較していない。それ以外は、ローカルで動く実装や外部コマンド実行の権限設計が絡むため、必要になった時点で別途扱う(README のセキュリティ方針に従い、権限境界を先に決める)。
 

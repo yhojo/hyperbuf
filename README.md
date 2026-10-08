@@ -94,11 +94,11 @@ Hyperbufは、ハッカー文化に根差した **使い込める道具** を目
 | --- | --- |
 | macOS application shell | **SwiftUI + WKWebView（決定、`docs/poc-interaction-results.md`）**。比較対象: Tauri 2 / Rust、Electron |
 | UI implementation | React + TypeScript、ネイティブUIとの分担 |
-| Markdown pipeline | unified / remark / rehype、および代替実装 |
-| GFM / appearance | remark-gfm、github-markdown-css、独自互換レイヤー |
-| Mathematics | KaTeX、MathJax |
-| Diagrams | Mermaid、Graphviz、PlantUML、WaveDrom、D2 |
-| Syntax highlighting | starry-night、Shiki |
+| Markdown pipeline | **unified / remark / rehype（決定、`docs/poc-rendering-results.md`）**。raw HTML は rehype-sanitize で無害化 |
+| GFM / appearance | **remark-gfm、github-markdown-css（決定）**。GitHub との差は小さな変換で吸収する（例: 通貨表記の `$`） |
+| Mathematics | **KaTeX（決定）**。MathJax は未比較 |
+| Diagrams | **Mermaid（決定、遅延ロード・strictモード）**。Graphviz、PlantUML、WaveDrom、D2 は未評価（外部コマンドが絡むものは権限境界を先に決める） |
+| Syntax highlighting | **starry-night（決定）**。Shiki と比較し、速度・出力サイズ・GitHub互換で優位 |
 | Project search | ripgrep、必要に応じてインデックス方式 |
 | File monitoring | OSネイティブ機構、Rust/Swift側の監視ライブラリ |
 | State / layout management | 明示的なbuffer・windowモデル、分割ツリーなど |

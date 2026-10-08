@@ -88,7 +88,7 @@ HyperBuf.app 本体に加え、CLI と Emacs 連携も同一リポジトリで�
 - `core/` — shared web core (TypeScript; model, keys, fuzzy, rendering pipeline, UI). OS-independent; the only boundary to a shell is the `hyperbufHost` contract
 - `app/macos/` — HyperBuf.app (SwiftUI + WKWebView shell; SwiftPM + scripts, no Xcode project for now). Other OSes get their own `app/<platform>/` with the best native framework for that platform
 - `cli/` — `hyperbuf` command (Swift single binary for now; opens a file/line/anchor in HyperBuf.app via the socket, launching the app through the `hyperbuf://` URL if needed)
-- `emacs/` — Emacs integration (`hyperbuf.el`). Talks to the socket directly by default; can be switched to call the `hyperbuf` CLI
+- `emacs/` — Emacs integration (`hyperbuf.el`, Emacs 29.1+, see `emacs/README.md`). Talks to the socket directly by default (`hyperbuf-transport` = `socket`); can be switched to call the `hyperbuf` CLI. Keeps its own copy of the input validation, kept in sync through the shared `protocol/examples/`
 - `protocol/` — machine-readable protocol definition (JSON Schema) + shared conformance examples (`examples/*.json`, used by Swift, the CLI and Emacs), and `protocol/swift` (`HyperBufProtocol`: types/validation/URL/framing; `HyperBufIPC`: `SocketServer` + `SocketClient`)
 - `fixtures/` — test documents and the corpus generator
 - `docs/` — design documents, PoC results, protocol spec, migration plan

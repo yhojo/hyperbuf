@@ -82,8 +82,9 @@ hyperbuf [オプション] <ファイル>[:<行>]
 | コマンド | 動作 |
 | --- | --- |
 | `hyperbuf-open-file` | 現在のバッファのファイルを、現在行つきで開く |
-| `hyperbuf-open-project` | 現在のプロジェクトのルートを開く |
+| `hyperbuf-open-project-file` | 現在のプロジェクトの Markdown を選んで開く(旧称: `hyperbuf-open-project`。`open` 要求はファイルを指すため、プロジェクトのルートそのものは開けない) |
 | `hyperbuf-open-other-window` | `--target split-right` で開く |
+| `hyperbuf-open` | Lisp から使う(`FILE &optional LINE ANCHOR TARGET WAIT`) |
 
 - カスタマイズ変数: `hyperbuf-executable`(既定 `hyperbuf`)、`hyperbuf-default-target`。
 - Emacs 側で見出しのアンカーは計算しない。行番号を渡し、アプリが該当ブロックへ解決する(GitHub 方式の見出し ID の計算を Emacs に持ち込まないため)。
@@ -394,3 +395,16 @@ UTF-8 の JSON Lines(1 行 1 メッセージ)。1 つの接続で、要求と応
 - **`anchor` の長さ:** JSON Schema の `maxLength` と同じく、Unicode のコードポイントで数える(書記素ではない)。
 - **共有する例:** `protocol/examples/` の `open-validation.json`、`url.json`、`framing.json`、`cli-args.json` を、Swift(プロトコル・CLI)と JSON Schema の検査が共有する。Emacs 連携(M5)も、同じ例を使う。
 - **未実装・未確認:** `target`(分割・新規 frame)と `project` の処理(`project` は、アプリの起動時のパネルの初期位置だけに使う)、別のユーザーからの接続の拒否(`getpeereid`)の実機確認、署名・公証したアプリでの動作、二重起動の検出後に、既存のインスタンスを前面に出す動作(今は終了するだけ)、Emacs 側のクライアント。
+
+## 14. Emacs 連携の実装の記録(M5、2026-10-09)
+
+`emacs/hyperbuf.el`(Emacs 29.1 以上)。使い方・設定は `emacs/README.md`。
+
+- **標準は直接ソケット**(`make-network-process` の `:family 'local`)。`hyperbuf-transport` を `cli` にすると、`hyperbuf` コマンドを呼ぶ。JSON は Emacs 組み込みの `json-serialize` / `json-parse-string`(ライブラリの追加なし)。
+- **入力の検証を、Emacs 側にも持つ**(`hyperbuf--validate-open`)。接続の前に、利用者に、すぐ分かる形でエラーを返し、アプリが起動していない場合(サーバーが検証できない)にも、同じ規則で守る。規則がサーバーとずれないよう、`protocol/examples/open-validation.json` を共有して適合テストをする(例を壊すと、Emacs のテストも失敗することを確認した)。
+- **URL の組み立ても共有の例で検証する**(`protocol/examples/url.json` の `url` と、Emacs が作る URL が一致する)。`url-hexify-string` は、予約文字と日本語を、大文字の 16 進でパーセントエンコードするので、Swift 側の `URLComponents` が読める。
+- **アプリが起動していないとき:** `hyperbuf-launch-if-needed`(既定 t)なら、開く要求の URL で `open` する。結果は、アプリの画面に出る(CLI と同じ)。nil なら、通知して終わる。
+- **未保存のバッファ:** ビューアはディスクを読むので、`hyperbuf-save-before-open`(既定 `ask`)で、開く前に保存を尋ねる。
+- **TRAMP のファイルは開かない**(手元のファイルだけを、ビューアが読む)。
+- **待ち時間:** アプリが `timeoutMs` で `timeout` を返すのを待つため、クライアントは、それに 2 秒の余白(`hyperbuf--reply-slack`)を足して待つ。
+- **未実装:** `hyperbuf-visit-location`(ビューアから Emacs への編集位置の連携、M6)。

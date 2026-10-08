@@ -28,7 +28,7 @@ printf '# B\n\n本文 B\n' > "$tmp/approve/repoA/docs/b.md"
 printf '# D\n' > "$tmp/deny/d.md"
 printf '# W\n' > "$tmp/wait/w.md"
 
-export TMP_DIR="$tmp" PROJECT_DIR="$project" APP_PATH="$app" CLI_PATH="$root/cli/.build/debug/hyperbuf"
+export TMP_DIR="$tmp" PROJECT_DIR="$project" APP_PATH="$app" CLI_PATH="$root/cli/.build/debug/hyperbuf" REPO_ROOT="$root"
 sock="$tmp/sock/hb.sock"
 trusted="$tmp/trusted-roots.json"
 
@@ -184,6 +184,36 @@ loc_after = call({"v": 1, "op": "get-location"})["result"]["location"]
 check("--print-url は、表示を変えない", loc_after == before_print, (before_print, loc_after))
 r = run_cli("--version")
 check("--version", r.returncode == 0 and r.stdout.startswith("hyperbuf "), r.stdout)
+
+print("Emacs(hyperbuf.el)")
+import shutil
+if shutil.which("emacs") is None:
+    print("  - emacs が見つからないので、省略")
+else:
+    emacs_env = {**os.environ, "HYPERBUF_SOCKET_PATH": sock_path, "LC_ALL": "en_US.UTF-8"}
+    def run_emacs(form, timeout=90):
+        return subprocess.run(
+            ["emacs", "-Q", "--batch", "-L", os.path.join(os.environ["REPO_ROOT"], "emacs"), "-l", "hyperbuf", "--eval", form],
+            capture_output=True, text=True, env=emacs_env, timeout=timeout)
+
+    r = run_emacs(f'(hyperbuf-open "{project}/index.md" 12)')
+    check("Emacs から、直接ソケットで開ける", r.returncode == 0, (r.returncode, r.stderr[-300:]))
+    loc = call({"v": 1, "op": "get-location"})["result"]["location"]
+    check("開いた位置(行 12)が、ビューアに出る", loc and loc["path"] == "index.md" and loc["anchor"] == "line:12", loc)
+
+    r = run_emacs(f'(hyperbuf-open "{project}/interaction.md" nil "refs")')
+    check("アンカーを指定して開ける", r.returncode == 0, (r.returncode, r.stderr[-300:]))
+
+    r = run_emacs(f'(hyperbuf-open "{tmp}/approve/repoA/docs/a.md")')
+    check("承認済みの範囲外も、確認なしで開ける", r.returncode == 0, (r.returncode, r.stderr[-300:]))
+
+    r = run_emacs(f'(hyperbuf-open "{tmp}/deny/d.md" nil nil nil t)')
+    check("拒否された範囲外は、エラー(outside-project)になる", r.returncode != 0 and "outside-project" in r.stderr, (r.returncode, r.stderr[-300:]))
+
+    r = run_emacs(f'(let ((hyperbuf-transport (quote cli)) (hyperbuf-executable "{cli}")) (hyperbuf-open "{project}/index.md" 4))')
+    check("CLI 経由(hyperbuf-transport を cli)でも開ける", r.returncode == 0, (r.returncode, r.stderr[-300:]))
+    loc = call({"v": 1, "op": "get-location"})["result"]["location"]
+    check("CLI 経由で開いた位置が、ビューアに出る", loc and loc["path"] == "index.md" and loc["anchor"] == "line:4", loc)
 
 if failures:
     print(f"\nNG: {len(failures)} 件")

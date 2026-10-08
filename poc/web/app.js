@@ -422,6 +422,22 @@ async function main() {
   visit(model, sel(), first);
   refresh();
   echo(`${files.length} files / host: ${host.name}`);
+  // 外部(CLI・Emacs 連携)からの「開く」要求。docs/integration-protocol.md
+  host.onOpen?.(async (req) => {
+    if (req.error) return (echo(`連携: ${req.error}`), host.log?.(`REJECTED ${req.error}`));
+    if (req.outside) return (echo(`連携: プロジェクトの範囲外です(確認 UI は未実装): ${req.path}`), host.log?.(`OUTSIDE ${req.path}`));
+    const anchor = req.anchor ?? (req.line ? `line:${req.line}` : null);
+    try {
+      await ensureBuffer(req.path);
+      visit(model, sel(), req.path, anchor);
+      refresh();
+      echo(`連携で開きました: ${req.path}${anchor ? "#" + anchor : ""}`);
+      setTimeout(() => host.log?.(`OPENED ${req.path} ${anchor ?? ""} header=${document.querySelector(".win.selected .win-header")?.textContent} scrollTop=${document.querySelector(".win.selected .content")?.scrollTop}`), 150);
+    } catch (err) {
+      echo(`連携: 開けません: ${req.path} (${err.message})`);
+    }
+  });
+  host.ready?.();
   host.onFileChanged(async (path) => {
     if (!model.buffers.has(path)) return;
     openBuffer(model, path, await host.readFile(path));

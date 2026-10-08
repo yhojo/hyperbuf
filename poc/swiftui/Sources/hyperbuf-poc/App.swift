@@ -4,15 +4,25 @@ import WebKit
 // Interaction PoC のシェル(SwiftUI + WKWebView)。
 // Web コア(poc/web)をカスタムスキームで配信し、ファイルアクセスはホストブリッジ経由に限る。
 
+// hyperbuf://open?... を受け取る(docs/integration-protocol.md)。SwiftUI の onOpenURL は WindowGroup だと
+// URL ごとに新しいウィンドウを作ってしまうため、AppDelegate で受け取り、ウィンドウは 1 つに保つ。
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func application(_ application: NSApplication, open urls: [URL]) {
+        urls.forEach { Host.shared.handleOpenURL($0) }
+    }
+}
+
 @main
 struct HyperbufPoc: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
+
     init() {
         NSApplication.shared.setActivationPolicy(.regular)
         NSApplication.shared.activate(ignoringOtherApps: true)
     }
 
     var body: some Scene {
-        WindowGroup {
+        Window("hyperbuf-poc", id: "main") {
             WebContainer()
                 .frame(minWidth: 900, minHeight: 600)
         }

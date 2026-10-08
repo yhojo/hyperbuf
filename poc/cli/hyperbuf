@@ -1,0 +1,44 @@
+#!/bin/bash
+# hyperbuf CLI の試作(bash)。引数を検証して hyperbuf://open の URL を組み立て、open に渡す。
+# 本実装は単一バイナリ(Swift など)にする。契約は docs/integration-protocol.md。
+set -euo pipefail
+
+usage() { echo "usage: hyperbuf [--anchor ID] [--line N] [--project DIR] [--target T] [--no-activate] [--print-url] FILE[:LINE]" >&2; exit 1; }
+
+anchor=""; line=""; project=""; target=""; activate=1; print_url=0; file=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --anchor) anchor="${2:?}"; shift 2 ;;
+    --line) line="${2:?}"; shift 2 ;;
+    --project) project="${2:?}"; shift 2 ;;
+    --target) target="${2:?}"; shift 2 ;;
+    --no-activate) activate=0; shift ;;
+    --print-url) print_url=1; shift ;;
+    -h|--help) usage ;;
+    -*) usage ;;
+    *) file="$1"; shift ;;
+  esac
+done
+[ -n "$file" ] || usage
+
+# FILE:LINE を分ける(ファイル名自体に ":数字" で終わる名前は --line で指定する)
+if [[ "$file" =~ ^(.+):([0-9]+)$ ]] && [ ! -e "$file" ]; then file="${BASH_REMATCH[1]}"; line="${line:-${BASH_REMATCH[2]}}"; fi
+
+[ -f "$file" ] || { echo "hyperbuf: not found: $file" >&2; exit 2; }
+case "$file" in *.md) ;; *) echo "hyperbuf: not a .md file: $file" >&2; exit 2 ;; esac
+abs="$(cd "$(dirname "$file")" && pwd -P)/$(basename "$file")"
+
+url="$(python3 - "$abs" "$line" "$anchor" "$project" "$target" <<'PY'
+import sys, urllib.parse
+path, line, anchor, project, target = sys.argv[1:6]
+q = [("v", "1"), ("path", path)]
+if line: q.append(("line", line))
+if anchor: q.append(("anchor", anchor))
+if project: q.append(("project", project))
+if target: q.append(("target", target))
+print("hyperbuf://open?" + urllib.parse.urlencode(q, quote_via=urllib.parse.quote))
+PY
+)"
+
+if [ "$print_url" = 1 ]; then echo "$url"; exit 0; fi
+if [ "$activate" = 1 ]; then open "$url" || exit 3; else open -g "$url" || exit 3; fi

@@ -20,6 +20,8 @@ final class Host: NSObject, WKURLSchemeHandler, WKScriptMessageHandlerWithReply 
     weak var webView: WKWebView?
     private var timer: Timer?
     private var watcher: FSWatcher?
+    private var pageReady = false
+    private var pendingOpens: [[String: Any]] = []
     private var stamps: [String: Date] = [:]
 
     override init() {
@@ -33,12 +35,17 @@ final class Host: NSObject, WKURLSchemeHandler, WKScriptMessageHandlerWithReply 
     static let bridgeScript = """
     (() => {
       const cbs = [];
+      const openCbs = [];
+      window.__hostOpen = (req) => openCbs.forEach((cb) => cb(req));
       const call = (msg) => window.webkit.messageHandlers.host.postMessage(msg);
       window.hyperbufHost = {
         name: "swiftui+wkwebview",
         listFiles: () => call({ op: "list" }),
         readFile: (path) => call({ op: "read", path }),
         onFileChanged: (cb) => cbs.push(cb),
+        onOpen: (cb) => openCbs.push(cb),
+        ready: () => call({ op: "ready" }),
+        log: (text) => call({ op: "log", text }),
         search: (query, opts = {}) => call({ op: "search", query, ...opts }),
         resolveResource: (path) => "hyperbuf://project/" + path.split("/").map(encodeURIComponent).join("/"),
       };
@@ -125,6 +132,15 @@ final class Host: NSObject, WKURLSchemeHandler, WKScriptMessageHandlerWithReply 
                 let text = try? String(contentsOf: file, encoding: .utf8)
             else { return replyHandler(nil, "cannot read") }
             replyHandler(text, nil)
+        case "ready":
+            // ページが onOpen を登録し終えた。起動前に届いていた要求をここで渡す。
+            pageReady = true
+            pendingOpens.forEach(deliver)
+            pendingOpens.removeAll()
+            replyHandler(nil, nil)
+        case "log":
+            log("JS \(body["text"] as? String ?? "")")
+            replyHandler(nil, nil)
         case "search":
             guard let query = body["query"] as? String, !query.isEmpty else { return replyHandler(nil, "empty query") }
             let engine = body["engine"] as? String ?? "swift"
@@ -323,5 +339,71 @@ extension Host {
             "engine": "rg", "total": all.count, "truncated": all.count > limit, "results": Array(all.prefix(limit)),
             "listMs": 0.0, "scanMs": Double(t1.uptimeNanoseconds - t0.uptimeNanoseconds) / 1e6,
         ]
+    }
+}
+
+// MARK: hyperbuf://open の受け取り(docs/integration-protocol.md §4.1・§6)
+
+extension Host {
+    /// PoC 用のログ。`open` で起動すると標準出力を取れないため、ファイルに追記する。
+    func log(_ text: String) {
+        let line = "\(Int(Date().timeIntervalSince1970 * 1000)) \(text)\n"
+        let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("hyperbuf-poc.log")
+        if let h = try? FileHandle(forWritingTo: url) {
+            h.seekToEndOfFile()
+            h.write(Data(line.utf8))
+            try? h.close()
+        } else {
+            try? line.write(to: url, atomically: true, encoding: .utf8)
+        }
+    }
+
+    /// URL を検証して、ページへ渡す要求(辞書)にする。失敗は error を持つ辞書にして、画面に表示させる。
+    func parseOpenURL(_ url: URL) -> [String: Any] {
+        guard url.scheme == "hyperbuf", url.host == "open",
+            let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems
+        else { return ["error": "未対応の URL です"] }
+        let q = Dictionary(items.map { ($0.name, $0.value ?? "") }, uniquingKeysWith: { first, _ in first })
+        if let v = q["v"], v != "1" { return ["error": "未対応のバージョンです(v=\(v))"] }
+        guard let path = q["path"], path.hasPrefix("/"), path.hasSuffix(".md"),
+            !path.contains("\0"), !path.unicodeScalars.contains(where: { $0.value < 0x20 }),
+            !path.split(separator: "/").contains("..")
+        else { return ["error": "path が不正です(絶対パスの .md のみ)"] }
+        var req: [String: Any] = [:]
+        if let line = q["line"] {
+            guard let n = Int(line), n > 0 else { return ["error": "line が不正です"] }
+            req["line"] = n
+        }
+        if let anchor = q["anchor"], !anchor.isEmpty {
+            guard anchor.count <= 200 else { return ["error": "anchor が長すぎます"] }
+            req["anchor"] = anchor
+        }
+        // シンボリックリンクを解決したうえで、プロジェクトの内側かどうかを判定する
+        let file = URL(fileURLWithPath: path).resolvingSymlinksInPath()
+        let base = projectRoot.resolvingSymlinksInPath().path
+        guard FileManager.default.fileExists(atPath: file.path) else { return ["error": "ファイルがありません: \(path)"] }
+        if file.path.hasPrefix(base + "/") {
+            req["path"] = String(file.path.dropFirst(base.count + 1))
+        } else {
+            req["outside"] = true
+            req["path"] = path
+        }
+        return req
+    }
+
+    func handleOpenURL(_ url: URL) {
+        log("URL_RECEIVED \(url.absoluteString)")
+        let req = parseOpenURL(url)
+        NSApp.activate(ignoringOtherApps: true)
+        log("WINDOWS \(NSApp.windows.filter { $0.isVisible }.count)")
+        if pageReady { deliver(req) } else { pendingOpens.append(req) }
+    }
+
+    fileprivate func deliver(_ req: [String: Any]) {
+        guard let data = try? JSONSerialization.data(withJSONObject: req), let json = String(data: data, encoding: .utf8)
+        else { return }
+        webView?.evaluateJavaScript("window.__hostOpen && window.__hostOpen(\(json))") { [weak self] _, error in
+            self?.log("DELIVERED \(error.map { "ERR \($0)" } ?? "ok")")
+        }
     }
 }

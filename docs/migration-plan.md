@@ -117,6 +117,7 @@ PoC(Interaction、Rendering、Project navigation、連携プロトコル)で、�
 
 | # | 状態 | メモ |
 | --- | --- | --- |
+| M1 | **完了(2026-10-08)** | `core/` に model / keys / fuzzy / pipeline を TypeScript で移し、`app.js`(479 行)を、ミニバッファ・window の描画・コマンド・キー入力・検索・ホストのイベント・起動に分割した。開発用ホストと開発サーバー(`scripts/dev-server.mjs`、127.0.0.1 のみ、プロジェクト外と `.md`・画像以外は返さない)で、ブラウザで PoC と同じ操作ができることを確認した(分割、独立した履歴、Back/Forward、全文書の描画、検索の仮想 buffer、行アンカー、外部更新時の位置の維持)。単体テスト 36 件(PoC の 27 件を引き継ぎ、fixtures のセキュリティ検証文書を使った sanitize のテストなどを追加) |
 | M0 | **完了(2026-10-08)** | `core/`(TypeScript、型検査・Prettier・テスト・esbuild)、`app/macos/` と `cli/`(SwiftPM、Swift 6、`swift format`、Swift Testing)、`emacs/`(ERT)、`protocol/`、`fixtures/`(PoC の文書集とコーパス生成)、`scripts/check.sh`、CI の骨組み。`scripts/check.sh` が全体で通り、意図的に壊すと失敗することを確認した。**CI のワークフローは、GitHub に公開する前で、まだ実行していない**(構文のみ確認) |
 
 ## 7. PoC の扱い

@@ -10,7 +10,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "node build.mjs",
-    "check": "npm run typecheck && npm run format:check && npm test"
+    "check": "npm run typecheck && npm run format:check && npm test",
+    "dev": "npm run build && node scripts/dev-server.mjs"
   },
   "engines": {
     "node": ">=22.18"

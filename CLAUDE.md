@@ -21,7 +21,7 @@ Per component (run in the component directory):
 
 | Component | Check | Single test |
 | --- | --- | --- |
-| `core/` (TypeScript, Node >= 22.18, no test runner dependency) | `npm run check` (typecheck + prettier + tests); `npm run build` | `node --test test/<file>.test.ts` |
+| `core/` (TypeScript, Node >= 22.18, no test runner dependency; tests run TS directly via type stripping, so avoid TS-only syntax such as constructor parameter properties and enums — `erasableSyntaxOnly` enforces it) | `npm run check` (typecheck + prettier + tests); `npm run build`; `npm run dev` (build + dev server on :8765 serving `fixtures/sample-project`, or `node scripts/dev-server.mjs <project-dir> <port>`) | `node --test test/<file>.test.ts` |
 | `app/macos/`, `cli/` (SwiftPM, Swift 6, macOS 14+) | `swift build && swift test && swift format lint --strict --recursive Sources Tests --configuration .swift-format` | `swift test --filter <TestName>` |
 | `emacs/` | `scripts/check.sh emacs` (byte-compile with warnings as errors, then ERT) | `emacs -Q --batch -L emacs -l ert -l emacs/test/hyperbuf-test.el --eval '(ert-run-tests-batch-and-exit "<test-name-regexp>")'` |
 

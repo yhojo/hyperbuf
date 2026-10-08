@@ -19,6 +19,7 @@ final class Host: NSObject, WKURLSchemeHandler, WKScriptMessageHandlerWithReply 
 
     weak var webView: WKWebView?
     private var timer: Timer?
+    private var watcher: FSWatcher?
     private var stamps: [String: Date] = [:]
 
     override init() {
@@ -38,6 +39,7 @@ final class Host: NSObject, WKURLSchemeHandler, WKScriptMessageHandlerWithReply 
         listFiles: () => call({ op: "list" }),
         readFile: (path) => call({ op: "read", path }),
         onFileChanged: (cb) => cbs.push(cb),
+        search: (query, opts = {}) => call({ op: "search", query, ...opts }),
         resolveResource: (path) => "hyperbuf://project/" + path.split("/").map(encodeURIComponent).join("/"),
       };
       window.__hostChanged = (path) => cbs.forEach((cb) => cb(path));
@@ -123,6 +125,14 @@ final class Host: NSObject, WKURLSchemeHandler, WKScriptMessageHandlerWithReply 
                 let text = try? String(contentsOf: file, encoding: .utf8)
             else { return replyHandler(nil, "cannot read") }
             replyHandler(text, nil)
+        case "search":
+            guard let query = body["query"] as? String, !query.isEmpty else { return replyHandler(nil, "empty query") }
+            let engine = body["engine"] as? String ?? "swift"
+            let limit = body["limit"] as? Int ?? 200
+            DispatchQueue.global(qos: .userInitiated).async {
+                let result = engine == "rg" ? self.searchRg(query, limit: limit) : self.searchSwift(query, limit: limit)
+                DispatchQueue.main.async { replyHandler(result, nil) }
+            }
         default:
             replyHandler(nil, "unknown op")
         }
@@ -177,7 +187,11 @@ final class Host: NSObject, WKURLSchemeHandler, WKScriptMessageHandlerWithReply 
                 }
             }
         }
-        timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in self?.poll() }
+        if ProcessInfo.processInfo.environment["HYPERBUF_WATCH"] == "poll" {
+            timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in self?.poll() }
+        } else {
+            watcher = FSWatcher(root: projectRoot) { [weak self] paths in paths.forEach { self?.notifyChanged($0) } }
+        }
     }
 
     private func currentStamps() -> [String: Date] {
@@ -195,9 +209,112 @@ final class Host: NSObject, WKURLSchemeHandler, WKScriptMessageHandlerWithReply 
     private func poll() {
         let now = currentStamps()
         for (path, date) in now where stamps[path] != date {
-            let json = String(data: try! JSONEncoder().encode(path), encoding: .utf8)!
-            webView?.evaluateJavaScript("window.__hostChanged && window.__hostChanged(\(json))")
+            notifyChanged(path)
         }
         stamps = now
+    }
+
+    private func notifyChanged(_ path: String) {
+        let json = String(data: try! JSONEncoder().encode(path), encoding: .utf8)!
+        webView?.evaluateJavaScript("window.__hostChanged && window.__hostChanged(\(json))")
+        // HYPERBUF_LOG_EVENTS=1: 通知を JS へ渡した時刻(epoch ミリ秒)を出力する(反応時間の計測用)
+        if ProcessInfo.processInfo.environment["HYPERBUF_LOG_EVENTS"] != nil {
+            print("EVENT \(path) \(Int(Date().timeIntervalSince1970 * 1000))")
+            fflush(stdout)
+        }
+    }
+}
+
+// MARK: 全文検索(PoC: 自前実装と ripgrep の比較)
+
+extension Host {
+    private static func fold(_ b: UInt8) -> UInt8 { (b >= 65 && b <= 90) ? b + 32 : b }
+
+    /// 大文字小文字を区別しない(ASCII のみ折り畳み)部分文字列検索。1 ファイルにつき最大 maxPerFile 行。
+    private static func scan(_ data: Data, _ q: [UInt8], path: String, maxPerFile: Int = 3) -> [[String: Any]] {
+        var found: [[String: Any]] = []
+        data.withUnsafeBytes { raw in
+            let p = raw.bindMemory(to: UInt8.self)
+            let n = p.count, m = q.count
+            var i = 0, line = 1
+            while i < n && found.count < maxPerFile {
+                var e = i
+                while e < n && p[e] != 10 { e += 1 }
+                if e - i >= m {
+                    var s = i
+                    while s + m <= e {
+                        var k = 0
+                        while k < m && fold(p[s + k]) == q[k] { k += 1 }
+                        if k == m {
+                            let text = String(decoding: UnsafeBufferPointer(rebasing: p[i..<min(e, i + 200)]), as: UTF8.self)
+                            found.append(["path": path, "line": line, "text": text])
+                            break
+                        }
+                        s += 1
+                    }
+                }
+                i = e + 1
+                line += 1
+            }
+        }
+        return found
+    }
+
+    func searchSwift(_ query: String, limit: Int) -> [String: Any] {
+        let t0 = DispatchTime.now()
+        let files = markdownFiles()
+        let t1 = DispatchTime.now()
+        let q = Array(query.utf8).map(Host.fold)
+        let root = projectRoot.resolvingSymlinksInPath()
+        var perFile = [[[String: Any]]](repeating: [], count: files.count)
+        perFile.withUnsafeMutableBufferPointer { buf in
+            let out = buf  // 各 index には 1 スレッドしか書かない
+            DispatchQueue.concurrentPerform(iterations: files.count) { i in
+                guard let data = try? Data(contentsOf: root.appendingPathComponent(files[i]), options: .mappedIfSafe)
+                else { return }
+                out[i] = Host.scan(data, q, path: files[i])
+            }
+        }
+        let all = perFile.flatMap { $0 }
+        let t2 = DispatchTime.now()
+        return [
+            "engine": "swift", "files": files.count, "total": all.count, "truncated": all.count > limit,
+            "results": Array(all.prefix(limit)),
+            "listMs": Double(t1.uptimeNanoseconds - t0.uptimeNanoseconds) / 1e6,
+            "scanMs": Double(t2.uptimeNanoseconds - t1.uptimeNanoseconds) / 1e6,
+        ]
+    }
+
+    /// ripgrep を外部プロセスとして呼ぶ。クエリは引数として渡す(シェルを介さない)。
+    func searchRg(_ query: String, limit: Int) -> [String: Any] {
+        guard let rg = ["/opt/homebrew/bin/rg", "/usr/local/bin/rg"].first(where: FileManager.default.isExecutableFile)
+        else { return ["error": "rg not found"] }
+        let t0 = DispatchTime.now()
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: rg)
+        proc.currentDirectoryURL = projectRoot
+        proc.arguments = [
+            "--null", "--line-number", "--ignore-case", "--fixed-strings", "--max-count", "3", "--no-heading",
+            "--color", "never", "-g", "*.md", "--", query, ".",
+        ]
+        let pipe = Pipe()
+        proc.standardOutput = pipe
+        proc.standardError = FileHandle.nullDevice
+        do { try proc.run() } catch { return ["error": "\(error)"] }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        proc.waitUntilExit()
+        var all: [[String: Any]] = []
+        for row in String(decoding: data, as: UTF8.self).split(separator: "\n") {
+            guard let nul = row.firstIndex(of: "\0") else { continue }
+            let path = String(row[..<nul]).replacingOccurrences(of: "./", with: "", options: .anchored)
+            let rest = row[row.index(after: nul)...]
+            guard let colon = rest.firstIndex(of: ":"), let line = Int(rest[..<colon]) else { continue }
+            all.append(["path": path, "line": line, "text": String(rest[rest.index(after: colon)...].prefix(200))])
+        }
+        let t1 = DispatchTime.now()
+        return [
+            "engine": "rg", "total": all.count, "truncated": all.count > limit, "results": Array(all.prefix(limit)),
+            "listMs": 0.0, "scanMs": Double(t1.uptimeNanoseconds - t0.uptimeNanoseconds) / 1e6,
+        ]
     }
 }

@@ -3,6 +3,7 @@ import {
   otherWindow, windows, selectedWindow, currentEntry, resolveLink,
 } from "./model.js";
 import { keyName, createKeymap, createDispatcher } from "./keys.js";
+import { fuzzyFilter } from "./fuzzy.js";
 import { createRenderer, hydrateDiagrams, findAnchor } from "./pipeline.js";
 import onigWasm from "vscode-oniguruma/release/onig.wasm";
 import "github-markdown-css/github-markdown.css";
@@ -43,6 +44,8 @@ const keymap = createKeymap({
   "S-TAB": "prev-link",
   "RET": "follow-link",
   "C-c j": "goto-heading",
+  "M-s g": "search-project",
+  "M-g g": "goto-line",
   "C-g": "keyboard-quit",
 });
 const dispatcher = createDispatcher(keymap);
@@ -77,6 +80,23 @@ function moveLink(dir) {
   u.linkIndex = u.linkIndex < 0 ? (dir > 0 ? 0 : links.length - 1) : (u.linkIndex + dir + links.length) % links.length;
   links.forEach((a, i) => a.classList.toggle("link-focus", i === u.linkIndex));
   links[u.linkIndex].scrollIntoView({ block: "nearest" });
+}
+
+// プロジェクト内の全文検索。結果は仮想 buffer(`*search: …*`)に Markdown として並べ、リンクで該当行へ飛ぶ。
+async function searchProject(query) {
+  if (!host.search) return echo("このホストは全文検索に対応していません");
+  const t0 = performance.now();
+  const res = await host.search(query, { limit: 500 });
+  if (res.error) return echo(`検索に失敗: ${res.error}`);
+  const lines = [`# 検索: ${query.replace(/[`#]/g, "")}`, "", `${res.total} 件${res.truncated ? "(先頭 " + res.results.length + " 件を表示)" : ""}`, ""];
+  for (const r of res.results) {
+    const snippet = r.text.trim().replace(/`/g, "'");
+    lines.push(`- [${r.path.replace(/[\[\]]/g, "")}:${r.line}](${encodeURI(r.path)}#line:${r.line}) \`${snippet}\``);
+  }
+  const vpath = `*search: ${query}*`;
+  openBuffer(model, vpath, lines.join("\n"));
+  visit(model, sel(), vpath);
+  echo(`検索 ${res.total} 件 (${(performance.now() - t0).toFixed(0)}ms、ホスト ${(res.listMs + res.scanMs).toFixed(0)}ms)`);
 }
 
 const commands = {
@@ -124,6 +144,15 @@ const commands = {
     const picked = await prompt("Heading: ", items, false);
     if (picked) visit(model, sel(), buf.path, headings[items.indexOf(picked)].id);
   },
+  // プロジェクト内の全文検索。結果は仮想 buffer(`*search: …*`)に Markdown として並べ、リンクで該当行へ飛ぶ。
+  "search-project": async () => {
+    const query = await prompt("Search project: ", []);
+    if (query) await searchProject(query);
+  },
+  "goto-line": async () => {
+    const n = Number(await prompt("Goto line: ", []));
+    if (Number.isInteger(n) && n > 0) visit(model, sel(), currentEntry(sel()).path, `line:${n}`);
+  },
   "execute-command": async () => {
     const name = await prompt("M-x ", Object.keys(commands), false);
     if (name) await commands[name]();
@@ -151,8 +180,7 @@ function prompt(label, candidates = [], allowFree = true) {
     let on = 0;
 
     const update = () => {
-      const q = input.value.toLowerCase();
-      shown = candidates.filter((c) => c.toLowerCase().includes(q)).slice(0, 8);
+      shown = fuzzyFilter(candidates, input.value, 8);
       on = Math.min(on, Math.max(0, shown.length - 1));
       list.replaceChildren(
         ...shown.map((c, i) => Object.assign(document.createElement("li"), { textContent: c, className: i === on ? "on" : "" })),
@@ -406,7 +434,7 @@ main().catch((err) => echo(`起動に失敗: ${err.message}`));
 
 // 自動検証用の入口(ヘッドレスで文書を開き、描画の統計を読む)
 window.__hb = {
-  model, commands, keymap, samples, renderStats,
+  model, commands, keymap, samples, renderStats, fuzzyFilter, searchProject, refresh,
   async open(path, anchor = null) {
     await ensureBuffer(path);
     visit(model, sel(), path, anchor);

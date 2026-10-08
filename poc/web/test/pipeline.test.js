@@ -23,7 +23,7 @@ test("sanitize: script・イベントハンドラ・javascript: URL を除去す
 
 test("GFM: 表・タスクリスト・取り消し線・自動リンク・脚注", () => {
   const out = html("| a | b |\n|---|---|\n| 1 | 2 |\n\n- [x] done\n- [ ] todo\n\n~~del~~ https://example.com\n\nfoot[^1]\n\n[^1]: note\n");
-  assert.match(out, /<table>/);
+  assert.match(out, /<table/);
   assert.match(out, /type="checkbox"/);
   assert.match(out, /<del>del<\/del>/);
   assert.match(out, /<a href="https:\/\/example.com"/);
@@ -78,6 +78,15 @@ test("画像: 相対パスは書き換え、外部 URL は読み込まない", (
   assert.match(out, /blocked-image/);
 });
 
+test("行アンカー: ブロック要素に元の行番号が付く", () => {
+  const out = html("# 見出し\n\n段落1\n\n- a\n- b\n\n```js\ncode\n```\n");
+  assert.match(out, /<h1[^>]*data-source-line="1"/);
+  assert.match(out, /<p data-source-line="3"/);
+  assert.match(out, /<li data-source-line="5"/);
+  assert.match(out, /<li data-source-line="6"/);
+  assert.match(out, /<pre data-source-line="8"/);
+});
+
 test("アラート", () => {
   const out = html("> [!WARNING]\n> careful\n");
   assert.match(out, /markdown-alert-warning/);
@@ -86,6 +95,6 @@ test("アラート", () => {
 
 test("details/summary と kbd を通す", () => {
   const out = html("<details><summary>s</summary>body</details>\n\n<kbd>C-x</kbd>");
-  assert.match(out, /<details>/);
+  assert.match(out, /<details/);
   assert.match(out, /<kbd>/);
 });

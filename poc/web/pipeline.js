@@ -51,6 +51,18 @@ function rehypeHeadingIds() {
   };
 }
 
+// 元の Markdown の行番号を、ブロック要素に data-source-line として残す(「N 行目を開く」用)。
+const LINE_TAGS = new Set(["p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "pre", "table", "blockquote", "ul", "ol", "hr", "details"]);
+function rehypeSourceLines() {
+  return (tree) => {
+    visit(tree, "element", (node) => {
+      if (LINE_TAGS.has(node.tagName) && node.position) {
+        node.properties = { ...node.properties, dataSourceLine: String(node.position.start.line) };
+      }
+    });
+  };
+}
+
 // > [!NOTE] などを GitHub のアラートの構造に変える。
 function rehypeAlerts() {
   return (tree) => {
@@ -118,6 +130,7 @@ const schema = {
   attributes: {
     ...defaultSchema.attributes,
     // 数式(remark-math)とコードの言語指定を通す。KaTeX の出力は sanitize の後で作るので許可は不要。
+    "*": [...(defaultSchema.attributes["*"] ?? []), "dataSourceLine"],
     code: [["className", /^language-./, "math-inline", "math-display"]],
     div: [...(defaultSchema.attributes.div ?? []), ["className", "math", "math-display"]],
     span: [...(defaultSchema.attributes.span ?? []), ["className", "math", "math-inline"]],
@@ -136,6 +149,7 @@ export async function createRenderer({ onigUrl } = {}) {
     .use(remarkRehype, { allowDangerousHtml: true, clobberPrefix: "" })
     .use(rehypeRaw)
     .use(rehypeHeadingIds)
+    .use(rehypeSourceLines)
     .use(rehypeSanitize, schema)
     .use(rehypeAlerts)
     .use(rehypeImages)
@@ -154,7 +168,18 @@ export async function createRenderer({ onigUrl } = {}) {
 }
 
 // アンカー(ページ内リンク先)の要素を探す。sanitize が id に付ける接頭辞(user-content-)に対応する。
+// "line:N" は、元の Markdown の N 行目(以前で最も近いブロック)を指す。
 export function findAnchor(root, anchor) {
+  const m = /^line:(\d+)$/.exec(anchor);
+  if (m) {
+    const n = Number(m[1]);
+    let best = null;
+    for (const el of root.querySelectorAll("[data-source-line]")) {
+      if (Number(el.dataset.sourceLine) <= n) best = el;
+      else if (best) break;
+    }
+    return best ?? root.querySelector("[data-source-line]");
+  }
   return root.querySelector(`#${CSS.escape("user-content-" + anchor)}`) ?? root.querySelector(`#${CSS.escape(anchor)}`);
 }
 

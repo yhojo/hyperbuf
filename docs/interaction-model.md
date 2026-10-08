@@ -71,7 +71,7 @@ Window は次のいずれかで位置を表す。
 
 ### 5.4 Back / Forward のキー(合意済み)
 
-- **`C-b` / `C-f`** を Back / Forward とする。編集における C-f/C-b が「文字の流れ」を泳ぐ操作であるのと同様に、Hyperbuf では「参照の流れ」を泳ぐ操作として再利用する。
+- **`C-b` / `C-f`** を Back / Forward とする。編集における C-f/C-b が「文字の流れ」を泳ぐ操作であるのと同様に、HyperBuf では「参照の流れ」を泳ぐ操作として再利用する。
 - `Cmd+[` / `Cmd+]` を macOS 向けの別名として併用する。
 - 縦方向の移動(C-n/C-p/C-v/M-v)は文書内(空間)、C-f/C-b は参照の流れ(時間)と使い分ける。
 - `C-c` 系プレフィックスは、markdown-mode の outline-mode 風カーソル移動のために予約し、Back / Forward には使わない。

@@ -278,7 +278,7 @@ URL スキームは、Web ページ・メール・文書のリンクからも起
 | 項目 | 内容 |
 | --- | --- |
 | 種類 | Unix ドメインソケット(ストリーム) |
-| パス | `~/Library/Application Support/Hyperbuf/hyperbuf.sock`。`sun_path` は 104 バイトまでなので、長すぎる場合の代替パス(`$TMPDIR` 配下など)を定める(未決) |
+| パス | `~/Library/Application Support/HyperBuf/hyperbuf.sock`。`sun_path` は 104 バイトまでなので、長すぎる場合の代替パス(`$TMPDIR` 配下など)を定める(未決) |
 | 権限 | ディレクトリ `0700`、ソケット `0600` |
 | 接続元の確認 | 接続ごとに、相手のユーザー ID(`LOCAL_PEERCRED` / `getpeereid`)が、アプリと同じかを確認する。異なれば切断する |
 | 単一インスタンス | 起動時に既存のソケットに接続を試み、応答があれば、すでに起動中とみなす。応答がなければ古いソケットとして削除して作り直す |

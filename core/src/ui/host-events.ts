@@ -20,6 +20,14 @@ export function wireHostEvents(ctx: AppContext): void {
     }
   });
 
+  // 確認待ちの要求の id。期限切れで取り消されたら、その確認だけを閉じる。
+  let confirming: string | null = null;
+  host.onOpenCancel?.((id) => {
+    if (confirming !== id) return;
+    minibuffer.cancel();
+    echo.message("連携: 要求の期限が切れました");
+  });
+
   // 外部(CLI・Emacs 連携)からの「開く」要求。docs/integration-protocol.md
   host.onOpen?.(async (req: OpenRequest) => {
     const respond = (result: unknown): void => {
@@ -32,22 +40,22 @@ export function wireHostEvents(ctx: AppContext): void {
     };
     if (req.error) return fail("bad-request", req.error);
     if (req.outside) {
-      // プロジェクトの範囲外は、ダイアログではなくミニバッファで確認する(§6)
+      // プロジェクトの範囲外は、ダイアログではなくミニバッファで確認する(docs/integration-protocol.md §6)。
+      // 承認されたら、シェルが提案したルートが、信頼するルートに加わる(永続化される)。
+      const where = req.root ? `${req.root} を信頼して、` : "";
+      confirming = req.id ?? null;
       const answer = await minibuffer.prompt(
-        `${req.path} はプロジェクトの外です。開きますか? `,
+        `${where}${req.path} を開きますか(プロジェクトの外です)? `,
         ["yes", "no"],
-        {
-          allowFree: false,
-        },
+        { allowFree: false },
       );
+      confirming = null;
       host.log?.(`OUTSIDE ${req.path} answer=${answer}`);
-      if (answer !== "yes") return fail("outside-project", "範囲外のため開きませんでした");
-      // 承認後の範囲外ファイルの表示(信頼するルートの追加・永続化)は M4 で実装する
-      echo.message(`連携: 範囲外のファイルを承認しました(表示は未実装): ${req.path}`);
-      return respond({
-        ok: true,
-        result: { path: req.path, confirmed: true, note: "範囲外の表示は未実装" },
-      });
+      // 回答は、承認でも拒否でも、シェルに伝える(承認が受理されたときだけ、読めるようになる)
+      const granted = (await host.confirmOutside?.(req.id ?? "", answer === "yes")) ?? false;
+      if (answer !== "yes" || !granted) {
+        return fail("outside-project", "範囲外のため開きませんでした");
+      }
     }
     const anchor = req.anchor ?? (req.line ? `line:${req.line}` : null);
     try {

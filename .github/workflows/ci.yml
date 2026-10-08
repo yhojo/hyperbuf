@@ -1,4 +1,4 @@
-# CI の骨組み(M0)。GitHub に公開する前で、まだ実行して確認していない。
+# CI。初回の実行(2026-10-08)で、Swift(macos-15)と Emacs は通り、core は Node 24 の node --test の指定を直した。
 # 利用できる macOS ランナーの Xcode / Swift のバージョンに依存するため、初回の実行で調整する。
 name: CI
 
@@ -19,6 +19,15 @@ jobs:
         with:
           node-version: 24
       - run: scripts/check.sh core
+
+  protocol:
+    runs-on: macos-15 # Swift の部品(protocol/swift)も検査するため
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: scripts/check.sh protocol
 
   swift:
     runs-on: macos-15

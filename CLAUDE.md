@@ -34,9 +34,11 @@ Running the macOS app (needs `core/dist`, so build the core first):
 (cd app/macos && swift run HyperBuf ../../docs)      # opens a project directory (no argument → an Open panel)
 app/macos/scripts/make-app.sh [debug|release]         # builds app/macos/.build/HyperBuf.app (ad-hoc signed, Web core bundled)
 scripts/integration-test.sh [project-dir]             # needs a GUI session: opens every document in a debug HyperBuf and checks rendering, CSP, search, images
+scripts/integration-test-ipc.sh                       # needs a GUI session: real .app + socket client + `hyperbuf` CLI + hyperbuf:// URL (open/outside-project confirm/timeout/errors)
+(cd cli && swift run hyperbuf docs/migration-plan.md:20)   # opens a file at a line in a running HyperBuf (launches it if needed)
 ```
 
-Debug builds only: `HYPERBUF_TEST_SCRIPT=<file.js>` runs a script inside the WebView after startup and prints `RESULT: …` (used by the integration test); `HYPERBUF_WEB_ROOT` overrides where the Web core is loaded from.
+Debug builds only: `HYPERBUF_TEST_SCRIPT=<file.js>` runs a script inside the WebView after startup and prints `RESULT: …` (used by the integration tests; the script must resolve, never return a pending Promise); `HYPERBUF_WEB_ROOT` overrides where the Web core is loaded from; `HYPERBUF_SOCKET_PATH`, `HYPERBUF_TRUSTED_ROOTS` and `HYPERBUF_TEST_LOG` redirect the socket, the trusted-roots store and the Web core log so tests never touch the user's real state. The `hyperbuf` CLI also honours `HYPERBUF_SOCKET_PATH` and `HYPERBUF_APP` (path of a .app to launch).
 
 Build outputs (`dist/`, `.build/`, `node_modules/`, `*.app`) are never committed.
 
@@ -87,7 +89,7 @@ HyperBuf.app 本体に加え、CLI と Emacs 連携も同一リポジトリで�
 - `app/macos/` — HyperBuf.app (SwiftUI + WKWebView shell; SwiftPM + scripts, no Xcode project for now). Other OSes get their own `app/<platform>/` with the best native framework for that platform
 - `cli/` — `hyperbuf` command (Swift single binary for now; opens a file/line/anchor in HyperBuf.app via the socket, launching the app through the `hyperbuf://` URL if needed)
 - `emacs/` — Emacs integration (`hyperbuf.el`). Talks to the socket directly by default; can be switched to call the `hyperbuf` CLI
-- `protocol/` — machine-readable protocol definition + shared conformance examples (used by the Swift server, the CLI and the Emacs client)
+- `protocol/` — machine-readable protocol definition (JSON Schema) + shared conformance examples (`examples/*.json`, used by Swift, the CLI and Emacs), and `protocol/swift` (`HyperBufProtocol`: types/validation/URL/framing; `HyperBufIPC`: `SocketServer` + `SocketClient`)
 - `fixtures/` — test documents and the corpus generator
 - `docs/` — design documents, PoC results, protocol spec, migration plan
 

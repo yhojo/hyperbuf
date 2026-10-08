@@ -13,6 +13,8 @@ export interface PromptOptions {
 
 export interface Minibuffer {
   readonly active: boolean;
+  /** 入力中なら、取り消す(`prompt` は null で終わる)。外部の要求の期限切れで閉じるときに使う。 */
+  cancel(): void;
   /** 確定した文字列。取り消したら null。 */
   prompt(
     label: string,
@@ -27,10 +29,14 @@ export function createMinibuffer(): Minibuffer {
   const list = byId("candidates");
   const labelEl = byId("prompt-label");
   let active = false;
+  let cancelCurrent: (() => void) | null = null;
 
   return {
     get active() {
       return active;
+    },
+    cancel() {
+      cancelCurrent?.();
     },
     prompt(label, candidates = [], { allowFree = true } = {}) {
       return new Promise((resolve) => {
@@ -56,6 +62,7 @@ export function createMinibuffer(): Minibuffer {
         };
         const done = (value: string | null): void => {
           active = false;
+          cancelCurrent = null;
           mini.hidden = true;
           input.removeEventListener("keydown", onKey);
           input.removeEventListener("input", onInput);
@@ -93,6 +100,7 @@ export function createMinibuffer(): Minibuffer {
         };
         input.addEventListener("keydown", onKey);
         input.addEventListener("input", onInput);
+        cancelCurrent = () => done(null);
         update();
       });
     },

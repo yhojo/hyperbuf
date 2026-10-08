@@ -1,10 +1,11 @@
 import Foundation
 import HyperBufKit
+import HyperBufProtocol
 import OSLog
 import WebKit
 
 /// Web コアの `window.hyperbufHost`(core/src/host.ts の契約)の、macOS での実体。
-/// 操作は、一覧・読み取り・検索・診断ログだけ。ファイルアクセスは、すべて `Project` を通る。
+/// ファイルアクセスは、すべて `FileAccess`(プロジェクト + 信頼するルート)を通る。
 @MainActor
 final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
     static let handlerName = "host"
@@ -14,15 +15,31 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
     static let script = """
         (() => {
           const call = (message) => window.webkit.messageHandlers.\(handlerName).postMessage(message);
-          const listeners = [];
-          window.__hostChanged = (path) => listeners.forEach((cb) => cb(path));
+          const changeListeners = [];
+          const openListeners = [];
+          const cancelListeners = [];
+          let queryListener = null;
+          window.__hostChanged = (path) => changeListeners.forEach((cb) => cb(path));
+          window.__hostOpen = (request) => openListeners.forEach((cb) => cb(request));
+          window.__hostOpenCancel = (id) => cancelListeners.forEach((cb) => cb(id));
+          window.__hostQuery = (op) => (queryListener ? queryListener(op) : null);
+          const encode = (path) => path.split("/").map(encodeURIComponent).join("/");
           window.hyperbufHost = {
             name: "macos",
             listFiles: () => call({ op: "list" }),
             readFile: (path) => call({ op: "read", path }),
-            onFileChanged: (cb) => { listeners.push(cb); },
-            resolveResource: (path) => "\(ContentSecurityPolicy.scheme)://project/" + path.split("/").map(encodeURIComponent).join("/"),
+            onFileChanged: (cb) => { changeListeners.push(cb); },
+            // 絶対パス(信頼するルートの内側)と、プロジェクト内の相対パスで、配る場所が違う
+            resolveResource: (path) =>
+              path.startsWith("/")
+                ? "\(ContentSecurityPolicy.scheme)://trusted" + encode(path)
+                : "\(ContentSecurityPolicy.scheme)://project/" + encode(path),
             search: (query, options = {}) => call({ op: "search", query, limit: options.limit }),
+            onOpen: (cb) => { openListeners.push(cb); },
+            onOpenCancel: (cb) => { cancelListeners.push(cb); },
+            onQuery: (cb) => { queryListener = cb; },
+            respond: (id, result) => { call({ op: "respond", id, result }); },
+            confirmOutside: (id, accepted) => call({ op: "confirm-outside", id, accepted }),
             ready: () => { call({ op: "ready" }); },
             log: (text) => { call({ op: "log", text }); },
           };
@@ -30,11 +47,13 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
         """
 
     private let session: ProjectSession
+    private let openFlow: OpenFlow
     /// Web コアが起動を終えた(`ready`)ときの処理。テストハーネスが使う。
     var onReady: (() -> Void)?
 
-    init(session: ProjectSession) {
+    init(session: ProjectSession, openFlow: OpenFlow) {
         self.session = session
+        self.openFlow = openFlow
     }
 
     func userContentController(
@@ -47,6 +66,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
             return
         }
         let project = session.project
+        let access = session.fileAccess
         switch op {
         case "list":
             // 数千ファイルでもメインスレッドを塞がないよう、別のスレッドで列挙する
@@ -57,7 +77,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
         case "read":
             guard let path = body["path"] as? String else { return replyHandler(nil, "bad request") }
             do {
-                replyHandler(try project.readMarkdown(path), nil)
+                replyHandler(try access.readMarkdown(path), nil)
             } catch {
                 replyHandler(nil, Bridge.describe(error))
             }
@@ -68,16 +88,44 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
                 let response = await Task.detached { ProjectSearch.search(project, query: query, limit: limit) }.value
                 replyHandler(Bridge.jsonObject(response), nil)
             }
+        case "respond":
+            if let id = body["id"] as? String, let payload = body["result"] as? [String: Any] {
+                openFlow.handleWebResponse(id: id, payload: payload)
+            }
+            replyHandler(nil, nil)
+        case "confirm-outside":
+            let id = body["id"] as? String ?? ""
+            replyHandler(openFlow.confirmOutside(id: id, accepted: body["accepted"] as? Bool ?? false), nil)
         case "ready":
+            session.pageDidBecomeReady()
             onReady?()
             replyHandler(nil, nil)
         case "log":
-            Bridge.logger.info("web: \(body["text"] as? String ?? "", privacy: .public)")
+            let text = body["text"] as? String ?? ""
+            Bridge.logger.info("web: \(text, privacy: .public)")
+            #if DEBUG
+                Bridge.appendTestLog(text)
+            #endif
             replyHandler(nil, nil)
         default:
             replyHandler(nil, "unknown op")
         }
     }
+
+    #if DEBUG
+        /// 統合テスト用: `HYPERBUF_TEST_LOG` のファイルに、Web コアの診断ログを追記する。
+        private static func appendTestLog(_ text: String) {
+            guard let path = ProcessInfo.processInfo.environment["HYPERBUF_TEST_LOG"] else { return }
+            let line = "\(Int(Date().timeIntervalSince1970 * 1000)) \(text)\n"
+            if let handle = FileHandle(forWritingAtPath: path) {
+                handle.seekToEndOfFile()
+                handle.write(Data(line.utf8))
+                try? handle.close()
+            } else {
+                try? line.write(toFile: path, atomically: true, encoding: .utf8)
+            }
+        }
+    #endif
 
     /// Web コアには、内部の事情を漏らさず、短い理由だけを返す。
     private static func describe(_ error: Error) -> String {

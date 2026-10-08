@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hyperbuf.invalid/protocol/response.schema.json",
+  "title": "HyperBuf response",
+  "type": "object",
+  "required": ["v", "ok"],
+  "properties": {
+    "v": {
+      "const": 1
+    },
+    "id": {
+      "type": ["string", "integer"]
+    },
+    "ok": {
+      "type": "boolean"
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "ok": {
+          "const": true
+        },
+        "result": {}
+      },
+      "required": ["result"],
+      "not": {
+        "required": ["error"]
+      }
+    },
+    {
+      "properties": {
+        "ok": {
+          "const": false
+        },
+        "error": {
+          "type": "object",
+          "required": ["code", "message"],
+          "properties": {
+            "code": {
+              "enum": [
+                "bad-request",
+                "unsupported-version",
+                "unknown-op",
+                "not-found",
+                "not-markdown",
+                "outside-project",
+                "timeout",
+                "stale",
+                "internal"
+              ]
+            },
+            "message": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": ["error"],
+      "not": {
+        "required": ["result"]
+      }
+    }
+  ]
+}

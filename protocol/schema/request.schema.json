@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hyperbuf.invalid/protocol/request.schema.json",
+  "title": "HyperBuf request",
+  "description": "ソケットで送る要求(JSON Lines の 1 行)。docs/integration-protocol.md §11。未知のフィールドは無視する。",
+  "type": "object",
+  "required": ["op"],
+  "properties": {
+    "v": {
+      "const": 1,
+      "description": "プロトコルのバージョン。省略時は 1"
+    },
+    "id": {
+      "type": ["string", "integer"],
+      "description": "応答と対応づける識別子"
+    },
+    "op": {
+      "enum": ["ping", "open", "get-location"]
+    },
+    "path": {
+      "type": "string",
+      "pattern": "^/(?!.*(?:^|/)\\.\\.(?:/|$))[^\\u0000-\\u001f\\u007f]*\\.md$",
+      "description": "開く Markdown の絶対パス(.md のみ、.. を含まない、制御文字を含まない)"
+    },
+    "line": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "anchor": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "project": {
+      "type": "string"
+    },
+    "target": {
+      "enum": ["current", "split-right", "split-below", "new-frame"]
+    },
+    "timeoutMs": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "if": {
+    "properties": {
+      "op": {
+        "const": "open"
+      }
+    }
+  },
+  "then": {
+    "required": ["path"],
+    "properties": {
+      "path": {}
+    }
+  },
+  "additionalProperties": true
+}

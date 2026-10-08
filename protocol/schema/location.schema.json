@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hyperbuf.invalid/protocol/location.schema.json",
+  "title": "HyperBuf edit location",
+  "description": "「エディタで編集」で指した位置。get-location の result.location。docs/integration-protocol.md §10。エディタは、ここにある照合用の情報(file・expect・context)で、位置が正しいことを確かめてから、移動する。",
+  "type": "object",
+  "required": [
+    "v",
+    "path",
+    "range",
+    "precision",
+    "expect",
+    "expectTruncated",
+    "context",
+    "file",
+    "viewer",
+    "markedAt"
+  ],
+  "properties": {
+    "v": {
+      "const": 1
+    },
+    "path": {
+      "type": "string",
+      "pattern": "^/.*\\.md$",
+      "description": "編集するファイルの絶対パス"
+    },
+    "range": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": {
+          "type": "object",
+          "required": ["line", "column"],
+          "properties": {
+            "line": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "column": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "end": {
+          "type": "object",
+          "required": ["line", "column"],
+          "properties": {
+            "line": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "column": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "description": "行・桁は 1 始まり。桁は Unicode のコードポイント(Emacs の文字)。end は、その位置の文字を含まない"
+    },
+    "precision": {
+      "enum": ["exact", "block"],
+      "description": "block は、位置が曖昧で、ブロック全体しか確実でないこと"
+    },
+    "expect": {
+      "type": "string",
+      "description": "その範囲にあるはずの、元の Markdown の文字列(改行は LF)。長いときは先頭だけ(expectTruncated)"
+    },
+    "expectTruncated": {
+      "type": "boolean"
+    },
+    "context": {
+      "type": "object",
+      "required": ["before", "after"],
+      "properties": {
+        "before": {
+          "type": "string"
+        },
+        "after": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "description": "範囲の直前・直後の文字列。エディタは、バッファの直前が before で終わり、直後が after で始まることを確かめる"
+    },
+    "file": {
+      "type": "object",
+      "required": ["sha256", "mtime", "size"],
+      "properties": {
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "ビューアが描画した版のファイルの内容(バイト列)の SHA-256"
+        },
+        "mtime": {
+          "type": "number",
+          "description": "同、更新日時(エポックからのミリ秒)"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "viewer": {
+      "type": "object",
+      "required": ["selection", "version", "readAt"],
+      "properties": {
+        "selection": {
+          "type": "string",
+          "description": "ビューアで選択していた、表示されているままの文字列(なければ空)"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "readAt": {
+          "type": "number",
+          "description": "ビューアが、そのファイルを読んだ時刻(エポックからのミリ秒)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "markedAt": {
+      "type": "number",
+      "description": "「エディタで編集」を選んだ時刻(エポックからのミリ秒)"
+    }
+  },
+  "additionalProperties": true
+}

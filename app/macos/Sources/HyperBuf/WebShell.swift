@@ -17,7 +17,9 @@ struct WebShell: NSViewRepresentable {
             bridge, contentWorld: .page, name: Bridge.handlerName)
         config.userContentController.addUserScript(
             WKUserScript(source: Bridge.script, injectionTime: .atDocumentStart, forMainFrameOnly: true))
-        let view = WKWebView(frame: .zero, configuration: config)
+        let view = EditorWebView(frame: .zero, configuration: config)
+        view.editMenuTitle = session.editorConfig.menuTitle
+        view.onEditRequested = { [weak session] in session?.requestEdit() }
         #if DEBUG
             view.isInspectable = true
         #endif

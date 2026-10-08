@@ -17,7 +17,10 @@ public enum HyperBufProtocol {
 public enum RequestOperation: String, Sendable, CaseIterable {
     case ping
     case open
+    /// 利用者が「エディタで編集」で指した位置(照合用の情報つき)を返す。
     case getLocation = "get-location"
+    /// いまの表示(どの文書の、どのあたりか)を返す。
+    case getView = "get-view"
 }
 
 public enum ErrorCode: String, Sendable, CaseIterable {

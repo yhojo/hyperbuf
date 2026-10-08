@@ -138,7 +138,7 @@ Hyperbufは、ハッカー文化に根差した **使い込める道具** を目
 
 ## Project status
 
-**Inception / Early design** — コンセプト定義と技術検証の準備段階です。実装、配布、サポート対象OS、ライセンスなどは未確定です。
+**Inception / Early design** — コンセプト定義と技術検証の準備段階です。配布は、オープンソース（GitHub）として公開し、Developer ID 署名・公証のビルド済みパッケージを直接配布する方針です（Mac App Store は対象外、サンドボックスなし）。サポート対象OS、ライセンスなどは未確定です。
 
 ---
 

@@ -56,4 +56,4 @@ HyperBuf.app 本体に加え、CLI と Emacs 連携も同一リポジトリで�
 - `emacs/` — Emacs 連携スクリプト。プロトコルを直接扱わず `hyperbuf` CLI を呼ぶ薄いラッパーとする
 - `docs/` — 設計文書、PoC 結果、連携プロトコル仕様
 
-App・CLI・Emacs が共有する「開く」契約(URL スキーム / Unix ソケット等は未定、起動中アプリへの転送と未起動時の起動を含む)は `docs/` に仕様として先に定める。技術スタック確定までトップレベルの共通ビルドは作らず、各ディレクトリで独立させる。
+App・CLI・Emacs が共有する契約は `docs/integration-protocol.md` に定める。**Decided:** 主経路は Unix ドメインソケット(JSON Lines。`ping` / `open` / `get-location`。同一ユーザーのみ)、URL スキーム `hyperbuf://` はアプリの起動と外部リンク用。Emacs 連携は直接ソケットが標準(設定で CLI 経由に切替可)。範囲外のファイルは URL・ソケットのどちらでも確認する。逆方向(ビューア→Emacs)は「Emacs で編集」メニュー + `get-location` の問い合わせで、位置の照合・警告のみ(続行不可)の方針。配布は OSS(GitHub)+ Developer ID 署名・公証の直接配布で、Mac App Store は対象外(サンドボックスなし)。技術スタック確定までトップレベルの共通ビルドは作らず、各ディレクトリで独立させる。

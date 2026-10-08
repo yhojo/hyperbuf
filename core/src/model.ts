@@ -53,6 +53,11 @@ export function resolveLink(fromPath: string, href: string): LinkTarget | null {
   return { path: parts.join("/"), anchor };
 }
 
+/** ファイルに対応しない buffer(`*search: …*` など)のパスか。実在の `.md` のパスは、`*` で終わらない。 */
+export function isVirtualPath(path: string): boolean {
+  return path.length >= 2 && path.startsWith("*") && path.endsWith("*");
+}
+
 export function createModel(): Model {
   const win: Win = { id: 1, history: [], index: -1 };
   return { buffers: new Map(), mru: [], winSeq: 1, root: leaf(win), selected: win.id };

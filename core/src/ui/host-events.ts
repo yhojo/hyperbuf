@@ -2,10 +2,11 @@
 
 import type { OpenRequest } from "../host.ts";
 import { currentEntry, openBuffer, selectedWindow } from "../model.ts";
+import type { Commands } from "./commands.ts";
 import type { AppContext } from "./context.ts";
 import { errorMessage, openAt } from "./navigation.ts";
 
-export function wireHostEvents(ctx: AppContext): void {
+export function wireHostEvents(ctx: AppContext, commands: Commands): void {
   const { host, model, views, echo, minibuffer } = ctx;
 
   // 外部更新: 開いている buffer だけ読み直す。位置の維持は Views が行う。
@@ -68,9 +69,14 @@ export function wireHostEvents(ctx: AppContext): void {
     }
   });
 
-  // 位置の問い合わせ(M6 で、選択から元の位置を求める実装に置き換える。今は現在位置を返す)
+  // シェルから「エディタで編集」(右クリックメニュー)が選ばれた
+  host.onEdit?.(() => {
+    void Promise.resolve(commands["edit-in-editor"]()).then(() => views.refresh());
+  });
+
+  // いまの表示の問い合わせ(`get-view`)。編集位置(`get-location`)は、シェルが保持する
   host.onQuery?.(async (op) => {
-    if (op !== "get-location") return null;
+    if (op !== "get-view") return null;
     const win = selectedWindow(model);
     const entry = currentEntry(win);
     if (!entry) return null;

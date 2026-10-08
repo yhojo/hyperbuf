@@ -307,4 +307,167 @@
   (with-temp-buffer
     (should-error (hyperbuf-open-file) :type 'user-error)))
 
+;;;; ビューアから編集位置へ(hyperbuf-visit-location)
+
+(defun hyperbuf-test--sha (text)
+  "TEXT(UTF-8 のバイト列)の SHA-256。"
+  (secure-hash 'sha256 (encode-coding-string text 'utf-8)))
+
+(ert-deftest hyperbuf-test-offset ()
+  (let ((text "ab\n日本語\n\nlast"))
+    (should (= (hyperbuf--offset text 1 1) 0))
+    (should (= (hyperbuf--offset text 1 3) 2))          ; 行末(改行の直前)
+    (should (= (hyperbuf--offset text 2 1) 3))
+    (should (= (hyperbuf--offset text 2 4) 6))
+    (should (= (hyperbuf--offset text 3 1) 7))          ; 空行
+    (should (= (hyperbuf--offset text 4 5) (length text)))
+    (should-not (hyperbuf--offset text 1 4))            ; 行の長さを超える
+    (should-not (hyperbuf--offset text 5 1))            ; 行が足りない
+    (should-not (hyperbuf--offset text 1 0))))
+
+(ert-deftest hyperbuf-test-conformance-location-check ()
+  "protocol/examples/location-check.json: 照合の結果が、共有の例と同じ。"
+  (let ((cases (hyperbuf-test--example "location-check")))
+    (should (>= (length cases) 8))
+    (dolist (item cases)
+      (let* ((name (plist-get item :name))
+             (text (plist-get item :text))
+             (disk-sha (hyperbuf-test--sha text))
+             (location (plist-get item :location))
+             (file (plist-get location :file))
+             (location (plist-put (copy-sequence location) :file
+                                  (plist-put (copy-sequence file) :sha256
+                                             (if (equal (plist-get file :sha256) "auto")
+                                                 disk-sha
+                                               (plist-get file :sha256)))))
+             (result (hyperbuf--check-location location text disk-sha)))
+        (should (equal (list name (plist-get item :status))
+                       (list name (symbol-name (plist-get result :status)))))))))
+
+(defun hyperbuf-test--location (path text start-line start-col end-line end-col expect
+                                     &optional precision before after)
+  "PATH の内容 TEXT について、get-location の位置(plist)を作る。"
+  (list :v 1 :path path
+        :range (list :start (list :line start-line :column start-col)
+                     :end (list :line end-line :column end-col))
+        :precision (or precision "exact")
+        :expect expect :expectTruncated :false
+        :context (list :before (or before "") :after (or after ""))
+        :file (list :sha256 (hyperbuf-test--sha text) :mtime 1 :size (string-bytes text))
+        :viewer (list :selection expect :version 1 :readAt 1)
+        :markedAt (* 1000 (float-time))))
+
+(defmacro hyperbuf-test--with-viewer (location-form &rest body)
+  "LOCATION-FORM(get-location が返す位置)を返す、テスト用のビューアに接続して BODY を実行する。"
+  (declare (indent 1))
+  `(hyperbuf-test--with-socket-dir path
+     (let ((server (hyperbuf-test--server
+                    path
+                    (lambda (proc _line)
+                      (hyperbuf-test--reply
+                       proc (list :v 1 :ok t
+                                  :result (list :location ,location-form)))))))
+       (unwind-protect (progn ,@body)
+         (delete-process server)))))
+
+(ert-deftest hyperbuf-test-visit-moves-to-the-exact-position-and-highlights ()
+  (hyperbuf-test--with-md-file file
+    (let* ((text (with-temp-buffer (insert-file-contents file) (buffer-string)))
+           ;; 「見出し」の 3 文字(1 行目の 3 桁目から)
+           (location (hyperbuf-test--location file text 1 3 1 6 "見出し"
+                                              "exact" "# " "\n\n本文\n"))
+           (pulsed nil)
+           (messages nil))
+      (hyperbuf-test--with-viewer location
+        (cl-letf (((symbol-function 'pulse-momentary-highlight-region)
+                   (lambda (start end &rest _) (setq pulsed (list start end))))
+                  ((symbol-function 'message)
+                   (lambda (format-string &rest args) (push (apply #'format format-string args) messages))))
+          (save-window-excursion
+            (hyperbuf-visit-location)
+            (should (file-equal-p (buffer-file-name) file))
+            (should (= (point) 3))
+            (should (equal pulsed '(3 6)))
+            (should (string-match-p "見出し" (car messages)))
+            (kill-buffer)))))))
+
+(ert-deftest hyperbuf-test-visit-says-so-when-the-position-is-only-block-precise ()
+  (hyperbuf-test--with-md-file file
+    (let* ((text (with-temp-buffer (insert-file-contents file) (buffer-string)))
+           (location (hyperbuf-test--location file text 1 1 1 6 "# 見出し" "block" "" "\n\n本文\n"))
+           (messages nil))
+      (hyperbuf-test--with-viewer location
+        (cl-letf (((symbol-function 'pulse-momentary-highlight-region) #'ignore)
+                  ((symbol-function 'message)
+                   (lambda (format-string &rest args) (push (apply #'format format-string args) messages))))
+          (save-window-excursion
+            (hyperbuf-visit-location)
+            (should (string-match-p "曖昧" (car messages)))
+            (kill-buffer)))))))
+
+(ert-deftest hyperbuf-test-visit-refuses-a-stale-view ()
+  "ビューアが描画したあと、ファイルが変わったら、移動せず、警告する(続行の手段もない)。"
+  (hyperbuf-test--with-md-file file
+    (let* ((text (with-temp-buffer (insert-file-contents file) (buffer-string)))
+           (location (hyperbuf-test--location file text 1 3 1 6 "見出し" "exact" "# " "\n\n本文\n")))
+      ;; 指したあとに、ファイルが書き換えられた
+      (with-temp-file file (insert "# 新しい見出し\n\n別の本文\n"))
+      (hyperbuf-test--with-viewer location
+        (let ((before (current-buffer))
+              (err (should-error (hyperbuf-visit-location) :type 'user-error)))
+          (should (eq (current-buffer) before))
+          (should (string-match-p "移動しません" (cadr err)))
+          (should (string-match-p "描画した版" (cadr err)))
+          (with-current-buffer "*hyperbuf-mismatch*"
+            (should (string-match-p "SHA-256" (buffer-string)))
+            (should (string-match-p "ビューアで、ファイルを開き直して" (buffer-string)))))))))
+
+(ert-deftest hyperbuf-test-visit-refuses-when-the-text-at-the-position-differs ()
+  (hyperbuf-test--with-md-file file
+    (let* ((text (with-temp-buffer (insert-file-contents file) (buffer-string)))
+           ;; ビューアが指していたのは「本文」だが、位置は、見出しの行を指している(食い違い)
+           (location (hyperbuf-test--location file text 1 3 1 6 "本文" "exact" "# " "")))
+      (hyperbuf-test--with-viewer location
+        (let ((err (should-error (hyperbuf-visit-location) :type 'user-error)))
+          (should (string-match-p "文字列が" (cadr err)))
+          (with-current-buffer "*hyperbuf-mismatch*"
+            (should (string-match-p "本文" (buffer-string)))
+            (should (string-match-p "見出し" (buffer-string)))))))))
+
+(ert-deftest hyperbuf-test-visit-checks-the-unsaved-buffer-not-just-the-disk ()
+  "未保存の編集で、文字列がずれていたら、ディスクが同じでも、移動しない。"
+  (hyperbuf-test--with-md-file file
+    (let* ((text (with-temp-buffer (insert-file-contents file) (buffer-string)))
+           (location (hyperbuf-test--location file text 1 3 1 6 "見出し" "exact" "# " "\n\n本文\n")))
+      (with-current-buffer (find-file-noselect file)
+        (goto-char (point-min))
+        (insert "先頭に追記した行\n")  ; 保存しない: ディスクは、ビューアが読んだ版のまま
+        (hyperbuf-test--with-viewer location
+          (let ((err (should-error (hyperbuf-visit-location) :type 'user-error)))
+            (should (string-match-p "移動しません" (cadr err)))))
+        (set-buffer-modified-p nil)
+        (kill-buffer)))))
+
+(ert-deftest hyperbuf-test-visit-without-a-marked-location-or-viewer ()
+  (hyperbuf-test--with-viewer nil
+    (let ((err (should-error (hyperbuf-visit-location) :type 'user-error)))
+      (should (string-match-p "位置がありません" (cadr err)))))
+  (hyperbuf-test--with-socket-dir _path
+    (let ((err (should-error (hyperbuf-visit-location) :type 'user-error)))
+      (should (string-match-p "起動していません" (cadr err))))))
+
+(ert-deftest hyperbuf-test-visit-rejects-unsafe-paths-from-the-viewer ()
+  "ソケットの相手が返した位置でも、パスは、検証する(絶対パスの .md のみ)。"
+  (hyperbuf-test--with-viewer (hyperbuf-test--location "/etc/passwd" "x" 1 1 1 2 "x")
+    (should-error (hyperbuf-visit-location) :type 'user-error))
+  (hyperbuf-test--with-viewer (hyperbuf-test--location "relative.md" "x" 1 1 1 2 "x")
+    (should-error (hyperbuf-visit-location) :type 'user-error)))
+
+(ert-deftest hyperbuf-test-edit-here-raises-the-frame ()
+  (let ((raised nil))
+    (cl-letf (((symbol-function 'select-frame-set-input-focus) (lambda (_f) (setq raised t)))
+              ((symbol-function 'hyperbuf-visit-location) #'ignore))
+      (hyperbuf-edit-here)
+      (should raised))))
+
 ;;; hyperbuf-test.el ends here

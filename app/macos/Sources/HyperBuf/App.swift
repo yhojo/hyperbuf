@@ -96,9 +96,12 @@ final class AppModel {
         case .open:
             openFlow.submit(request, reply: reply)
         case .getLocation:
-            guard let session else { return reply(.success(id: request.id, .object(["location": .null]))) }
+            // 利用者が「エディタで編集」で指した位置(照合用の情報つき)。まだなければ null
+            reply(.success(id: request.id, .object(["location": session?.markedLocation?.json ?? .null])))
+        case .getView:
+            guard let session else { return reply(.success(id: request.id, .object(["view": .null]))) }
             Task { @MainActor in
-                reply(.success(id: request.id, .object(["location": await session.query("get-location")])))
+                reply(.success(id: request.id, .object(["view": await session.view()])))
             }
         }
     }

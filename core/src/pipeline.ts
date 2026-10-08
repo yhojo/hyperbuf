@@ -98,12 +98,24 @@ const LINE_TAGS = new Set([
   "details",
 ]);
 
-/** 元の Markdown の行番号を、ブロック要素に data-source-line として残す(「N 行目を開く」用)。 */
+/**
+ * 元の Markdown の位置を、ブロック要素に残す。
+ *  - data-source-line: 開始行(「N 行目を開く」用)
+ *  - data-source-start / data-source-end: 開始・終了の文字オフセット(UTF-16)。ビューアから、編集位置を
+ *    エディタへ渡すために、選択した範囲を、元の位置に対応づける(docs/integration-protocol.md §10)
+ *  - data-source-end-line: 終了行
+ */
 const rehypeSourceLines: Plugin<[], HastRoot> = () => (tree) => {
   visit(tree, "element", (node) => {
-    if (LINE_TAGS.has(node.tagName) && node.position) {
-      node.properties = { ...node.properties, dataSourceLine: String(node.position.start.line) };
+    const { position } = node;
+    if (!LINE_TAGS.has(node.tagName) || !position) return;
+    const properties: Record<string, string> = { dataSourceLine: String(position.start.line) };
+    if (position.start.offset !== undefined && position.end.offset !== undefined) {
+      properties["dataSourceStart"] = String(position.start.offset);
+      properties["dataSourceEnd"] = String(position.end.offset);
+      properties["dataSourceEndLine"] = String(position.end.line);
     }
+    node.properties = { ...node.properties, ...properties };
   });
 };
 
@@ -190,7 +202,13 @@ const schema: SchemaWithAttributes = {
   ...defaultSchema,
   attributes: {
     ...attributes,
-    "*": [...(attributes["*"] ?? []), "dataSourceLine"],
+    "*": [
+      ...(attributes["*"] ?? []),
+      "dataSourceLine",
+      "dataSourceEndLine",
+      "dataSourceStart",
+      "dataSourceEnd",
+    ],
     // 数式(remark-math)とコードの言語指定を通す。KaTeX の出力は sanitize の後で作るので許可は不要。
     code: [["className", /^language-./, "math-inline", "math-display"]],
     div: [...(attributes["div"] ?? []), ["className", "math", "math-display"]],

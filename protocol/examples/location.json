@@ -1,0 +1,360 @@
+[
+  {
+    "name": "exact",
+    "valid": true,
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 3,
+          "column": 7
+        },
+        "end": {
+          "line": 3,
+          "column": 11
+        }
+      },
+      "precision": "exact",
+      "expect": "独自の語",
+      "expectTruncated": false,
+      "context": {
+        "before": "この文には、",
+        "after": "があります。"
+      },
+      "file": {
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mtime": 1791470000000,
+        "size": 120
+      },
+      "viewer": {
+        "selection": "独自の語",
+        "version": 1,
+        "readAt": 1791470000100
+      },
+      "markedAt": 1791470005000
+    }
+  },
+  {
+    "name": "block(選択なし)",
+    "valid": true,
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "line": 2,
+          "column": 4
+        }
+      },
+      "precision": "block",
+      "expect": "一行目\n二行目",
+      "expectTruncated": false,
+      "context": {
+        "before": "この文には、",
+        "after": "があります。"
+      },
+      "file": {
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mtime": 1791470000000,
+        "size": 120
+      },
+      "viewer": {
+        "selection": "",
+        "version": 2,
+        "readAt": 1
+      },
+      "markedAt": 1791470005000
+    }
+  },
+  {
+    "name": "未知のフィールドは許す",
+    "valid": true,
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 3,
+          "column": 7
+        },
+        "end": {
+          "line": 3,
+          "column": 11
+        }
+      },
+      "precision": "exact",
+      "expect": "独自の語",
+      "expectTruncated": false,
+      "context": {
+        "before": "この文には、",
+        "after": "があります。"
+      },
+      "file": {
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mtime": 1791470000000,
+        "size": 120
+      },
+      "viewer": {
+        "selection": "独自の語",
+        "version": 1,
+        "readAt": 1791470000100
+      },
+      "markedAt": 1791470005000,
+      "future": {
+        "x": 1
+      }
+    }
+  },
+  {
+    "name": "v が違う",
+    "valid": false,
+    "location": {
+      "v": 2,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 3,
+          "column": 7
+        },
+        "end": {
+          "line": 3,
+          "column": 11
+        }
+      },
+      "precision": "exact",
+      "expect": "独自の語",
+      "expectTruncated": false,
+      "context": {
+        "before": "この文には、",
+        "after": "があります。"
+      },
+      "file": {
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mtime": 1791470000000,
+        "size": 120
+      },
+      "viewer": {
+        "selection": "独自の語",
+        "version": 1,
+        "readAt": 1791470000100
+      },
+      "markedAt": 1791470005000
+    }
+  },
+  {
+    "name": "相対パス",
+    "valid": false,
+    "location": {
+      "v": 1,
+      "path": "doc.md",
+      "range": {
+        "start": {
+          "line": 3,
+          "column": 7
+        },
+        "end": {
+          "line": 3,
+          "column": 11
+        }
+      },
+      "precision": "exact",
+      "expect": "独自の語",
+      "expectTruncated": false,
+      "context": {
+        "before": "この文には、",
+        "after": "があります。"
+      },
+      "file": {
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mtime": 1791470000000,
+        "size": 120
+      },
+      "viewer": {
+        "selection": "独自の語",
+        "version": 1,
+        "readAt": 1791470000100
+      },
+      "markedAt": 1791470005000
+    }
+  },
+  {
+    "name": ".md 以外",
+    "valid": false,
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.txt",
+      "range": {
+        "start": {
+          "line": 3,
+          "column": 7
+        },
+        "end": {
+          "line": 3,
+          "column": 11
+        }
+      },
+      "precision": "exact",
+      "expect": "独自の語",
+      "expectTruncated": false,
+      "context": {
+        "before": "この文には、",
+        "after": "があります。"
+      },
+      "file": {
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mtime": 1791470000000,
+        "size": 120
+      },
+      "viewer": {
+        "selection": "独自の語",
+        "version": 1,
+        "readAt": 1791470000100
+      },
+      "markedAt": 1791470005000
+    }
+  },
+  {
+    "name": "line が 0",
+    "valid": false,
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 0,
+          "column": 1
+        },
+        "end": {
+          "line": 1,
+          "column": 1
+        }
+      },
+      "precision": "exact",
+      "expect": "独自の語",
+      "expectTruncated": false,
+      "context": {
+        "before": "この文には、",
+        "after": "があります。"
+      },
+      "file": {
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mtime": 1791470000000,
+        "size": 120
+      },
+      "viewer": {
+        "selection": "独自の語",
+        "version": 1,
+        "readAt": 1791470000100
+      },
+      "markedAt": 1791470005000
+    }
+  },
+  {
+    "name": "precision が不正",
+    "valid": false,
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 3,
+          "column": 7
+        },
+        "end": {
+          "line": 3,
+          "column": 11
+        }
+      },
+      "precision": "fuzzy",
+      "expect": "独自の語",
+      "expectTruncated": false,
+      "context": {
+        "before": "この文には、",
+        "after": "があります。"
+      },
+      "file": {
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mtime": 1791470000000,
+        "size": 120
+      },
+      "viewer": {
+        "selection": "独自の語",
+        "version": 1,
+        "readAt": 1791470000100
+      },
+      "markedAt": 1791470005000
+    }
+  },
+  {
+    "name": "sha256 が 64 桁の 16 進ではない",
+    "valid": false,
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 3,
+          "column": 7
+        },
+        "end": {
+          "line": 3,
+          "column": 11
+        }
+      },
+      "precision": "exact",
+      "expect": "独自の語",
+      "expectTruncated": false,
+      "context": {
+        "before": "この文には、",
+        "after": "があります。"
+      },
+      "file": {
+        "sha256": "xyz",
+        "mtime": 1,
+        "size": 1
+      },
+      "viewer": {
+        "selection": "独自の語",
+        "version": 1,
+        "readAt": 1791470000100
+      },
+      "markedAt": 1791470005000
+    }
+  },
+  {
+    "name": "file がない",
+    "valid": false,
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 3,
+          "column": 7
+        },
+        "end": {
+          "line": 3,
+          "column": 11
+        }
+      },
+      "precision": "exact",
+      "expect": "独自の語",
+      "expectTruncated": false,
+      "context": {
+        "before": "この文には、",
+        "after": "があります。"
+      },
+      "viewer": {
+        "selection": "独自の語",
+        "version": 1,
+        "readAt": 1791470000100
+      },
+      "markedAt": 1791470005000
+    }
+  }
+]

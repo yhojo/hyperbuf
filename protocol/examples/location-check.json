@@ -1,0 +1,409 @@
+[
+  {
+    "name": "exact: すべて一致",
+    "text": "# 見出し\n\nこの文には、独自の語があります。\n\n別の段落です。\n",
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 3,
+          "column": 7
+        },
+        "end": {
+          "line": 3,
+          "column": 11
+        }
+      },
+      "precision": "exact",
+      "expect": "独自の語",
+      "expectTruncated": false,
+      "context": {
+        "before": "# 見出し\n\nこの文には、",
+        "after": "があります。\n\n別の段落です。\n"
+      },
+      "file": {
+        "sha256": "auto",
+        "mtime": 1,
+        "size": 85
+      },
+      "viewer": {
+        "selection": "",
+        "version": 1,
+        "readAt": 1
+      },
+      "markedAt": 1
+    },
+    "status": "ok"
+  },
+  {
+    "name": "block: 複数行のブロック全体",
+    "text": "foo\nbar baz\n\nqux\n",
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "line": 2,
+          "column": 8
+        }
+      },
+      "precision": "block",
+      "expect": "foo\nbar baz",
+      "expectTruncated": false,
+      "context": {
+        "before": "",
+        "after": "\n\nqux\n"
+      },
+      "file": {
+        "sha256": "auto",
+        "mtime": 1,
+        "size": 17
+      },
+      "viewer": {
+        "selection": "",
+        "version": 1,
+        "readAt": 1
+      },
+      "markedAt": 1
+    },
+    "status": "ok"
+  },
+  {
+    "name": "絵文字を含む行の桁(コードポイント)",
+    "text": "😀😀 target 😀\n",
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 1,
+          "column": 4
+        },
+        "end": {
+          "line": 1,
+          "column": 10
+        }
+      },
+      "precision": "exact",
+      "expect": "target",
+      "expectTruncated": false,
+      "context": {
+        "before": "😀😀 ",
+        "after": " 😀\n"
+      },
+      "file": {
+        "sha256": "auto",
+        "mtime": 1,
+        "size": 21
+      },
+      "viewer": {
+        "selection": "",
+        "version": 1,
+        "readAt": 1
+      },
+      "markedAt": 1
+    },
+    "status": "ok"
+  },
+  {
+    "name": "expect が切り詰められているときは、先頭だけを照合",
+    "text": "foo\nbar baz\n\nqux\n",
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "line": 2,
+          "column": 8
+        }
+      },
+      "precision": "block",
+      "expect": "foo\nbar",
+      "expectTruncated": true,
+      "context": {
+        "before": "",
+        "after": "\n\nqux\n"
+      },
+      "file": {
+        "sha256": "auto",
+        "mtime": 1,
+        "size": 17
+      },
+      "viewer": {
+        "selection": "",
+        "version": 1,
+        "readAt": 1
+      },
+      "markedAt": 1
+    },
+    "status": "ok"
+  },
+  {
+    "name": "stale: ファイルの内容が、描画した版と違う",
+    "text": "# 見出し\n\nこの文には、独自の語があります。\n\n別の段落です。\n",
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 3,
+          "column": 7
+        },
+        "end": {
+          "line": 3,
+          "column": 11
+        }
+      },
+      "precision": "exact",
+      "expect": "独自の語",
+      "expectTruncated": false,
+      "context": {
+        "before": "# 見出し\n\nこの文には、",
+        "after": "があります。\n\n別の段落です。\n"
+      },
+      "file": {
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "mtime": 1,
+        "size": 85
+      },
+      "viewer": {
+        "selection": "",
+        "version": 1,
+        "readAt": 1
+      },
+      "markedAt": 1
+    },
+    "status": "stale"
+  },
+  {
+    "name": "mismatch: その位置の文字列が、expect と違う",
+    "text": "# 見出し\n\nこの文には、独自の語があります。\n\n別の段落です。\n",
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 3,
+          "column": 7
+        },
+        "end": {
+          "line": 3,
+          "column": 11
+        }
+      },
+      "precision": "exact",
+      "expect": "別の語です",
+      "expectTruncated": false,
+      "context": {
+        "before": "# 見出し\n\nこの文には、",
+        "after": "があります。\n\n別の段落です。\n"
+      },
+      "file": {
+        "sha256": "auto",
+        "mtime": 1,
+        "size": 85
+      },
+      "viewer": {
+        "selection": "",
+        "version": 1,
+        "readAt": 1
+      },
+      "markedAt": 1
+    },
+    "status": "mismatch"
+  },
+  {
+    "name": "mismatch: 前の文脈が違う",
+    "text": "# 見出し\n\nこの文には、独自の語があります。\n\n別の段落です。\n",
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 3,
+          "column": 7
+        },
+        "end": {
+          "line": 3,
+          "column": 11
+        }
+      },
+      "precision": "exact",
+      "expect": "独自の語",
+      "expectTruncated": false,
+      "context": {
+        "before": "別の文脈",
+        "after": "があります。\n\n別の段落です。\n"
+      },
+      "file": {
+        "sha256": "auto",
+        "mtime": 1,
+        "size": 85
+      },
+      "viewer": {
+        "selection": "",
+        "version": 1,
+        "readAt": 1
+      },
+      "markedAt": 1
+    },
+    "status": "mismatch"
+  },
+  {
+    "name": "mismatch: 後ろの文脈が違う",
+    "text": "# 見出し\n\nこの文には、独自の語があります。\n\n別の段落です。\n",
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 3,
+          "column": 7
+        },
+        "end": {
+          "line": 3,
+          "column": 11
+        }
+      },
+      "precision": "exact",
+      "expect": "独自の語",
+      "expectTruncated": false,
+      "context": {
+        "before": "# 見出し\n\nこの文には、",
+        "after": "があります!"
+      },
+      "file": {
+        "sha256": "auto",
+        "mtime": 1,
+        "size": 85
+      },
+      "viewer": {
+        "selection": "",
+        "version": 1,
+        "readAt": 1
+      },
+      "markedAt": 1
+    },
+    "status": "mismatch"
+  },
+  {
+    "name": "mismatch: 行が、文書の範囲外",
+    "text": "foo\nbar baz\n\nqux\n",
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 99,
+          "column": 1
+        },
+        "end": {
+          "line": 99,
+          "column": 4
+        }
+      },
+      "precision": "exact",
+      "expect": "foo",
+      "expectTruncated": false,
+      "context": {
+        "before": "",
+        "after": ""
+      },
+      "file": {
+        "sha256": "auto",
+        "mtime": 1,
+        "size": 17
+      },
+      "viewer": {
+        "selection": "",
+        "version": 1,
+        "readAt": 1
+      },
+      "markedAt": 1
+    },
+    "status": "mismatch"
+  },
+  {
+    "name": "mismatch: 桁が、行の長さを超える",
+    "text": "foo\nbar baz\n\nqux\n",
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 1,
+          "column": 50
+        },
+        "end": {
+          "line": 1,
+          "column": 53
+        }
+      },
+      "precision": "exact",
+      "expect": "foo",
+      "expectTruncated": false,
+      "context": {
+        "before": "",
+        "after": ""
+      },
+      "file": {
+        "sha256": "auto",
+        "mtime": 1,
+        "size": 17
+      },
+      "viewer": {
+        "selection": "",
+        "version": 1,
+        "readAt": 1
+      },
+      "markedAt": 1
+    },
+    "status": "mismatch"
+  },
+  {
+    "name": "mismatch: block の expect が、先頭からも一致しない",
+    "text": "foo\nbar baz\n\nqux\n",
+    "location": {
+      "v": 1,
+      "path": "/Users/me/doc.md",
+      "range": {
+        "start": {
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "line": 2,
+          "column": 8
+        }
+      },
+      "precision": "block",
+      "expect": "xxx",
+      "expectTruncated": false,
+      "context": {
+        "before": "",
+        "after": "\n\nqux\n"
+      },
+      "file": {
+        "sha256": "auto",
+        "mtime": 1,
+        "size": 17
+      },
+      "viewer": {
+        "selection": "",
+        "version": 1,
+        "readAt": 1
+      },
+      "markedAt": 1
+    },
+    "status": "mismatch"
+  }
+]

@@ -27,6 +27,8 @@ export const DEFAULT_BINDINGS: Readonly<Record<string, CommandName>> = {
   "C-c j": "goto-heading",
   "M-s g": "search-project",
   "M-g g": "goto-line",
+  // ビューアで指した場所を、エディタで編集する(右クリックメニューの「Emacs で編集」と同じ)
+  "C-c e": "edit-in-editor",
   "C-g": "keyboard-quit",
 };
 

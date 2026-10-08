@@ -82,7 +82,7 @@ private func cleanup(_ path: String) {
                 switch operation {
                 case .ping: reply(.success(id: request.id, .object(["pid": .number(1)])))
                 case .open: reply(.success(id: request.id, .object(["path": .string(request.path ?? "")])))
-                case .getLocation: reply(.success(id: request.id, .null))
+                case .getLocation, .getView: reply(.success(id: request.id, .null))
                 }
             }
             if delayMs > 0 {

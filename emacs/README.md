@@ -21,9 +21,37 @@ Emacs から、HyperBuf(macOS の Markdown ビューア)に、ファイルと行
 | `hyperbuf-open-other-window` | 同じものを、HyperBuf の別の window(右に分割)に開く |
 | `hyperbuf-open-project-file` | プロジェクトの Markdown を選んで開く |
 | `hyperbuf-open` | Lisp から。`(hyperbuf-open FILE &optional LINE ANCHOR TARGET WAIT)` |
+| `hyperbuf-visit-location` | ビューアで「Emacs で編集」と指した位置へ移動する(照合つき。下記) |
+| `hyperbuf-edit-here` | 同じものに加えて、Emacs のフレームを前面に出す(`emacsclient` から呼ぶ用) |
 
 プレフィックス引数(`C-u`)つきなら、アプリ内の確認(プロジェクトの外のファイルを開くか、など)を、長く待つ。
 ビューアは、ディスク上のファイルを読むので、未保存の変更があるときは、開く前に保存するかを尋ねる(`hyperbuf-save-before-open`)。
+
+## ビューアから、編集位置へ(「Emacs で編集」)
+
+ビューアで、直したい文字列を選択して、右クリックメニューの **「Emacs で編集」**(または、ビューアで `C-c e`)を選ぶ。
+Emacs で `M-x hyperbuf-visit-location`(または、ビューアが、設定した `emacsclient` で `hyperbuf-edit-here` を呼び出す)と、その位置へ移動する。
+
+**誤った場所を、黙って編集させない**ために、移動の前に、必ず照合する。
+
+| 照合 | 失敗したとき |
+| --- | --- |
+| ファイルが、ビューアが描画した版と同じか(SHA-256) | 移動しない。「ビューアで見ている内容と、編集する内容が食い違います」 |
+| その位置の文字列と前後の文脈が、ビューアが指していたものと同じか(未保存の編集でずれていても検出) | 移動しない。食い違いの詳細を `*hyperbuf-mismatch*` に出す |
+
+照合に失敗したときは、**続行する手段はない**(何かが根本的におかしいことに、気づいていない可能性が高いため)。
+成功したら、範囲を一時的に強調し、ビューアが指していた文字列を、エコー領域に出す。同じ文言が複数あって位置が決められないときは、
+ブロックの先頭へ移動し、「位置が曖昧なため、ブロック全体を示しています」と知らせる(推測では、移動しない)。
+
+ビューアから Emacs を呼び出すには、`~/Library/Application Support/HyperBuf/config.json` に、固定のコマンドを書く
+(文書の内容・位置は、引数に含まれない。詳細は `docs/integration-protocol.md` §15)。
+
+```json
+{
+  "editorName": "Emacs",
+  "editorCommand": ["/opt/homebrew/bin/emacsclient", "-n", "-e", "(hyperbuf-edit-here)"]
+}
+```
 
 ## 設定
 
@@ -41,7 +69,7 @@ Emacs から、HyperBuf(macOS の Markdown ビューア)に、ファイルと行
 
 - リモートのファイル(TRAMP)は開けない(ビューアは、手元のファイルだけを読む)。
 - アプリが起動していないとき、アプリを起動して要求を渡すが、結果は、アプリの画面に出る(Emacs には返らない)。
-- 編集位置の連携(ビューアから Emacs へ、`hyperbuf-visit-location`)は、M6 で実装する。
+- UTF-8 以外の文字コードのファイルは、ビューアの照合が合わず、移動しない(誤った場所へは、移動しない)。
 
 ## 開発
 

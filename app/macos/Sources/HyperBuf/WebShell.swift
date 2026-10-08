@@ -17,13 +17,16 @@ struct WebShell: NSViewRepresentable {
             bridge, contentWorld: .page, name: Bridge.handlerName)
         config.userContentController.addUserScript(
             WKUserScript(source: Bridge.script, injectionTime: .atDocumentStart, forMainFrameOnly: true))
-        let view = WKWebView(frame: .zero, configuration: config)
+        let view = EditorWebView(frame: .zero, configuration: config)
+        view.editMenuTitle = session.editorConfig.menuTitle
+        view.onEditRequested = { [weak session] in session?.requestEdit() }
         #if DEBUG
             view.isInspectable = true
         #endif
         session.webView = view
         context.coordinator.bridge = bridge  // WKUserContentController は、ハンドラを強参照しない
         TestHarness.attach(to: view, bridge: bridge)
+        TestHarness.startCommandChannel(for: view)
         view.load(URLRequest(url: URL(string: "\(ContentSecurityPolicy.scheme)://app/index.html")!))
         return view
     }

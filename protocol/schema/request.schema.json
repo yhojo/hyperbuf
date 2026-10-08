@@ -15,7 +15,7 @@
       "description": "応答と対応づける識別子"
     },
     "op": {
-      "enum": ["ping", "open", "get-location"]
+      "enum": ["ping", "open", "get-location", "get-view"]
     },
     "path": {
       "type": "string",

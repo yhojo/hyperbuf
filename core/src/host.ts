@@ -3,6 +3,17 @@
  * Web コアは、これ以外の方法でシェルの機能を使わない。
  * 契約の詳細: docs/integration-protocol.md、docs/poc-navigation-results.md
  */
+import type { SourceLocation } from "./locate.ts";
+
+/** `markLocation` の結果。 */
+export interface MarkResult {
+  ok: boolean;
+  /** エディタを呼び出したか(設定されたコマンドを実行したか)。 */
+  triggered: boolean;
+  /** 利用者に見せる説明。 */
+  message: string;
+}
+
 export interface HyperbufHost {
   /** シェルの識別名(診断用)。 */
   readonly name: string;
@@ -20,7 +31,15 @@ export interface HyperbufHost {
   onOpen?(callback: (request: OpenRequest) => void): void;
   /** 「開く」要求が期限切れなどで取り消された(確認待ちのミニバッファを閉じる)。 */
   onOpenCancel?(callback: (id: string) => void): void;
-  /** 位置の問い合わせ(`get-location`)への応答を登録する。 */
+  /**
+   * ビューアで指した場所(元の位置)を、エディタ連携のために記録する(「Emacs で編集」)。
+   * シェルが、ファイルの識別情報(ハッシュ等)を添えて保持し、エディタが `get-location` で取りに来る。
+   * 設定されていれば、シェルが、利用者の設定した固定のコマンドで、エディタを呼び出す。
+   */
+  markLocation?(location: SourceLocation): Promise<MarkResult>;
+  /** シェルから、「エディタで編集」の操作(右クリックメニューなど)が選ばれた。 */
+  onEdit?(callback: () => void): void;
+  /** 位置の問い合わせ(`get-view`: いまの表示)への応答を登録する。 */
   onQuery?(callback: (op: string) => Promise<unknown>): void;
   /** 「開く」要求への結果を返す(確認待ちを含む)。 */
   respond?(id: string, result: unknown): void;

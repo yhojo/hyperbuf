@@ -18,9 +18,11 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
           const changeListeners = [];
           const openListeners = [];
           const cancelListeners = [];
+          const editListeners = [];
           let queryListener = null;
           window.__hostChanged = (path) => changeListeners.forEach((cb) => cb(path));
           window.__hostOpen = (request) => openListeners.forEach((cb) => cb(request));
+          window.__hostEdit = () => editListeners.forEach((cb) => cb());
           window.__hostOpenCancel = (id) => cancelListeners.forEach((cb) => cb(id));
           window.__hostQuery = (op) => (queryListener ? queryListener(op) : null);
           const encode = (path) => path.split("/").map(encodeURIComponent).join("/");
@@ -38,6 +40,8 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
             onOpen: (cb) => { openListeners.push(cb); },
             onOpenCancel: (cb) => { cancelListeners.push(cb); },
             onQuery: (cb) => { queryListener = cb; },
+            onEdit: (cb) => { editListeners.push(cb); },
+            markLocation: (location) => call({ op: "mark-location", location }),
             respond: (id, result) => { call({ op: "respond", id, result }); },
             confirmOutside: (id, accepted) => call({ op: "confirm-outside", id, accepted }),
             ready: () => { call({ op: "ready" }); },
@@ -88,6 +92,12 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
                 let response = await Task.detached { ProjectSearch.search(project, query: query, limit: limit) }.value
                 replyHandler(Bridge.jsonObject(response), nil)
             }
+        case "mark-location":
+            guard let object = body["location"],
+                let data = try? JSONSerialization.data(withJSONObject: object),
+                let web = try? JSONDecoder().decode(WebLocation.self, from: data)
+            else { return replyHandler(["ok": false, "triggered": false, "message": "位置を解釈できません"], nil) }
+            Task { replyHandler(await session.markLocation(web), nil) }
         case "respond":
             if let id = body["id"] as? String, let payload = body["result"] as? [String: Any] {
                 openFlow.handleWebResponse(id: id, payload: payload)

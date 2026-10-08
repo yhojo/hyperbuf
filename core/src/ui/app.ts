@@ -63,7 +63,7 @@ export async function startApp(options: {
   } else {
     echo.message("Markdown ファイルがありません");
   }
-  wireHostEvents(ctx);
+  wireHostEvents(ctx, commands);
 
   return {
     ctx,

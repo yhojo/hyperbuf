@@ -24,6 +24,7 @@
 (require 'cl-lib)
 (require 'json)
 (require 'project)
+(require 'pulse)
 (require 'subr-x)
 (require 'url-util)
 
@@ -91,6 +92,11 @@ nil なら選択中の window。それ以外は、次のいずれか。"
 ビューアは、ディスク上のファイルを読む。
 `ask' は確認し、t は確認なしで保存し、nil は保存しない。"
   :type '(choice (const :tag "確認する" ask) (const :tag "保存する" t) (const :tag "保存しない" nil))
+  :group 'hyperbuf)
+
+(defcustom hyperbuf-location-max-age 600
+  "ビューアで指した位置が、これ(秒)より古いとき、移動の際に、その旨を知らせる。"
+  :type 'number
   :group 'hyperbuf)
 
 (define-error 'hyperbuf-not-running "HyperBuf が起動していません")
@@ -288,6 +294,165 @@ WAIT(プレフィックス引数)つきなら、アプリ内の確認を長く�
                                           (project-files project))))
          (choice (completing-read "Markdown: " files nil t)))
     (hyperbuf-open (expand-file-name choice root) nil nil nil wait)))
+
+;;;; ビューアから、編集位置へ(「Emacs で編集」)
+;;
+;; ビューアで指した場所を、元の Markdown の位置にして、エディタに渡す。誤った場所を、黙って編集させないために、
+;;  - 位置は、ビューアが構文木から求めたもの(文言の検索ではない)
+;;  - 移動の前に、必ず照合する: (1) ファイルが、ビューアが描画した版と同じか (2) その位置にあるはずの文字列と
+;;    前後の文脈が、バッファと一致するか
+;;  - 照合に失敗したら、移動も、続行もしない。警告と、食い違いの詳細(`*hyperbuf-mismatch*')だけを出す
+;;  - 移動したら、範囲を一時的に強調し、ビューアが指していた文字列を表示する
+;; 仕様: docs/integration-protocol.md §10。共有の例: protocol/examples/location-check.json
+
+(defun hyperbuf--file-sha256 (path)
+  "PATH のファイルの内容(バイト列)の SHA-256。ビューアが読んだ版との比較に使う。"
+  (with-temp-buffer
+    (set-buffer-multibyte nil)
+    (insert-file-contents-literally path)
+    (secure-hash 'sha256 (current-buffer))))
+
+(defun hyperbuf--offset (text line column)
+  "TEXT の LINE 行 COLUMN 桁の、0 始まりの文字位置。範囲外なら nil。
+LINE と COLUMN は 1 始まり。桁は、文字(コードポイント)で数える。"
+  (let ((pos 0) (current 1))
+    (while (and pos (< current line))
+      (let ((newline (string-search "\n" text pos)))
+        (setq pos (and newline (1+ newline))
+              current (1+ current))))
+    (when (and pos (>= column 1))
+      (let ((line-end (or (string-search "\n" text pos) (length text)))
+            (offset (+ pos (1- column))))
+        (and (<= offset line-end) offset)))))
+
+(defun hyperbuf--check-location (location text disk-sha)
+  "LOCATION(`get-location' の位置)を、バッファの内容と照合する。
+TEXT はバッファの全文、DISK-SHA はディスク上のファイルの SHA-256。
+結果は plist。成功なら (:status ok :start S :end E :actual …)。
+失敗なら (:status stale|mismatch :reason …)。S・E は 0 始まりの文字位置。"
+  (let* ((range (plist-get location :range))
+         (start (plist-get range :start))
+         (end (plist-get range :end))
+         (file (plist-get location :file))
+         (expect (plist-get location :expect))
+         (context (plist-get location :context)))
+    (cond
+     ((not (equal (plist-get location :v) hyperbuf--protocol-version))
+      (list :status 'mismatch :reason "未対応のバージョンの位置です"))
+     ((not (equal (plist-get file :sha256) disk-sha))
+      (list :status 'stale
+            :reason "ファイルが、ビューアが描画した版と違います(ビューアで見ている内容と、編集する内容が食い違います)"))
+     (t
+      (let ((s (hyperbuf--offset text (plist-get start :line) (plist-get start :column)))
+            (e (hyperbuf--offset text (plist-get end :line) (plist-get end :column))))
+        (if (not (and s e (<= s e)))
+            (list :status 'mismatch :reason "位置が、文書の範囲外です")
+          (let ((actual (substring text s e)))
+            (cond
+             ((not (if (eq (plist-get location :expectTruncated) t)
+                       (string-prefix-p expect actual)
+                     (equal expect actual)))
+              (list :status 'mismatch
+                    :reason "その位置の文字列が、ビューアが指していたものと違います" :actual actual))
+             ((not (string-suffix-p (plist-get context :before) (substring text 0 s)))
+              (list :status 'mismatch :reason "位置の直前の文脈が、ビューアが指していたものと違います" :actual actual))
+             ((not (string-prefix-p (plist-get context :after) (substring text e)))
+              (list :status 'mismatch :reason "位置の直後の文脈が、ビューアが指していたものと違います" :actual actual))
+             (t (list :status 'ok :start s :end e :actual actual))))))))))
+
+(defun hyperbuf--abbreviate (string &optional limit)
+  "STRING を、改行を空白にして、LIMIT(既定 60)文字までに縮める。"
+  (let ((flat (replace-regexp-in-string "[\n\r]+" " " string))
+        (limit (or limit 60)))
+    (if (> (length flat) limit) (concat (substring flat 0 limit) "…") flat)))
+
+(defun hyperbuf--report-problem (location result path)
+  "照合に失敗した LOCATION の詳細を出して、`user-error' にする(移動しない)。
+詳細は `*hyperbuf-mismatch*' バッファに出す。PATH は、編集するファイル。"
+  (let ((buffer (get-buffer-create "*hyperbuf-mismatch*"))
+        (file (plist-get location :file)))
+    (with-current-buffer buffer
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert (format "HyperBuf: 編集位置の照合に失敗したので、移動しませんでした。\n\n理由: %s\n"
+                        (plist-get result :reason))
+                (format "ファイル: %s\n" path)
+                (format "ビューアが指していた文字列: %s\n"
+                        (hyperbuf--abbreviate (or (plist-get (plist-get location :viewer) :selection) "") 200))
+                (format "位置: %d 行 %d 桁 〜 %d 行 %d 桁(%s)\n\n"
+                        (plist-get (plist-get (plist-get location :range) :start) :line)
+                        (plist-get (plist-get (plist-get location :range) :start) :column)
+                        (plist-get (plist-get (plist-get location :range) :end) :line)
+                        (plist-get (plist-get (plist-get location :range) :end) :column)
+                        (plist-get location :precision)))
+        (if (eq (plist-get result :status) 'stale)
+            (insert (format "ビューアが描画した版: SHA-256 %s(%s バイト)\nいまのファイル: SHA-256 %s(%s バイト)\n\n"
+                            (plist-get file :sha256) (plist-get file :size)
+                            (hyperbuf--file-sha256 path)
+                            (file-attribute-size (file-attributes path)))
+                    "対処: ビューアで、ファイルを開き直して(または、外部更新の反映を待って)、もう一度、指してください。\n")
+          (insert (format "ビューアが指していた文字列:\n  %s\nいま、その位置にある文字列:\n  %s\n\n"
+                          (hyperbuf--abbreviate (or (plist-get location :expect) "") 200)
+                          (hyperbuf--abbreviate (or (plist-get result :actual) "(なし)") 200))
+                  "対処: 位置の近くを、目で確かめてください。別の場所を編集しないように、自動では移動しません。\n"))
+        (special-mode)))
+    (display-buffer buffer)
+    (user-error "HyperBuf: %s(移動しません。詳細は *hyperbuf-mismatch*)" (plist-get result :reason))))
+
+(defun hyperbuf--visit (location)
+  "LOCATION を照合して、問題がなければ、その位置へ移動して強調する。
+問題があれば、移動せず、`user-error'。"
+  (let ((path (plist-get location :path)))
+    (when-let* ((problem (hyperbuf--validate-open path)))
+      (user-error "HyperBuf: 位置のファイルが不正です: %s" (cdr problem)))
+    (unless (file-regular-p path) (user-error "ファイルがありません: %s" path))
+    (let* ((buffer (find-file-noselect path))
+           (disk-sha (hyperbuf--file-sha256 path))
+           (text (with-current-buffer buffer
+                   (save-restriction (widen) (buffer-substring-no-properties (point-min) (point-max)))))
+           (result (hyperbuf--check-location location text disk-sha)))
+      (unless (eq (plist-get result :status) 'ok)
+        (hyperbuf--report-problem location result path))
+      (switch-to-buffer buffer)
+      (widen)
+      (let ((start (+ (point-min) (plist-get result :start)))
+            (end (+ (point-min) (plist-get result :end)))
+            (age (- (float-time) (/ (or (plist-get location :markedAt) 0) 1000.0))))
+        (goto-char start)
+        (pulse-momentary-highlight-region start end)
+        (message "HyperBuf: 「%s」%s%s"
+                 (hyperbuf--abbreviate (plist-get result :actual))
+                 (if (equal (plist-get location :precision) "block")
+                     "(位置が曖昧なため、ブロック全体を示しています)" "")
+                 (if (> age hyperbuf-location-max-age)
+                     (format "(%d 分前に指した位置です)" (round (/ age 60))) ""))))))
+
+;;;###autoload
+(defun hyperbuf-visit-location ()
+  "ビューアで「Emacs で編集」と指した位置へ、移動する。
+移動の前に、ファイルの版・その位置の文字列・前後の文脈を、
+ビューアが指していたものと照合する。
+照合に失敗したら、移動せず、警告と詳細(*hyperbuf-mismatch*)を出す。"
+  (interactive)
+  (let* ((response (condition-case nil
+                       (hyperbuf--socket-request
+                        (list :v hyperbuf--protocol-version :id (format "emacs-%d" (emacs-pid)) :op "get-location")
+                        hyperbuf-timeout)
+                     (hyperbuf-not-running (user-error "HyperBuf が起動していません"))))
+         (location (plist-get (plist-get response :result) :location)))
+    (when-let* ((error (plist-get response :error))) (hyperbuf--report-error error))
+    (unless location
+      (user-error "ビューアで指した位置がありません(ビューアの右クリックメニュー「Emacs で編集」で指してください)"))
+    (hyperbuf--visit location)))
+
+;;;###autoload
+(defun hyperbuf-edit-here ()
+  "`hyperbuf-visit-location' に加えて、Emacs のフレームを前面に出す。
+ビューアの「Emacs で編集」が、emacsclient から呼び出すのに使う。
+例: emacsclient -n -e \"(hyperbuf-edit-here)\""
+  (interactive)
+  (select-frame-set-input-focus (selected-frame))
+  (hyperbuf-visit-location))
 
 (provide 'hyperbuf)
 

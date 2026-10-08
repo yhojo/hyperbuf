@@ -14,6 +14,7 @@ const ajv = new Ajv2020({
 });
 const validateRequest = ajv.compile(read("../schema/request.schema.json"));
 const validateResponse = ajv.compile(read("../schema/response.schema.json"));
+const validateLocation = ajv.compile(read("../schema/location.schema.json"));
 
 test("open の検証例: スキーマの合否が、期待(ok かエラー)と一致する", () => {
   for (const item of read("../examples/open-validation.json")) {
@@ -64,4 +65,37 @@ test("応答: 成功には result、失敗には error が要り、両方は持�
     validateResponse({ v: 1, ok: true, result: 1, error: { code: "timeout", message: "m" } }),
     false,
   );
+});
+
+test("位置(location)の例: スキーマの合否が、期待と一致する", () => {
+  for (const item of read("../examples/location.json")) {
+    assert.equal(
+      validateLocation(item.location),
+      item.valid,
+      `${item.name}: ${JSON.stringify(validateLocation.errors)}`,
+    );
+  }
+});
+
+test("照合の例(location-check): 位置のペイロードとして、スキーマに合う(sha256 は auto を置き換える)", () => {
+  const checks = read("../examples/location-check.json");
+  assert.ok(checks.length >= 8);
+  for (const item of checks) {
+    const location = {
+      ...item.location,
+      file: {
+        ...item.location.file,
+        sha256: item.location.file.sha256 === "auto" ? "0".repeat(64) : item.location.file.sha256,
+      },
+    };
+    assert.ok(
+      validateLocation(location),
+      `${item.name}: ${JSON.stringify(validateLocation.errors)}`,
+    );
+    assert.ok(["ok", "stale", "mismatch"].includes(item.status), item.name);
+  }
+});
+
+test("get-view も、リクエストのスキーマに合う", () => {
+  assert.ok(validateRequest({ op: "get-view" }));
 });

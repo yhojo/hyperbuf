@@ -4,10 +4,18 @@ import Foundation
 public struct FileAccess: Sendable {
     public let project: Project
     public let trusted: TrustedRoots
+    /// 読んだ版の識別情報(エディタ連携で、古い表示を見つけるのに使う)。
+    public let fingerprints: FileFingerprints
 
-    public init(project: Project, trusted: TrustedRoots) {
+    public init(project: Project, trusted: TrustedRoots, fingerprints: FileFingerprints = FileFingerprints()) {
         self.project = project
         self.trusted = trusted
+        self.fingerprints = fingerprints
+    }
+
+    /// 相対パス(プロジェクト内)または絶対パス(信頼するルートの内側)を、`realpath` の形の絶対パスにする。
+    public func absolutePath(_ path: String) throws -> String {
+        try resolve(path).path
     }
 
     /// 絶対パスは、信頼するルートの内側であること。それ以外は、プロジェクト内の相対パス。
@@ -24,6 +32,7 @@ public struct FileAccess: Sendable {
         // resolve の失敗(範囲外など)を、try? で「読めない」に潰さない
         let file = try resolve(path)
         guard let data = try? Data(contentsOf: file) else { throw ProjectError.unreadable }
+        fingerprints.record(path: file.path, data: data)
         return String(decoding: data, as: UTF8.self)
     }
 

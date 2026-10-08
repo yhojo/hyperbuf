@@ -14,7 +14,7 @@ public enum HyperBufProtocol {
     public static let urlScheme = "hyperbuf"
 }
 
-public enum Operation: String, Sendable, CaseIterable {
+public enum RequestOperation: String, Sendable, CaseIterable {
     case ping
     case open
     case getLocation = "get-location"
@@ -55,7 +55,7 @@ public struct Request: Sendable, Equatable, Codable {
     public var timeoutMs: Int?
 
     public init(
-        v: Int? = HyperBufProtocol.version, id: String? = nil, op: Operation, path: String? = nil, line: Int? = nil,
+        v: Int? = HyperBufProtocol.version, id: String? = nil, op: RequestOperation, path: String? = nil, line: Int? = nil,
         anchor: String? = nil, project: String? = nil, target: String? = nil, timeoutMs: Int? = nil
     ) {
         self.v = v

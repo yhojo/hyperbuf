@@ -54,7 +54,7 @@ private func decodeRequest(_ object: [String: Any]) throws -> Request {
                 #expect(parsed.line == expected.line, "\(name)")
                 #expect(parsed.anchor == expected.anchor, "\(name)")
                 // 作った URL を、もう一度読むと、同じ要求になる
-                if expected.op == Operation.open.rawValue {
+                if expected.op == RequestOperation.open.rawValue {
                     let rebuilt = try #require(OpenURL.make(expected), "\(name)")
                     guard case .success(let again) = OpenURL.parse(rebuilt) else {
                         Issue.record("\(name): 往復")

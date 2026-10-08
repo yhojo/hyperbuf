@@ -20,3 +20,8 @@ struct TempProject {
 
     func remove() { try? FileManager.default.removeItem(at: url) }
 }
+
+/// 複数のテスト用プロジェクトを、まとめて片づける。
+func removeAll(_ projects: TempProject...) {
+    for project in projects { project.remove() }
+}

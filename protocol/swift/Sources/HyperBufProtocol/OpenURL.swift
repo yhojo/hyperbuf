@@ -21,7 +21,7 @@ public enum OpenURL {
         guard url.scheme == HyperBufProtocol.urlScheme else {
             return .failure(ProtocolError(.badRequest, "未対応の URL です"))
         }
-        guard let op = url.host.flatMap(Operation.init(rawValue:)), op == .open || op == .ping else {
+        guard let op = url.host.flatMap(RequestOperation.init(rawValue:)), op == .open || op == .ping else {
             return .failure(ProtocolError(.unknownOp, "未対応の操作です: \(url.host ?? "")"))
         }
         let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []

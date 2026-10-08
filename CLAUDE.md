@@ -27,7 +27,8 @@ A keyboard-driven macOS viewer (not an editor) for browsing many cross-reference
 - Security baseline: treat all Markdown as untrusted (including AI-agent-generated); restrict script execution/external references in HTML/SVG/diagram engines; explicit file-access scope and external-command permissions; diagram render errors must be shown in place without breaking the whole document.
 - File watching should reload externally-updated files while preserving reading position.
 - **Decided:** the macOS shell is SwiftUI + WKWebView. The renderer/navigation core is a shell-independent web bundle; the only boundary is the `hyperbufHost` contract (`listFiles` / `readFile` / `onFileChanged`). Other OSes are expected to get their own native shell, not a shared cross-platform one. See `docs/poc-interaction-results.md`.
-- The other technology candidates in the README (unified/remark/rehype; KaTeX/MathJax; Mermaid etc.; starry-night/Shiki; ripgrep) are **candidates to evaluate, not decisions**. Don't treat any as adopted without the user's confirmation.
+- **Decided (rendering):** unified/remark/rehype with remark-gfm, remark-math + KaTeX, starry-night, Mermaid (strict, lazy-loaded), rehype-sanitize, github-markdown-css. Keep rehype-sanitize's `user-content-` id prefix; images only via `<img>`; no external network (starry-night's default CDN WASM fetch is disabled by bundling). See `docs/poc-rendering-results.md`.
+- The remaining candidates in the README (MathJax, Graphviz/PlantUML/WaveDrom/D2, ripgrep for search, file-monitoring mechanism) are **candidates to evaluate, not decisions**. Don't treat any as adopted without the user's confirmation.
 
 ## Coding conventions
 

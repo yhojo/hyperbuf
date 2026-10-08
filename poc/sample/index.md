@@ -14,3 +14,5 @@ Hyperbuf PoC 用のサンプル文書です。リンクをたどって参照履�
 - `TAB` / `S-TAB` でリンクを選び、`RET` でたどる
 - `C-x 2` `C-x 3` `C-x 0` `C-x 1` `C-x o` — window の操作
 - `C-x b` — buffer 切替、`C-x C-f` — ファイルを開く、`M-x` — コマンド実行
+
+- [Rendering 検証文書集](rendering/00-index.md)

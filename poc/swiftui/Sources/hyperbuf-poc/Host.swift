@@ -38,8 +38,14 @@ final class Host: NSObject, WKURLSchemeHandler, WKScriptMessageHandlerWithReply 
         listFiles: () => call({ op: "list" }),
         readFile: (path) => call({ op: "read", path }),
         onFileChanged: (cb) => cbs.push(cb),
+        resolveResource: (path) => "hyperbuf://project/" + path.split("/").map(encodeURIComponent).join("/"),
       };
       window.__hostChanged = (path) => cbs.forEach((cb) => cb(path));
+      // 診断用: CSP 違反とエラーを起動時から記録する
+      window.__diag = { violations: [], errors: [] };
+      document.addEventListener("securitypolicyviolation", (e) => window.__diag.violations.push(e.violatedDirective + " " + e.blockedURI));
+      window.addEventListener("error", (e) => window.__diag.errors.push(String(e.message)));
+      window.addEventListener("unhandledrejection", (e) => window.__diag.errors.push("rejection: " + String(e.reason)));
     })();
     """
 
@@ -47,19 +53,30 @@ final class Host: NSObject, WKURLSchemeHandler, WKScriptMessageHandlerWithReply 
 
     func webView(_ webView: WKWebView, start task: any WKURLSchemeTask) {
         guard let url = task.request.url else { return task.didFailWithError(URLError(.badURL)) }
-        var rel = url.path.hasPrefix("/") ? String(url.path.dropFirst()) : url.path
+        var rel = (url.path.hasPrefix("/") ? String(url.path.dropFirst()) : url.path).removingPercentEncoding ?? url.path
         if rel.isEmpty { rel = "index.html" }
-        guard let file = contained(rel, in: webRoot), let data = try? Data(contentsOf: file) else {
+        // hyperbuf://project/* はプロジェクト内の画像だけを返す。それ以外(app)は web ディレクトリの静的ファイル。
+        let isProject = url.host == "project"
+        guard let file = contained(rel, in: isProject ? projectRoot : webRoot),
+            !isProject || Host.imageExtensions.contains(file.pathExtension.lowercased()),
+            let data = try? Data(contentsOf: file)
+        else {
             let res = HTTPURLResponse(url: url, statusCode: 404, httpVersion: nil, headerFields: nil)!
             task.didReceive(res)
             task.didFinish()
             return
         }
         // 外部通信・インライン実行を禁じる(local first / 不信任入力の前提)
-        let csp = "default-src hyperbuf:; style-src hyperbuf: 'unsafe-inline'; img-src hyperbuf: data:; connect-src 'none'"
+        let csp = "default-src hyperbuf:; script-src hyperbuf: 'wasm-unsafe-eval'; style-src hyperbuf: 'unsafe-inline'; font-src hyperbuf:; img-src hyperbuf:; connect-src hyperbuf:"
+        // プロジェクトの画像は何も実行・読み込みさせない(SVG に含まれる script なども無効)
         let res = HTTPURLResponse(
             url: url, statusCode: 200, httpVersion: nil,
-            headerFields: ["Content-Type": mime(file), "Content-Security-Policy": csp, "Cache-Control": "no-store"])!
+            headerFields: [
+                "Content-Type": mime(file),
+                "Content-Security-Policy": isProject ? "default-src 'none'; style-src 'unsafe-inline'" : csp,
+                "X-Content-Type-Options": "nosniff",
+                "Cache-Control": "no-store",
+            ])!
         task.didReceive(res)
         task.didReceive(data)
         task.didFinish()
@@ -73,9 +90,20 @@ final class Host: NSObject, WKURLSchemeHandler, WKScriptMessageHandlerWithReply 
         case "js": return "text/javascript; charset=utf-8"
         case "css": return "text/css; charset=utf-8"
         case "json": return "application/json; charset=utf-8"
+        case "wasm": return "application/wasm"
+        case "svg": return "image/svg+xml"
+        case "png": return "image/png"
+        case "jpg", "jpeg": return "image/jpeg"
+        case "gif": return "image/gif"
+        case "webp": return "image/webp"
+        case "woff2": return "font/woff2"
+        case "woff": return "font/woff"
+        case "ttf": return "font/ttf"
         default: return "application/octet-stream"
         }
     }
+
+    private static let imageExtensions: Set<String> = ["png", "jpg", "jpeg", "gif", "webp", "svg"]
 
     // MARK: ブリッジ
 
@@ -124,6 +152,21 @@ final class Host: NSObject, WKURLSchemeHandler, WKScriptMessageHandlerWithReply 
     func startWatching() {
         stamps = currentStamps()
         // HYPERBUF_DEBUG=1 のとき、起動 3 秒後に画面下部の表示を標準出力へ出す(ブリッジ疎通の確認用)
+        // HYPERBUF_DEBUG_EVAL=<JS ファイル> のとき、そのスクリプトを実行して結果を出力する(自動検証用)
+        if let evalPath = ProcessInfo.processInfo.environment["HYPERBUF_DEBUG_EVAL"],
+            let script = try? String(contentsOfFile: evalPath, encoding: .utf8)
+        {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+                self?.webView?.callAsyncJavaScript(script, arguments: [:], in: nil, in: .page) { result in
+                    switch result {
+                    case .success(let value): print("EVAL:", value ?? "nil")
+                    case .failure(let error): print("EVAL ERROR:", error)
+                    }
+                    fflush(stdout)
+                    exit(0)
+                }
+            }
+        }
         if ProcessInfo.processInfo.environment["HYPERBUF_DEBUG"] != nil {
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
                 self?.webView?.evaluateJavaScript(

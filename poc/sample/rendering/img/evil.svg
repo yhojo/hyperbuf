@@ -1,0 +1,1 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" onload="alert('svg onload')"><script>alert("svg script")</script><rect width="200" height="60" fill="#ffebe9" stroke="#cf222e"/><text x="100" y="35" font-size="13" text-anchor="middle">evil.svg (inert)</text></svg>

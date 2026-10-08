@@ -3,7 +3,12 @@ import {
   otherWindow, windows, selectedWindow, currentEntry, resolveLink,
 } from "./model.js";
 import { keyName, createKeymap, createDispatcher } from "./keys.js";
-import { renderMarkdown } from "./render.js";
+import { createRenderer, hydrateDiagrams, findAnchor } from "./pipeline.js";
+import onigWasm from "vscode-oniguruma/release/onig.wasm";
+import "github-markdown-css/github-markdown.css";
+import "katex/dist/katex.min.css";
+import "@wooorm/starry-night/style/both";
+import "./style.css";
 import { getHost } from "./host.js";
 
 const $ = (id) => document.getElementById(id);
@@ -12,6 +17,7 @@ const echoEl = $("echo");
 const statusEl = $("status");
 
 const host = getHost();
+const renderer = await createRenderer({ onigUrl: new URL(onigWasm, import.meta.url) });
 const model = createModel();
 const winEls = new Map(); // window id -> { el, content, header, lastEntry, linkIndex }
 
@@ -107,10 +113,16 @@ const commands = {
     }
   },
   "goto-heading": async () => {
+    // 見出しは描画後の DOM から取る(id は GitHub 方式で付くので、正規表現による解析とはずれ得る)
     const buf = model.buffers.get(currentEntry(sel()).path);
-    const items = buf.headings.map((h) => `${"  ".repeat(h.level - 1)}${h.text}`);
+    const headings = [...ui().content.querySelectorAll("h1,h2,h3,h4,h5,h6")].map((h) => ({
+      level: Number(h.tagName[1]),
+      text: h.textContent,
+      id: h.id.replace(/^user-content-/, ""),
+    }));
+    const items = headings.map((h) => `${"  ".repeat(h.level - 1)}${h.text}`);
     const picked = await prompt("Heading: ", items, false);
-    if (picked) visit(model, sel(), buf.path, buf.headings[items.indexOf(picked)].id);
+    if (picked) visit(model, sel(), buf.path, headings[items.indexOf(picked)].id);
   },
   "execute-command": async () => {
     const name = await prompt("M-x ", Object.keys(commands), false);
@@ -232,6 +244,9 @@ function visibleAnchor(content) {
   return best;
 }
 
+const resolveResource = host.resolveResource ?? ((path) => path);
+const renderStats = { ms: 0, diagrams: "" };
+
 function updateWindow(win) {
   const u = windowUi(win);
   const entry = currentEntry(win);
@@ -246,26 +261,42 @@ function updateWindow(win) {
     const reload = u.lastEntry === entry && samePath;
     const anchor = reload ? visibleAnchor(u.content) : null;
     const ratio = reload ? u.content.scrollTop / Math.max(1, u.content.scrollHeight) : 0;
-    u.content.innerHTML = renderMarkdown(buf.text);
+    const { html, ms } = renderer.renderMarkdown(buf.text, { docPath: entry.path, resolveResource });
+    renderStats.ms = ms;
+    u.content.innerHTML = `<div class="markdown-body">${html}</div>`;
     u.linkIndex = -1;
+    const token = (u.renderToken = (u.renderToken ?? 0) + 1);
     if (reload) {
-      const target = anchor && u.content.querySelector(`#${CSS.escape(anchor.id)}`);
-      setScroll(u, target ? target.offsetTop + anchor.delta : u.content.scrollHeight * ratio);
+      u.computeTop = () => {
+        const target = anchor && u.content.querySelector(`#${CSS.escape(anchor.id)}`);
+        return target ? target.offsetTop + anchor.delta : u.content.scrollHeight * ratio;
+      };
+      setScroll(u, u.computeTop());
       entry.scroll = u.content.scrollTop;
     }
     u.lastKey = key;
     if (!reload) u.lastEntry = null; // 新しい表示として位置を適用する
+    // Mermaid は描画後に高さが変わるので、読み手が動かしていなければ位置を取り直す
+    queueMicrotask(() => settleDiagrams(u, entry, token));
   }
   if (u.lastEntry !== entry) {
-    let top = entry.scroll;
-    if (!top && entry.anchor) {
-      const target = u.content.querySelector(`#${CSS.escape(entry.anchor)}`);
-      if (target) top = target.offsetTop;
-    }
-    setScroll(u, top);
+    const viaAnchor = !entry.scroll && entry.anchor;
+    u.computeTop = viaAnchor ? () => findAnchor(u.content, entry.anchor)?.offsetTop ?? 0 : () => entry.scroll;
+    setScroll(u, u.computeTop());
     entry.scroll = u.content.scrollTop;
     u.linkIndex = -1;
     u.lastEntry = entry;
+  }
+}
+
+async function settleDiagrams(u, entry, token) {
+  const before = u.content.scrollTop;
+  const info = await hydrateDiagrams(u.content);
+  if (token !== u.renderToken) return;
+  renderStats.diagrams = info.count ? `図 ${info.count}件(${info.ms.toFixed(0)}ms${info.errors ? `, 失敗${info.errors}` : ""})` : "";
+  if (u.content.scrollTop === before && u.computeTop) {
+    setScroll(u, u.computeTop());
+    entry.scroll = u.content.scrollTop;
   }
 }
 
@@ -313,7 +344,7 @@ function recordLatency(t0, name) {
       const sorted = [...samples].sort((a, b) => a - b);
       const q = (p) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))];
       statusEl.textContent =
-        `${host.name} | ${name}: ${ms.toFixed(1)}ms | 中央値 ${q(0.5).toFixed(1)} / p95 ${q(0.95).toFixed(1)} / 最大 ${sorted.at(-1).toFixed(1)} (n=${samples.length})`;
+        `${host.name} | ${name}: ${ms.toFixed(1)}ms (描画 ${renderStats.ms.toFixed(1)}ms ${renderStats.diagrams}) | 中央値 ${q(0.5).toFixed(1)} / p95 ${q(0.95).toFixed(1)} / 最大 ${sorted.at(-1).toFixed(1)} (n=${samples.length})`;
     }, 0),
   );
 }
@@ -373,4 +404,12 @@ async function main() {
 
 main().catch((err) => echo(`起動に失敗: ${err.message}`));
 
-window.__hb = { model, commands, keymap, samples };
+// 自動検証用の入口(ヘッドレスで文書を開き、描画の統計を読む)
+window.__hb = {
+  model, commands, keymap, samples, renderStats,
+  async open(path, anchor = null) {
+    await ensureBuffer(path);
+    visit(model, sel(), path, anchor);
+    refresh();
+  },
+};

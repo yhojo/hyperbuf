@@ -5,6 +5,7 @@
 //   listFiles(): Promise<string[]>        プロジェクト内の Markdown の相対パス
 //   readFile(path): Promise<string>
 //   onFileChanged(cb: (path) => void)     外部更新の通知
+//   resolveResource?(path): string        文書から参照されるローカル画像の URL(相対パス → 読み込める URL)
 //   simulateChange?(path): Promise<void>  開発用: 外部更新の模擬
 // }
 
@@ -29,6 +30,7 @@ function createFetchHost(base = new URL("../sample/", import.meta.url)) {
     onFileChanged(cb) {
       listeners.push(cb);
     },
+    resolveResource: (path) => new URL(path, base).href,
     async simulateChange(path) {
       const text = overrides.get(path) ?? (await (await fetch(new URL(path, base))).text());
       overrides.set(path, `${text}\n\n- 外部更新 ${new Date().toLocaleTimeString()}\n`);

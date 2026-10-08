@@ -99,8 +99,8 @@ Hyperbufは、ハッカー文化に根差した **使い込める道具** を目
 | Mathematics | **KaTeX（決定）**。MathJax は未比較 |
 | Diagrams | **Mermaid（決定、遅延ロード・strictモード）**。Graphviz、PlantUML、WaveDrom、D2 は未評価（外部コマンドが絡むものは権限境界を先に決める） |
 | Syntax highlighting | **starry-night（決定）**。Shiki と比較し、速度・出力サイズ・GitHub互換で優位 |
-| Project search | ripgrep、必要に応じてインデックス方式 |
-| File monitoring | OSネイティブ機構、Rust/Swift側の監視ライブラリ |
+| Project search | **Swift 自前実装から開始（決定、`docs/poc-navigation-results.md`）**。`host.search` の契約でエンジンを差し替え可能にし、正規表現や除外規則が必要になった時点で ripgrep を再評価。インデックス方式は規模に応じて検討 |
+| File monitoring | **FSEvents（決定）**。ポーリングは削除を検知できず、ファイル数に比例して重いため採用しない |
 | State / layout management | 明示的なbuffer・windowモデル、分割ツリーなど |
 
 評価軸には、**表示互換性、操作遅延、メモリ、拡張性、セキュリティ、macOS統合、保守性、配布容易性**を含めます。レンダリングエンジンと閲覧・ナビゲーションのコアは、可能な限り疎結合に保ちます。
@@ -133,6 +133,7 @@ Hyperbufは、ハッカー文化に根差した **使い込める道具** を目
 - GitHub互換表示の対象範囲をどう定義するか。
 - 図表プラグインをどの権限境界で実行するか。
 - 大きな文書の部分更新とスクロール位置維持をどう実現するか。
+- メモリ使用量の確認（プロジェクト後半にまとめて。描画バンドルで増加、リークの有無と内訳を調べる）。
 - Back / Forward の履歴粒度をどう設計するか。window分割時は履歴を複製する方針（詳細は `docs/interaction-model.md`）。
 
 ## Project status

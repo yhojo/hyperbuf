@@ -2,6 +2,13 @@
 
 README.md に記載した方針・計画を変更した際の記録。新しいものを上に追記する。README は自由に更新してよいが、変更理由をここに残す。
 
+## 2026-10-08 23:34 JST — 構成・名前・言語・対応OSの決定
+
+- **変更前**（README/CLAUDE.md）: 名前は「Hyperbuf（仮称）」。構成は `app/` `cli/` `emacs/` `docs/` の計画。Web コアは素の JavaScript、CLI や最小の macOS は未決。
+- **変更後**: 名前は **HyperBuf**（GUI は `HyperBuf.app`、CLI・URL スキーム・リポジトリは `hyperbuf`）に確定（仮称を外す）。構成は `core/` `app/macos/`（他OSは `app/<platform>/`）`cli/` `emacs/` `protocol/` `fixtures/` `docs/`。Web コアは **TypeScript**（React は使わない）。Swift のビルドは SwiftPM + スクリプト。CI は最初の段階（M0）で骨組みを入れる。最小の macOS は、Apple が保守を続けている世代まで対応（提案: macOS 14 以上）。ライセンスは公開前に確認し、難しい問題があれば公開・配布を諦めて個人のツールとして使う。
+- **理由**: PoC で素の DOM と JavaScript で足りたが、公開リポジトリの保守性と貢献しやすさのために型を付ける。他OS を追加するとき、ディレクトリを付け替えずに済むよう `app/macos/` とする。名前は、Web 検索・GitHub・npm・Homebrew で同名の製品が見つからなかった（商標とドメインの登録は未確認）。
+- 関連: `docs/migration-plan.md`、README、CLAUDE.md を更新。
+
 ## 2026-10-08 23:13 JST — 連携プロトコルと配布方式の決定
 
 - **変更前**（README）: 配布、連携の経路は未確定。`hyperbuf` CLI と Emacs 連携は構想のみ。
@@ -37,7 +44,7 @@ README.md に記載した方針・計画を変更した際の記録。新しい�
 
 - **変更前**（README）: Back / Forward のキーは TBD。入力欄の扱いは未定。
 - **変更後**: Back / Forward は `C-b` / `C-f`（別名 `Cmd+[` / `Cmd+]`）。検索やbuffer選択などの入力は、ダイアログではなくframe下部のミニバッファで行う。
-- **理由**: Emacs では C-f/C-b が「編集対象の流れ」を泳ぐ操作に使われる。Hyperbuf の主な使い方は、大量の文書を参照の流れに沿って前後に読み進めることなので、同じキーの意味を参照の流れに再利用するのが自然。ミニバッファは入力の見た目と操作を全体で揃える。
+- **理由**: Emacs では C-f/C-b が「編集対象の流れ」を泳ぐ操作に使われる。HyperBuf の主な使い方は、大量の文書を参照の流れに沿って前後に読み進めることなので、同じキーの意味を参照の流れに再利用するのが自然。ミニバッファは入力の見た目と操作を全体で揃える。
 - **併せて決定**: 閲覧画面にカーソルは表示しない方向。コピーのためのテキスト選択は別途検討する。`M-f` / `M-b` は予約（案は `docs/interaction-model.md`）。
 - 関連: README「Open questions」の入力・選択の項目を更新。
 

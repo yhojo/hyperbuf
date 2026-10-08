@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Hyperbuf（仮称）is in the **inception / early design** phase. The repository currently contains only `README.md` (written in Japanese) — a product vision document. There is no source code, build system, linter, or test suite yet, so there are no build/test commands to run. Name, specs, architecture, and library choices are all explicitly provisional and expected to change after PoCs.
+HyperBufis in the **inception / early design** phase. The repository currently contains only `README.md` (written in Japanese) — a product vision document. There is no source code, build system, linter, or test suite yet, so there are no build/test commands to run. Name, specs, architecture, and library choices are all explicitly provisional and expected to change after PoCs.
 
 When adding documents, follow the README's language (Japanese) unless told otherwise.
 
@@ -51,9 +51,14 @@ A keyboard-driven macOS viewer (not an editor) for browsing many cross-reference
 
 HyperBuf.app 本体に加え、CLI と Emacs 連携も同一リポジトリで管理する。ディレクトリは実装開始時に作成する(現時点では未作成)。
 
-- `app/` — HyperBuf.app (GUI)
-- `cli/` — `hyperbuf` コマンド。指定ファイル(行・見出し)を HyperBuf.app で開く
-- `emacs/` — Emacs 連携スクリプト。プロトコルを直接扱わず `hyperbuf` CLI を呼ぶ薄いラッパーとする
-- `docs/` — 設計文書、PoC 結果、連携プロトコル仕様
+- `core/` — shared web core (TypeScript; model, keys, fuzzy, rendering pipeline, UI). OS-independent; the only boundary to a shell is the `hyperbufHost` contract
+- `app/macos/` — HyperBuf.app (SwiftUI + WKWebView shell; SwiftPM + scripts, no Xcode project for now). Other OSes get their own `app/<platform>/` with the best native framework for that platform
+- `cli/` — `hyperbuf` command (Swift single binary for now; opens a file/line/anchor in HyperBuf.app via the socket, launching the app through the `hyperbuf://` URL if needed)
+- `emacs/` — Emacs integration (`hyperbuf.el`). Talks to the socket directly by default; can be switched to call the `hyperbuf` CLI
+- `protocol/` — machine-readable protocol definition + shared conformance examples (used by the Swift server, the CLI and the Emacs client)
+- `fixtures/` — test documents and the corpus generator
+- `docs/` — design documents, PoC results, protocol spec, migration plan
+
+Product name: **HyperBuf** (GUI: `HyperBuf.app`, CLI/URL scheme/repo: `hyperbuf`). Minimum macOS: 14 (policy: generations Apple still patches). Migration order and decisions: `docs/migration-plan.md`.
 
 App・CLI・Emacs が共有する契約は `docs/integration-protocol.md` に定める。**Decided:** 主経路は Unix ドメインソケット(JSON Lines。`ping` / `open` / `get-location`。同一ユーザーのみ)、URL スキーム `hyperbuf://` はアプリの起動と外部リンク用。Emacs 連携は直接ソケットが標準(設定で CLI 経由に切替可)。範囲外のファイルは URL・ソケットのどちらでも確認する。逆方向(ビューア→Emacs)は「Emacs で編集」メニュー + `get-location` の問い合わせで、位置の照合・警告のみ(続行不可)の方針。配布は OSS(GitHub)+ Developer ID 署名・公証の直接配布で、Mac App Store は対象外(サンドボックスなし)。技術スタック確定までトップレベルの共通ビルドは作らず、各ディレクトリで独立させる。

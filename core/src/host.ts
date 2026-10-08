@@ -18,6 +18,8 @@ export interface HyperbufHost {
   search?(query: string, options?: SearchOptions): Promise<SearchResult>;
   /** 外部(CLI・Emacs 連携)からの「開く」要求。 */
   onOpen?(callback: (request: OpenRequest) => void): void;
+  /** 「開く」要求が期限切れなどで取り消された(確認待ちのミニバッファを閉じる)。 */
+  onOpenCancel?(callback: (id: string) => void): void;
   /** 位置の問い合わせ(`get-location`)への応答を登録する。 */
   onQuery?(callback: (op: string) => Promise<unknown>): void;
   /** 「開く」要求への結果を返す(確認待ちを含む)。 */

@@ -39,6 +39,12 @@ final class ProjectSession: Identifiable {
         if pageReady { evaluateOpen(instruction) } else { pendingOpens.append(instruction) }
     }
 
+    /// Web コアの `onOpenCancel` に、取り消された要求の id を渡す(確認待ちのミニバッファを閉じる)。
+    func cancelOpen(_ id: String) {
+        guard pageReady, let json = Self.json(id) else { return }
+        webView?.evaluateJavaScript("window.__hostOpenCancel && window.__hostOpenCancel(\(json))")
+    }
+
     /// Web コアの `onQuery` に問い合わせる(`get-location` など)。準備前なら null。
     func query(_ op: String) async -> JSONValue {
         guard pageReady, let webView else { return .null }

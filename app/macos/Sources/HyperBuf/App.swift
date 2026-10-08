@@ -1,4 +1,5 @@
 import AppKit
+import HyperBufIPC
 import HyperBufKit
 import HyperBufProtocol
 import SwiftUI

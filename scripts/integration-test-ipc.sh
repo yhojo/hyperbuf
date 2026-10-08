@@ -9,6 +9,7 @@ cd "$(dirname "$0")/.."
 root="$(pwd)"
 
 app/macos/scripts/make-app.sh debug >/dev/null
+(cd cli && swift build >/dev/null)
 app="$root/app/macos/.build/HyperBuf.app"
 project="$root/fixtures/sample-project"
 
@@ -27,21 +28,23 @@ printf '# B\n\n本文 B\n' > "$tmp/approve/repoA/docs/b.md"
 printf '# D\n' > "$tmp/deny/d.md"
 printf '# W\n' > "$tmp/wait/w.md"
 
-export TMP_DIR="$tmp" PROJECT_DIR="$project" APP_PATH="$app"
+export TMP_DIR="$tmp" PROJECT_DIR="$project" APP_PATH="$app" CLI_PATH="$root/cli/.build/debug/hyperbuf"
 sock="$tmp/sock/hb.sock"
 trusted="$tmp/trusted-roots.json"
 
 open -a "$app" \
   --env "HYPERBUF_SOCKET_PATH=$sock" \
   --env "HYPERBUF_TRUSTED_ROOTS=$trusted" \
+  --env "HYPERBUF_TEST_LOG=$tmp/test.log" \
   --env "HYPERBUF_TEST_SCRIPT=$root/app/macos/IntegrationTests/ipc-driver.js" \
   --args "$project"
 
-python3 - "$sock" "$trusted" <<'PY'
+python3 - "$sock" "$trusted" "$tmp/test.log" <<'PY'
 import json, os, socket, stat, subprocess, sys, time
 
-sock_path, trusted_path = sys.argv[1], sys.argv[2]
+sock_path, trusted_path, test_log = sys.argv[1], sys.argv[2], sys.argv[3]
 tmp, project, app = os.environ["TMP_DIR"], os.environ["PROJECT_DIR"], os.environ["APP_PATH"]
+cli = os.environ["CLI_PATH"]
 failures = []
 
 def check(name, condition, detail=""):
@@ -118,7 +121,9 @@ check("拒否したルートは、信頼するルートに入らない", len(jso
 print("open: 範囲外(期限切れ)")
 r = call({"v": 1, "id": "5", "op": "open", "path": f"{tmp}/wait/w.md", "timeoutMs": 700})
 check("答えがなければ、timeout", (not r.get("ok")) and r["error"]["code"] == "timeout", r)
-time.sleep(2.0)  # ドライバが、残った確認を Esc で取り消す
+time.sleep(1.0)
+log = open(test_log).read() if os.path.exists(test_log) else ""
+check("期限が切れると、画面の確認(ミニバッファ)も閉じる", "SAW wait prompt" in log and "HIDDEN wait prompt" in log, log)
 
 print("異常系")
 def code(r): return (r.get("error") or {}).get("code")
@@ -143,6 +148,42 @@ subprocess.run(["open", "-a", app, bad], check=True)
 time.sleep(1.0)
 loc2 = call({"v": 1, "op": "get-location"})["result"]["location"]
 check("不正な URL は、表示を変えない", loc2 == loc, loc2)
+
+print("hyperbuf CLI")
+cli_env = {**os.environ, "HYPERBUF_SOCKET_PATH": sock_path}
+def run_cli(*args, cwd=None):
+    return subprocess.run([cli, *args], capture_output=True, text=True, env=cli_env, cwd=cwd, timeout=90)
+
+r = run_cli(f"{project}/index.md:9")
+check("プロジェクト内を開ける(終了コード 0)", r.returncode == 0, (r.returncode, r.stderr))
+loc = call({"v": 1, "op": "get-location"})["result"]["location"]
+check("CLI で開いた位置が、get-location に出る", loc and loc["path"] == "index.md" and loc["anchor"] == "line:9", loc)
+
+r = run_cli("--anchor", "参照履歴", "interaction.md", cwd=project)
+check("相対パスと --anchor", r.returncode == 0, (r.returncode, r.stderr))
+loc = call({"v": 1, "op": "get-location"})["result"]["location"]
+check("アンカーで開く", loc and loc["path"] == "interaction.md" and loc["anchor"] == "参照履歴", loc)
+
+r = run_cli("--wait", f"{tmp}/approve/repoA/docs/b.md")
+check("承認済みの範囲外は、確認なしで開ける(終了コード 0)", r.returncode == 0, (r.returncode, r.stderr))
+
+r = run_cli("--wait", f"{tmp}/deny/d.md")
+check("拒否された範囲外は、終了コード 4", r.returncode == 4, (r.returncode, r.stderr))
+
+
+r = run_cli(f"{project}/nope.md")
+check("存在しないファイルは、終了コード 2", r.returncode == 2, (r.returncode, r.stderr))
+r = run_cli("/etc/hosts")
+check(".md 以外は、終了コード 2", r.returncode == 2, (r.returncode, r.stderr))
+r = run_cli("--line", "0", f"{project}/index.md")
+check("使い方の誤りは、終了コード 1", r.returncode == 1, (r.returncode, r.stderr))
+before_print = call({"v": 1, "op": "get-location"})["result"]["location"]
+r = run_cli("--print-url", f"{project}/index.md:3")
+check("--print-url は、開かずに URL を出す", r.returncode == 0 and r.stdout.startswith("hyperbuf://open?v=1&path="), r.stdout)
+loc_after = call({"v": 1, "op": "get-location"})["result"]["location"]
+check("--print-url は、表示を変えない", loc_after == before_print, (before_print, loc_after))
+r = run_cli("--version")
+check("--version", r.returncode == 0 and r.stdout.startswith("hyperbuf "), r.stdout)
 
 if failures:
     print(f"\nNG: {len(failures)} 件")

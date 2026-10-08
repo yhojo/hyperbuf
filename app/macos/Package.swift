@@ -17,7 +17,13 @@ let package = Package(
             name: "HyperBufKit",
             dependencies: [.product(name: "HyperBufProtocol", package: "swift")]),
         // SwiftUI + WKWebView のシェル。
-        .executableTarget(name: "HyperBuf", dependencies: ["HyperBufKit"]),
+        .executableTarget(
+            name: "HyperBuf",
+            dependencies: [
+                "HyperBufKit",
+                .product(name: "HyperBufProtocol", package: "swift"),
+                .product(name: "HyperBufIPC", package: "swift"),
+            ]),
         .testTarget(name: "HyperBufKitTests", dependencies: ["HyperBufKit"]),
     ]
 )

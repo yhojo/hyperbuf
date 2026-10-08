@@ -20,6 +20,14 @@ export function wireHostEvents(ctx: AppContext): void {
     }
   });
 
+  // 確認待ちの要求の id。期限切れで取り消されたら、その確認だけを閉じる。
+  let confirming: string | null = null;
+  host.onOpenCancel?.((id) => {
+    if (confirming !== id) return;
+    minibuffer.cancel();
+    echo.message("連携: 要求の期限が切れました");
+  });
+
   // 外部(CLI・Emacs 連携)からの「開く」要求。docs/integration-protocol.md
   host.onOpen?.(async (req: OpenRequest) => {
     const respond = (result: unknown): void => {
@@ -35,11 +43,13 @@ export function wireHostEvents(ctx: AppContext): void {
       // プロジェクトの範囲外は、ダイアログではなくミニバッファで確認する(docs/integration-protocol.md §6)。
       // 承認されたら、シェルが提案したルートが、信頼するルートに加わる(永続化される)。
       const where = req.root ? `${req.root} を信頼して、` : "";
+      confirming = req.id ?? null;
       const answer = await minibuffer.prompt(
         `${where}${req.path} を開きますか(プロジェクトの外です)? `,
         ["yes", "no"],
         { allowFree: false },
       );
+      confirming = null;
       host.log?.(`OUTSIDE ${req.path} answer=${answer}`);
       // 回答は、承認でも拒否でも、シェルに伝える(承認が受理されたときだけ、読めるようになる)
       const granted = (await host.confirmOutside?.(req.id ?? "", answer === "yes")) ?? false;

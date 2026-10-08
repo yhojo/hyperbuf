@@ -17,9 +17,11 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
           const call = (message) => window.webkit.messageHandlers.\(handlerName).postMessage(message);
           const changeListeners = [];
           const openListeners = [];
+          const cancelListeners = [];
           let queryListener = null;
           window.__hostChanged = (path) => changeListeners.forEach((cb) => cb(path));
           window.__hostOpen = (request) => openListeners.forEach((cb) => cb(request));
+          window.__hostOpenCancel = (id) => cancelListeners.forEach((cb) => cb(id));
           window.__hostQuery = (op) => (queryListener ? queryListener(op) : null);
           const encode = (path) => path.split("/").map(encodeURIComponent).join("/");
           window.hyperbufHost = {
@@ -34,6 +36,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
                 : "\(ContentSecurityPolicy.scheme)://project/" + encode(path),
             search: (query, options = {}) => call({ op: "search", query, limit: options.limit }),
             onOpen: (cb) => { openListeners.push(cb); },
+            onOpenCancel: (cb) => { cancelListeners.push(cb); },
             onQuery: (cb) => { queryListener = cb; },
             respond: (id, result) => { call({ op: "respond", id, result }); },
             confirmOutside: (id, accepted) => call({ op: "confirm-outside", id, accepted }),
@@ -98,12 +101,31 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
             onReady?()
             replyHandler(nil, nil)
         case "log":
-            Bridge.logger.info("web: \(body["text"] as? String ?? "", privacy: .public)")
+            let text = body["text"] as? String ?? ""
+            Bridge.logger.info("web: \(text, privacy: .public)")
+            #if DEBUG
+                Bridge.appendTestLog(text)
+            #endif
             replyHandler(nil, nil)
         default:
             replyHandler(nil, "unknown op")
         }
     }
+
+    #if DEBUG
+        /// 統合テスト用: `HYPERBUF_TEST_LOG` のファイルに、Web コアの診断ログを追記する。
+        private static func appendTestLog(_ text: String) {
+            guard let path = ProcessInfo.processInfo.environment["HYPERBUF_TEST_LOG"] else { return }
+            let line = "\(Int(Date().timeIntervalSince1970 * 1000)) \(text)\n"
+            if let handle = FileHandle(forWritingAtPath: path) {
+                handle.seekToEndOfFile()
+                handle.write(Data(line.utf8))
+                try? handle.close()
+            } else {
+                try? line.write(toFile: path, atomically: true, encoding: .utf8)
+            }
+        }
+    #endif
 
     /// Web コアには、内部の事情を漏らさず、短い理由だけを返す。
     private static func describe(_ error: Error) -> String {

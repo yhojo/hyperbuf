@@ -85,6 +85,8 @@ final class OpenFlow {
     private func expire(_ id: String, _ request: Request) {
         guard let entry = pending.removeValue(forKey: id) else { return }
         entry.reply?(.failure(id: request.id, ProtocolError(.timeout, "ユーザーの回答がありませんでした")))
+        // 画面に残っている確認(ミニバッファ)も、閉じる。答えても、もう無効なので
+        model?.session?.cancelOpen(id)
     }
 
     /// 検証・分類の失敗。ソケットの相手には応答で、URL スキームには、画面(ミニバッファ)で知らせる。

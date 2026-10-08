@@ -1,6 +1,6 @@
 // 統合テスト(IPC)用のドライバ(WebView の中で実行される)。
 // ミニバッファの「範囲外のファイルを開きますか」に、パスの名前で自動的に答える:
-//   /approve/ を含むパス → yes、/deny/ を含むパス → no、/wait/ を含むパス → 答えずに、少しして Esc で取り消す。
+//   /approve/ を含むパス → yes、/deny/ を含むパス → no、/wait/ を含むパス → 答えない(期限切れで閉じることの確認)。
 let answered = null;
 setInterval(() => {
   const mini = document.getElementById("minibuffer");
@@ -25,7 +25,14 @@ setInterval(() => {
     type("no");
     press("Enter", "Enter");
   } else if (label.includes("/wait/")) {
-    setTimeout(() => press("Escape", "Escape"), 1500);
+    // 答えない。要求の期限が切れたら、アプリが、この確認を閉じるはず(閉じたことを、テスト用のログに記録する)
+    window.hyperbufHost.log("SAW wait prompt");
+    const watch = setInterval(() => {
+      if (document.getElementById("minibuffer").hidden) {
+        window.hyperbufHost.log("HIDDEN wait prompt");
+        clearInterval(watch);
+      }
+    }, 50);
   }
 }, 50);
 // このスクリプトが終わると、ハーネスがアプリを終了させる。テストの終了までは終わらせない(通常は、

@@ -3,7 +3,7 @@ import Foundation
 import HyperBufProtocol
 import Testing
 
-@testable import HyperBufKit
+@testable import HyperBufIPC
 
 /// テスト用の素朴なクライアント。
 private final class TestClient {

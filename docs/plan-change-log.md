@@ -2,6 +2,14 @@
 
 README.md に記載した方針・計画を変更した際の記録。新しいものを上に追記する。README は自由に更新してよいが、変更理由をここに残す。
 
+## 2026-10-08 22:40 JST — ファイル監視・全文検索・仮想bufferの決定
+
+- **変更前**（README「Architecture and technology」）: Project search は ripgrep・インデックス方式の候補、File monitoring は OS ネイティブ機構とライブラリの候補で、未決定。
+- **変更後**: ファイル監視は **FSEvents**。全文検索は **Swift 自前実装から開始**（`host.search` の契約でエンジンを差し替え可能にし、正規表現や除外規則が必要になった時点で ripgrep を再評価）。一覧・検索の対象は当面 `*.md` とディレクトリのみ（既定の除外: 隠しファイル・隠しディレクトリ、`node_modules`。`.gitignore` は解釈しない）。仮想 buffer（`*search: …*`）と行アンカー（`path#line:N`）を操作モデルに取り込む。メモリ使用量の調査はプロジェクト後半に回す。
+- **理由**: 5,000 ファイル（12.7 MB）でも、自前実装の全文検索は約 70 ms、FSEvents の反応は約 12 ms、ファイル名の絞り込みは 1 ms 以下で、いずれも十分。ポーリングは削除を検知できず、ファイル数に比例して重い。ripgrep は同梱と外部コマンドの権限設計が要り、macOS の `Process` 引数で日本語の濃点が分解される落とし穴もあるため、必要になるまで見送る。
+- **併せて決定**: メモリは、描画バンドルの導入で約 173 MB から約 380〜410 MB に増えたが、現時点では許容し、後半にリークの有無と内訳をまとめて確認する。
+- 関連: `docs/poc-navigation-results.md`、`docs/interaction-model.md` §5b、README の技術表と未決事項、CLAUDE.md を更新。
+
 ## 2026-10-08 22:21 JST — レンダリング層の決定
 
 - **変更前**（README「Architecture and technology」）: Markdown pipeline、GFM、数式、図、シンタックスハイライトは候補を並べた状態で未決定。

@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""IPC(Unix ドメインソケット)のクライアント試作。docs/integration-protocol.md §11。
+usage: hyperbuf-ipc ping | open FILE[:LINE] [--anchor A] [--wait-ms N] | get-location | raw JSON
+未起動なら HYPERBUF_APP(.app のパス)を `open` で起動し、ソケットの出現を待って再接続する。"""
+import json, os, socket, subprocess, sys, time
+
+SOCK = os.path.expanduser("~/Library/Application Support/Hyperbuf/hyperbuf.sock")
+
+def connect(launch=True, wait=10.0):
+    t_end = time.time() + wait
+    launched = False
+    while True:
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        try:
+            s.connect(SOCK)
+            return s, launched
+        except OSError:
+            s.close()
+            if not launch:
+                raise
+            if not launched:
+                app = os.environ.get("HYPERBUF_APP")
+                if not app:
+                    sys.exit("hyperbuf-ipc: アプリが起動していません(HYPERBUF_APP を指定すると起動します)")
+                subprocess.run(["open", "-g", app], check=True)
+                launched = True
+            if time.time() > t_end:
+                sys.exit("hyperbuf-ipc: アプリを起動できません")
+            time.sleep(0.02)
+
+def call(req, timeout=60):
+    s, launched = connect()
+    s.settimeout(timeout)
+    s.sendall((json.dumps(req, ensure_ascii=False) + "\n").encode())
+    buf = b""
+    while b"\n" not in buf:
+        chunk = s.recv(65536)
+        if not chunk:
+            break
+        buf += chunk
+    s.close()
+    return json.loads(buf.split(b"\n")[0]), launched
+
+def main(argv):
+    if not argv:
+        sys.exit(__doc__)
+    t0 = time.time()
+    op = argv[0]
+    if op == "raw":
+        req = json.loads(argv[1])
+    elif op == "open":
+        target, line, anchor, wait = argv[1], None, None, None
+        rest = argv[2:]
+        if ":" in target and target.rsplit(":", 1)[1].isdigit():
+            target, line = target.rsplit(":", 1)
+        while rest:
+            if rest[0] == "--anchor": anchor = rest[1]; rest = rest[2:]
+            elif rest[0] == "--wait-ms": wait = int(rest[1]); rest = rest[2:]
+            else: sys.exit("unknown option " + rest[0])
+        req = {"v": 1, "id": "1", "op": "open", "path": os.path.realpath(target)}
+        if line: req["line"] = int(line)
+        if anchor: req["anchor"] = anchor
+        if wait: req["timeoutMs"] = wait
+    else:
+        req = {"v": 1, "id": "1", "op": op}
+    res, launched = call(req)
+    print(json.dumps(res, ensure_ascii=False), file=sys.stdout)
+    print(f"# {int((time.time()-t0)*1000)} ms{' (アプリを起動)' if launched else ''}", file=sys.stderr)
+    sys.exit(0 if res.get("ok") else 4)
+
+main(sys.argv[1:])

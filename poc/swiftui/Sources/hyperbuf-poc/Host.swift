@@ -20,8 +20,10 @@ final class Host: NSObject, WKURLSchemeHandler, WKScriptMessageHandlerWithReply 
     weak var webView: WKWebView?
     private var timer: Timer?
     private var watcher: FSWatcher?
-    private var pageReady = false
-    private var pendingOpens: [[String: Any]] = []
+    var pageReady = false
+    var pendingOpens: [[String: Any]] = []
+    var pendingReplies: [String: ([String: Any]) -> Void] = [:]
+    var socketServer: SocketServer?
     private var stamps: [String: Date] = [:]
 
     override init() {
@@ -45,6 +47,8 @@ final class Host: NSObject, WKURLSchemeHandler, WKScriptMessageHandlerWithReply 
         onFileChanged: (cb) => cbs.push(cb),
         onOpen: (cb) => openCbs.push(cb),
         ready: () => call({ op: "ready" }),
+        onQuery: (cb) => { window.__hostQuery = cb; },
+        respond: (id, result) => call({ op: "respond", id, result }),
         log: (text) => call({ op: "log", text }),
         search: (query, opts = {}) => call({ op: "search", query, ...opts }),
         resolveResource: (path) => "hyperbuf://project/" + path.split("/").map(encodeURIComponent).join("/"),
@@ -137,6 +141,14 @@ final class Host: NSObject, WKURLSchemeHandler, WKScriptMessageHandlerWithReply 
             pageReady = true
             pendingOpens.forEach(deliver)
             pendingOpens.removeAll()
+            replyHandler(nil, nil)
+        case "respond":
+            // ページが、ソケット経由の要求(確認待ちを含む)への結果を返した
+            if let id = body["id"] as? String, let reply = pendingReplies.removeValue(forKey: id),
+                let result = body["result"] as? [String: Any]
+            {
+                reply(result)
+            }
             replyHandler(nil, nil)
         case "log":
             log("JS \(body["text"] as? String ?? "")")
@@ -358,37 +370,53 @@ extension Host {
         }
     }
 
-    /// URL を検証して、ページへ渡す要求(辞書)にする。失敗は error を持つ辞書にして、画面に表示させる。
-    func parseOpenURL(_ url: URL) -> [String: Any] {
-        guard url.scheme == "hyperbuf", url.host == "open",
-            let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems
-        else { return ["error": "未対応の URL です"] }
-        let q = Dictionary(items.map { ($0.name, $0.value ?? "") }, uniquingKeysWith: { first, _ in first })
-        if let v = q["v"], v != "1" { return ["error": "未対応のバージョンです(v=\(v))"] }
-        guard let path = q["path"], path.hasPrefix("/"), path.hasSuffix(".md"),
-            !path.contains("\0"), !path.unicodeScalars.contains(where: { $0.value < 0x20 }),
+    struct OpenError: Error {
+        let code: String
+        let message: String
+    }
+
+    /// `open` 要求の検証(URL 経由・ソケット経由で共通。docs/integration-protocol.md §6・§11.6)。
+    /// 成功時は、ページへ渡す要求(プロジェクト内なら相対パス、範囲外なら outside)を返す。
+    func validateOpen(path: String?, line: Any?, anchor: String?, version: Any?) -> Result<[String: Any], OpenError> {
+        if let v = version, "\(v)" != "1" { return .failure(OpenError(code: "unsupported-version", message: "未対応のバージョンです(v=\(v))")) }
+        guard let path, path.hasPrefix("/"), !path.contains("\0"), !path.unicodeScalars.contains(where: { $0.value < 0x20 }),
             !path.split(separator: "/").contains("..")
-        else { return ["error": "path が不正です(絶対パスの .md のみ)"] }
+        else { return .failure(OpenError(code: "bad-request", message: "path が不正です(絶対パスのみ)")) }
+        guard path.hasSuffix(".md") else { return .failure(OpenError(code: "not-markdown", message: ".md のみ開けます")) }
         var req: [String: Any] = [:]
-        if let line = q["line"] {
-            guard let n = Int(line), n > 0 else { return ["error": "line が不正です"] }
+        if let line {
+            guard let n = Int("\(line)"), n > 0 else { return .failure(OpenError(code: "bad-request", message: "line が不正です")) }
             req["line"] = n
         }
-        if let anchor = q["anchor"], !anchor.isEmpty {
-            guard anchor.count <= 200 else { return ["error": "anchor が長すぎます"] }
+        if let anchor, !anchor.isEmpty {
+            guard anchor.count <= 200 else { return .failure(OpenError(code: "bad-request", message: "anchor が長すぎます")) }
             req["anchor"] = anchor
         }
         // シンボリックリンクを解決したうえで、プロジェクトの内側かどうかを判定する
         let file = URL(fileURLWithPath: path).resolvingSymlinksInPath()
         let base = projectRoot.resolvingSymlinksInPath().path
-        guard FileManager.default.fileExists(atPath: file.path) else { return ["error": "ファイルがありません: \(path)"] }
+        guard FileManager.default.fileExists(atPath: file.path) else {
+            return .failure(OpenError(code: "not-found", message: "ファイルがありません: \(path)"))
+        }
         if file.path.hasPrefix(base + "/") {
             req["path"] = String(file.path.dropFirst(base.count + 1))
         } else {
             req["outside"] = true
             req["path"] = path
         }
-        return req
+        return .success(req)
+    }
+
+    /// URL を検証して、ページへ渡す要求(辞書)にする。失敗は error を持つ辞書にして、画面に表示させる。
+    func parseOpenURL(_ url: URL) -> [String: Any] {
+        guard url.scheme == "hyperbuf", url.host == "open",
+            let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems
+        else { return ["error": "未対応の URL です"] }
+        let q = Dictionary(items.map { ($0.name, $0.value ?? "") }, uniquingKeysWith: { first, _ in first })
+        switch validateOpen(path: q["path"], line: q["line"], anchor: q["anchor"], version: q["v"]) {
+        case .success(let req): return req
+        case .failure(let e): return ["error": e.message]
+        }
     }
 
     func handleOpenURL(_ url: URL) {
@@ -399,7 +427,7 @@ extension Host {
         if pageReady { deliver(req) } else { pendingOpens.append(req) }
     }
 
-    fileprivate func deliver(_ req: [String: Any]) {
+    func deliver(_ req: [String: Any]) {
         guard let data = try? JSONSerialization.data(withJSONObject: req), let json = String(data: data, encoding: .utf8)
         else { return }
         webView?.evaluateJavaScript("window.__hostOpen && window.__hostOpen(\(json))") { [weak self] _, error in

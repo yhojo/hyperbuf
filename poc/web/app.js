@@ -424,18 +424,38 @@ async function main() {
   echo(`${files.length} files / host: ${host.name}`);
   // 外部(CLI・Emacs 連携)からの「開く」要求。docs/integration-protocol.md
   host.onOpen?.(async (req) => {
-    if (req.error) return (echo(`連携: ${req.error}`), host.log?.(`REJECTED ${req.error}`));
-    if (req.outside) return (echo(`連携: プロジェクトの範囲外です(確認 UI は未実装): ${req.path}`), host.log?.(`OUTSIDE ${req.path}`));
+    const respond = (result) => req.id && host.respond?.(req.id, result);
+    const fail = (code, message) => (echo(`連携: ${message}`), host.log?.(`REJECTED ${code} ${message}`), respond({ ok: false, error: { code, message } }));
+    if (req.error) return fail("bad-request", req.error);
+    let confirmed = false;
+    if (req.outside) {
+      // プロジェクトの範囲外は、ダイアログではなくミニバッファで確認する(docs/integration-protocol.md §6)
+      const answer = await prompt(`${req.path} はプロジェクトの外です。開きますか? `, ["yes", "no"], false);
+      host.log?.(`OUTSIDE ${req.path} answer=${answer}`);
+      if (answer !== "yes") return fail("outside-project", "範囲外のため開きませんでした");
+      confirmed = true;
+      // PoC: 範囲外の文書の表示(信頼するルートの追加と読み取り)は未実装。確認の往復だけを検証する
+      echo(`連携: 範囲外のファイルを承認しました(PoC では表示しません): ${req.path}`);
+      return respond({ ok: true, result: { path: req.path, confirmed, note: "PoC: 範囲外の表示は未実装" } });
+    }
     const anchor = req.anchor ?? (req.line ? `line:${req.line}` : null);
     try {
       await ensureBuffer(req.path);
       visit(model, sel(), req.path, anchor);
       refresh();
       echo(`連携で開きました: ${req.path}${anchor ? "#" + anchor : ""}`);
+      respond({ ok: true, result: { path: req.path } });
       setTimeout(() => host.log?.(`OPENED ${req.path} ${anchor ?? ""} header=${document.querySelector(".win.selected .win-header")?.textContent} scrollTop=${document.querySelector(".win.selected .content")?.scrollTop}`), 150);
     } catch (err) {
-      echo(`連携: 開けません: ${req.path} (${err.message})`);
+      fail("not-found", `開けません: ${req.path} (${err.message})`);
     }
+  });
+  // 位置の問い合わせ(PoC: 選択の代わりに、選択中の window の現在位置を返す)
+  host.onQuery?.(async (op) => {
+    if (op !== "get-location") return null;
+    const win = sel();
+    const entry = currentEntry(win);
+    return { path: entry.path, anchor: entry.anchor, scrollTop: Math.round(ui().content.scrollTop), history: `${win.index + 1}/${win.history.length}` };
   });
   host.ready?.();
   host.onFileChanged(async (path) => {

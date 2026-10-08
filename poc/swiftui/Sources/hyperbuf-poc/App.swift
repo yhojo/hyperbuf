@@ -42,6 +42,7 @@ struct WebContainer: NSViewRepresentable {
         host.webView = view
         view.load(URLRequest(url: URL(string: "\(Host.scheme)://app/index.html")!))
         host.startWatching()
+        host.startSocketServer()
         return view
     }
 

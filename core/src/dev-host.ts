@@ -1,7 +1,7 @@
 // 開発用ホスト: 開発サーバー(scripts/dev-server.mjs)の HTTP API を使う。
 // 本番では、シェル(macOS アプリなど)が `window.hyperbufHost` を注入するので、使われない。
 
-import type { HyperbufHost, SearchOptions, SearchResult } from "./host.ts";
+import type { HostConfig, HyperbufHost, SearchOptions, SearchResult } from "./host.ts";
 
 export function createDevHost(base = ""): HyperbufHost {
   const api = (path: string): string => `${base}/__project/${path}`;
@@ -12,6 +12,10 @@ export function createDevHost(base = ""): HyperbufHost {
     name: "dev-server",
     async listFiles() {
       return (await (await fetch(api("files"))).json()) as string[];
+    },
+    async getConfig() {
+      const res = await fetch(api("config"));
+      return res.ok ? ((await res.json()) as HostConfig) : {};
     },
     async readFile(path) {
       const res = await fetch(api(`file?path=${encodeURIComponent(path)}`));

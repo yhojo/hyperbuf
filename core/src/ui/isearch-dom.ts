@@ -174,7 +174,16 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
   const accepted = await session.done;
   clearHighlights();
   if (accepted && query) {
-    lastQuery = query; // 一致は、選択状態のまま残る(そのまま、「エディタで編集」の対象にもなる)
+    lastQuery = query;
+    // 一致は、選択状態で残す(そのまま、「エディタで編集」の対象にもなる)。ミニバッファの入力欄が、
+    // フォーカスを失うときに、文書の選択を解除してしまう WebView があるので、閉じたあとで、選択し直す
+    const start = current === null ? undefined : matches[current];
+    const range = start === undefined ? null : rangeFor(index, start, start + query.length);
+    if (range) {
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
   } else {
     window.getSelection()?.removeAllRanges();
     content.scrollTop = origin.scrollTop;

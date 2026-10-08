@@ -1,5 +1,8 @@
 import { createKeymap } from "../keys.ts";
 import type { Keymap } from "../keys.ts";
+import { applyOverrides } from "../keybindings.ts";
+import type { BindingsResult, Overrides } from "../keybindings.ts";
+import { COMMAND_NAMES } from "./commands.ts";
 import type { CommandName } from "./commands.ts";
 
 /** 標準のキー割り当て。docs/interaction-model.md。利用者の設定での上書きは M3。 */
@@ -42,9 +45,15 @@ export const DEFAULT_BINDINGS: Readonly<Record<string, CommandName>> = {
   "M-g g": "goto-line",
   // ビューアで指した場所を、エディタで編集する(右クリックメニューの「Emacs で編集」と同じ)
   "C-c e": "edit-in-editor",
+  "C-h b": "describe-bindings",
   "C-g": "keyboard-quit",
 };
 
 export function defaultKeymap(): Keymap {
   return createKeymap(DEFAULT_BINDINGS);
+}
+
+/** 標準の割り当てに、利用者の設定(`keybindings`)を重ねる。問題のある設定は、無視して、理由を返す。 */
+export function resolveBindings(overrides: Overrides | undefined): BindingsResult {
+  return applyOverrides(DEFAULT_BINDINGS, overrides ?? {}, new Set<string>(COMMAND_NAMES));
 }

@@ -1,7 +1,7 @@
 // アプリの組み立て。状態(model)、部品(エコー・ミニバッファ・描画)、コマンド、キー入力、
 // ホストからのイベントを結びつける。
 
-import type { HyperbufHost } from "../host.ts";
+import type { HostConfig, HyperbufHost } from "../host.ts";
 import { createModel } from "../model.ts";
 import type { Renderer } from "../pipeline.ts";
 import { createCommands } from "./commands.ts";
@@ -12,7 +12,8 @@ import { createEcho } from "./echo.ts";
 import { wireHostEvents } from "./host-events.ts";
 import { installKeyboard } from "./keyboard.ts";
 import type { KeyboardHandle } from "./keyboard.ts";
-import { defaultKeymap } from "./keymap.ts";
+import { createKeymap } from "../keys.ts";
+import { resolveBindings } from "./keymap.ts";
 import { createMinibuffer } from "./minibuffer.ts";
 import { follow, openAt } from "./navigation.ts";
 import { searchProject } from "./search.ts";
@@ -49,10 +50,13 @@ export async function startApp(options: {
       void follow(ctx, win, href).then(() => views.refresh());
     },
   });
-  const ctx: AppContext = { host, model, views, echo, minibuffer };
+  // 利用者のキー割り当て(config.json の keybindings)を、標準に重ねる。問題のある設定は、無視して、知らせる
+  const config: HostConfig | undefined = await host.getConfig?.().catch(() => undefined);
+  const bindings = resolveBindings(config?.keybindings);
+  const ctx: AppContext = { host, model, views, echo, minibuffer, bindings };
 
   const commands = createCommands(ctx);
-  const keyboard = installKeyboard(ctx, commands, defaultKeymap());
+  const keyboard = installKeyboard(ctx, commands, createKeymap(bindings.bindings));
 
   const files = await host.listFiles();
   const first = files.includes("index.md") ? "index.md" : files[0];
@@ -64,6 +68,9 @@ export async function startApp(options: {
     echo.message("Markdown ファイルがありません");
   }
   wireHostEvents(ctx, commands);
+  if (bindings.problems.length) {
+    echo.message(`設定: ${bindings.problems.length} 件の問題があります(C-h b で確認できます)`);
+  }
 
   return {
     ctx,

@@ -23,6 +23,8 @@ import {
 } from "../outline.ts";
 import { headingElements, headingsOf } from "./anchors.ts";
 import type { AppContext } from "./context.ts";
+import { renderBindingsHelp } from "../help.ts";
+import { openBuffer } from "../model.ts";
 import { startIsearch } from "./isearch-dom.ts";
 import { locateFromDom } from "./locate-dom.ts";
 import { errorMessage, follow, openAt } from "./navigation.ts";
@@ -59,10 +61,48 @@ export const COMMAND_NAMES = [
   "search-project",
   "edit-in-editor",
   "execute-command",
+  "describe-bindings",
   "keyboard-quit",
 ] as const;
 
 export type CommandName = (typeof COMMAND_NAMES)[number];
+
+/** コマンドの説明(describe-bindings に出る)。全コマンドに必要(型で、漏れを検出する)。 */
+export const COMMAND_DOCS: Readonly<Record<CommandName, string>> = {
+  "split-below": "window を、上下に分割する(履歴は、複製される)",
+  "split-right": "window を、左右に分割する(履歴は、複製される)",
+  "delete-window": "選択中の window を閉じる",
+  "delete-other-windows": "選択中の window だけを残す",
+  "other-window": "次の window を選択する",
+  back: "参照履歴を戻る",
+  forward: "参照履歴を進む",
+  "scroll-line-down": "1 行分、下へスクロールする",
+  "scroll-line-up": "1 行分、上へスクロールする",
+  "scroll-page-down": "1 画面分、下へスクロールする",
+  "scroll-page-up": "1 画面分、上へスクロールする",
+  "beginning-of-document": "文書の先頭へ",
+  "end-of-document": "文書の末尾へ",
+  "next-heading": "次の見出しへ(参照履歴には積まない)",
+  "previous-heading": "前の見出しへ(節の途中なら、その節の見出しへ)",
+  "up-heading": "上のレベルの見出しへ",
+  "forward-same-level": "同じレベルの、次の見出しへ(親をまたがない)",
+  "backward-same-level": "同じレベルの、前の見出しへ(親をまたがない)",
+  "next-link": "次のリンクを選ぶ",
+  "prev-link": "前のリンクを選ぶ",
+  "follow-link": "選んでいるリンクをたどる",
+  "switch-buffer": "開いている buffer を、最近使った順の候補から選んで表示する",
+  "find-file": "プロジェクトの Markdown を、あいまい検索で選んで開く",
+  "goto-heading": "見出しを選んで、そこへ移動する",
+  "goto-line": "元の Markdown の行番号を指定して、そこへ移動する",
+  "isearch-forward":
+    "文書内を、インクリメンタルに検索する(C-s で次、C-r で前、RET で確定、C-g で取消)",
+  "isearch-backward": "文書内を、後ろ向きにインクリメンタル検索する",
+  "search-project": "プロジェクト全体を全文検索して、結果を仮想 buffer に出す",
+  "edit-in-editor": "指した場所(選択・右クリック・画面の上端)を、エディタで編集するために記録する",
+  "execute-command": "コマンドを、名前を選んで実行する",
+  "describe-bindings": "キー割り当ての一覧を出す(設定の問題も)",
+  "keyboard-quit": "入力途中のキーを取り消す",
+};
 export type Command = () => unknown;
 export type Commands = Record<CommandName, Command>;
 
@@ -199,6 +239,20 @@ export function createCommands(ctx: AppContext): Commands {
       const name = await minibuffer.prompt("M-x ", COMMAND_NAMES, { allowFree: false });
       const command = COMMAND_NAMES.find((n) => n === name);
       if (command) await commands[command]();
+    },
+    // キー割り当ての一覧(仮想 buffer)。設定の問題も、ここに出る
+    "describe-bindings": () => {
+      const path = "*Help: keybindings*";
+      openBuffer(
+        model,
+        path,
+        renderBindingsHelp({
+          docs: COMMAND_DOCS,
+          bindings: ctx.bindings.bindings,
+          problems: ctx.bindings.problems,
+        }),
+      );
+      visit(model, sel(), path);
     },
     "keyboard-quit": () => echo.message("Quit"),
   };

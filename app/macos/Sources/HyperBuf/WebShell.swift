@@ -6,12 +6,13 @@ import WebKit
 struct WebShell: NSViewRepresentable {
     let session: ProjectSession
     let web: StaticFiles
+    let openFlow: OpenFlow
 
     func makeNSView(context: Context) -> WKWebView {
-        let bridge = Bridge(session: session)
+        let bridge = Bridge(session: session, openFlow: openFlow)
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(
-            SchemeHandler(web: web, project: session.project), forURLScheme: ContentSecurityPolicy.scheme)
+            SchemeHandler(web: web, access: session.fileAccess), forURLScheme: ContentSecurityPolicy.scheme)
         config.userContentController.addScriptMessageHandler(
             bridge, contentWorld: .page, name: Bridge.handlerName)
         config.userContentController.addUserScript(

@@ -40,6 +40,12 @@ public struct ProtocolError: Error, Sendable, Equatable, Codable {
         self.code = code.rawValue
         self.message = message
     }
+
+    /// 別の部品(Web コアなど)から届いたコード。未知のコードは、`internal` にそろえる。
+    public init(rawCode: String, message: String) {
+        self.code = ErrorCode(rawValue: rawCode) == nil ? ErrorCode.internal.rawValue : rawCode
+        self.message = message
+    }
 }
 
 /// 要求。未知のフィールドは無視する(後方互換)。
@@ -55,7 +61,8 @@ public struct Request: Sendable, Equatable, Codable {
     public var timeoutMs: Int?
 
     public init(
-        v: Int? = HyperBufProtocol.version, id: String? = nil, op: RequestOperation, path: String? = nil, line: Int? = nil,
+        v: Int? = HyperBufProtocol.version, id: String? = nil, op: RequestOperation, path: String? = nil,
+        line: Int? = nil,
         anchor: String? = nil, project: String? = nil, target: String? = nil, timeoutMs: Int? = nil
     ) {
         self.v = v

@@ -2,16 +2,17 @@ import Foundation
 import HyperBufKit
 import WebKit
 
-/// `hyperbuf://app/*`(Web コア)と `hyperbuf://project/*`(プロジェクトの画像)を配る。
+/// `hyperbuf://app/*`(Web コア)、`hyperbuf://project/*`(プロジェクトの画像)、
+/// `hyperbuf://trusted/*`(信頼するルートの内側の画像)を配る。
 /// file:// だと ES modules が読めないこと、ファイルアクセスの範囲を自分で管理したいことから、カスタムスキームを使う。
 @MainActor
 final class SchemeHandler: NSObject, WKURLSchemeHandler {
     private let web: StaticFiles
-    private let project: Project
+    private let access: FileAccess
 
-    init(web: StaticFiles, project: Project) {
+    init(web: StaticFiles, access: FileAccess) {
         self.web = web
-        self.project = project
+        self.access = access
     }
 
     func webView(_ webView: WKWebView, start task: any WKURLSchemeTask) {
@@ -26,7 +27,12 @@ final class SchemeHandler: NSObject, WKURLSchemeHandler {
                 let file = try web.read(relative)
                 respond(task, url: url, status: 200, mime: file.mime, csp: ContentSecurityPolicy.app, body: file.data)
             case "project":
-                let file = try project.readResource(relative)
+                let file = try access.readResource(relative)
+                respond(
+                    task, url: url, status: 200, mime: file.mime, csp: ContentSecurityPolicy.resource, body: file.data)
+            case "trusted":
+                // 信頼するルートの内側の画像(絶対パス)。承認されていない場所は、FileAccess が拒否する
+                let file = try access.readResource("/" + relative)
                 respond(
                     task, url: url, status: 200, mime: file.mime, csp: ContentSecurityPolicy.resource, body: file.data)
             default:

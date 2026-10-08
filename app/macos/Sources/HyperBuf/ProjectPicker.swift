@@ -16,10 +16,15 @@ enum ProjectPicker {
     }
 
     /// ユーザーが、読むディレクトリを選ぶ。選んだものだけが、ファイルアクセスの範囲になる。
-    static func choose() -> Project? {
+    /// `startingAt` は、外部の要求(ファイルを開く)が提案する、最初に表示するディレクトリ。
+    static func choose(startingAt: String? = nil) -> Project? {
         let panel = NSOpenPanel()
         panel.title = "HyperBuf: プロジェクト(Markdown のあるディレクトリ)を選択"
         panel.prompt = "開く"
+        if let startingAt {
+            panel.directoryURL = URL(fileURLWithPath: startingAt)
+            panel.message = "外部から、このディレクトリのファイルを開く要求がありました。読むディレクトリを選んでください。"
+        }
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false

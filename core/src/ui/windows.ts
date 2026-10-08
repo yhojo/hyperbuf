@@ -61,6 +61,19 @@ export class Views {
     this.selected().content.scrollBy({ top: dy });
   }
 
+  /** 選択中の window を、指定の位置(上端)にスクロールする。 */
+  scrollTo(top: number): void {
+    this.selected().content.scrollTo({ top });
+  }
+
+  scrollTop(): number {
+    return this.selected().content.scrollTop;
+  }
+
+  scrollHeight(): number {
+    return this.selected().content.scrollHeight;
+  }
+
   pageHeight(): number {
     return this.selected().content.clientHeight;
   }

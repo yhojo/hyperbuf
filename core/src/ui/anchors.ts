@@ -38,6 +38,22 @@ export function visibleAnchor(content: HTMLElement): VisibleAnchor | null {
   return best;
 }
 
+export interface HeadingElement {
+  el: HTMLElement;
+  level: number;
+  /** 文書(スクロールする要素)の中での、上端の位置。 */
+  top: number;
+}
+
+/** 文書内の見出し要素を、先頭から順に。outline 風の移動に使う。 */
+export function headingElements(content: HTMLElement): HeadingElement[] {
+  return [...content.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,h6")].map((el) => ({
+    el,
+    level: Number(el.tagName.slice(1)),
+    top: el.offsetTop,
+  }));
+}
+
 export interface HeadingInfo {
   level: number;
   text: string;

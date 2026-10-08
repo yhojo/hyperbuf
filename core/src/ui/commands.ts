@@ -13,8 +13,17 @@ import {
   visit,
 } from "../model.ts";
 import { isVirtualPath } from "../model.ts";
-import { headingsOf } from "./anchors.ts";
+import {
+  currentIndex,
+  nextIndex,
+  previousIndex,
+  sameLevelBackward,
+  sameLevelForward,
+  upIndex,
+} from "../outline.ts";
+import { headingElements, headingsOf } from "./anchors.ts";
 import type { AppContext } from "./context.ts";
+import { startIsearch } from "./isearch-dom.ts";
 import { locateFromDom } from "./locate-dom.ts";
 import { errorMessage, follow, openAt } from "./navigation.ts";
 import { searchProject } from "./search.ts";
@@ -31,6 +40,13 @@ export const COMMAND_NAMES = [
   "scroll-line-up",
   "scroll-page-down",
   "scroll-page-up",
+  "beginning-of-document",
+  "end-of-document",
+  "next-heading",
+  "previous-heading",
+  "up-heading",
+  "forward-same-level",
+  "backward-same-level",
   "next-link",
   "prev-link",
   "follow-link",
@@ -38,6 +54,8 @@ export const COMMAND_NAMES = [
   "find-file",
   "goto-heading",
   "goto-line",
+  "isearch-forward",
+  "isearch-backward",
   "search-project",
   "edit-in-editor",
   "execute-command",
@@ -54,6 +72,21 @@ export function createCommands(ctx: AppContext): Commands {
   const { model, views, echo, minibuffer, host } = ctx;
   const sel = () => selectedWindow(model);
 
+  /** 見出しの一覧から、移動先を求めて、そこへスクロールする。 */
+  const moveToHeading = (
+    pick: (tops: number[], levels: number[]) => number | null,
+    none: string,
+  ): void => {
+    const headings = headingElements(views.selected().content);
+    const index = pick(
+      headings.map((h) => h.top),
+      headings.map((h) => h.level),
+    );
+    const target = index === null ? undefined : headings[index];
+    if (target) views.scrollTo(target.top);
+    else echo.message(none);
+  };
+
   const commands: Commands = {
     "split-below": () => split(model, "col"),
     "split-right": () => split(model, "row"),
@@ -66,6 +99,34 @@ export function createCommands(ctx: AppContext): Commands {
     "scroll-line-up": () => views.scrollBy(-LINE_PX),
     "scroll-page-down": () => views.scrollBy(views.pageHeight() * 0.9),
     "scroll-page-up": () => views.scrollBy(-views.pageHeight() * 0.9),
+    "beginning-of-document": () => views.scrollTo(0),
+    "end-of-document": () => views.scrollTo(views.scrollHeight()),
+    // outline-mode 風の見出し移動。文書内の移動なので、参照履歴には積まない
+    "next-heading": () =>
+      moveToHeading(
+        (tops) => nextIndex(tops, views.scrollTop()),
+        "これより後ろに見出しはありません",
+      ),
+    "previous-heading": () =>
+      moveToHeading(
+        (tops) => previousIndex(tops, views.scrollTop()),
+        "これより前に見出しはありません",
+      ),
+    "up-heading": () =>
+      moveToHeading(
+        (tops, levels) => upIndex(levels, currentIndex(tops, views.scrollTop())),
+        "上のレベルの見出しはありません",
+      ),
+    "forward-same-level": () =>
+      moveToHeading(
+        (tops, levels) => sameLevelForward(levels, currentIndex(tops, views.scrollTop())),
+        "同じレベルの、次の見出しはありません",
+      ),
+    "backward-same-level": () =>
+      moveToHeading(
+        (tops, levels) => sameLevelBackward(levels, currentIndex(tops, views.scrollTop())),
+        "同じレベルの、前の見出しはありません",
+      ),
     "next-link": () => views.moveLink(1),
     "prev-link": () => views.moveLink(-1),
     "follow-link": async () => {
@@ -99,6 +160,9 @@ export function createCommands(ctx: AppContext): Commands {
       const n = Number(await minibuffer.prompt("Goto line: "));
       if (entry && Number.isInteger(n) && n > 0) visit(model, sel(), entry.path, `line:${n}`);
     },
+    // 文書内のインクリメンタル検索(Emacs の isearch)。プロジェクト全体の検索は、search-project(M-s g)
+    "isearch-forward": () => startIsearch(ctx, 1),
+    "isearch-backward": () => startIsearch(ctx, -1),
     "search-project": async () => {
       const query = await minibuffer.prompt("Search project: ");
       if (query) await searchProject(ctx, query);

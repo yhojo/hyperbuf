@@ -161,3 +161,15 @@ body {
   max-width: 100%;
   height: auto;
 }
+
+#prompt-count {
+  color: var(--muted);
+}
+/* 文書内検索(C-s)の一致。CSS Custom Highlight API(Safari 17.2 以降)。非対応なら、現在の一致だけが、選択状態になる */
+::highlight(hb-search) {
+  background-color: #ffd33d80;
+}
+::highlight(hb-search-current) {
+  background-color: #ff9632;
+  color: #000;
+}

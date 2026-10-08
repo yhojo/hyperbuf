@@ -1,0 +1,37 @@
+# CI の骨組み(M0)。GitHub に公開する前で、まだ実行して確認していない。
+# 利用できる macOS ランナーの Xcode / Swift のバージョンに依存するため、初回の実行で調整する。
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: scripts/check.sh core
+
+  swift:
+    runs-on: macos-15
+    strategy:
+      matrix:
+        target: [app, cli]
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/check.sh ${{ matrix.target }}
+
+  emacs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y emacs-nox
+      - run: scripts/check.sh emacs

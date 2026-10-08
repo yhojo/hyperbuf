@@ -4,9 +4,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-HyperBufis in the **inception / early design** phase. The repository currently contains only `README.md` (written in Japanese) — a product vision document. There is no source code, build system, linter, or test suite yet, so there are no build/test commands to run. Name, specs, architecture, and library choices are all explicitly provisional and expected to change after PoCs.
+HyperBuf is in **early implementation (migration plan M0 done)**. The PoCs are finished and live on `poc/*` branches (not merged); `main` holds design docs plus the new, minimal scaffold of each component. The first real features land in M1 (`core/`) and M2 (`app/macos/`); see `docs/migration-plan.md`. README.md (Japanese) is the product vision.
 
 When adding documents, follow the README's language (Japanese) unless told otherwise.
+
+## Commands
+
+Everything runs from the repo root through one script (same as CI, `.github/workflows/ci.yml`; CI itself has not run yet because the repo has no GitHub remote):
+
+```bash
+scripts/check.sh            # all: core, app, cli, emacs
+scripts/check.sh core       # or: app | cli | emacs
+```
+
+Per component (run in the component directory):
+
+| Component | Check | Single test |
+| --- | --- | --- |
+| `core/` (TypeScript, Node >= 22.18, no test runner dependency) | `npm run check` (typecheck + prettier + tests); `npm run build` | `node --test test/<file>.test.ts` |
+| `app/macos/`, `cli/` (SwiftPM, Swift 6, macOS 14+) | `swift build && swift test && swift format lint --strict --recursive Sources Tests --configuration .swift-format` | `swift test --filter <TestName>` |
+| `emacs/` | `scripts/check.sh emacs` (byte-compile with warnings as errors, then ERT) | `emacs -Q --batch -L emacs -l ert -l emacs/test/hyperbuf-test.el --eval '(ert-run-tests-batch-and-exit "<test-name-regexp>")'` |
+
+Formatters: Prettier (core), `swift format` (Swift; 4-space indent, config in each package's `.swift-format`). Fix with `npm run format` / `swift format format --in-place --recursive Sources Tests --configuration .swift-format`.
+
+Build outputs (`dist/`, `.build/`, `node_modules/`, `*.app`) are never committed.
 
 ## What the product is
 
@@ -47,9 +68,9 @@ A keyboard-driven macOS viewer (not an editor) for browsing many cross-reference
 - PoC は `poc/<テーマ>` ブランチで行う。コードは原則 `main` にマージせず、結果をまとめた設計文書のみ取り込む。PoC ブランチは削除せず残す。
 - `main` の履歴を書き換える操作(force push 等)はしない。
 
-## Repository layout (planned, monorepo)
+## Repository layout (monorepo)
 
-HyperBuf.app 本体に加え、CLI と Emacs 連携も同一リポジトリで管理する。ディレクトリは実装開始時に作成する(現時点では未作成)。
+HyperBuf.app 本体に加え、CLI と Emacs 連携も同一リポジトリで管理する。
 
 - `core/` — shared web core (TypeScript; model, keys, fuzzy, rendering pipeline, UI). OS-independent; the only boundary to a shell is the `hyperbufHost` contract
 - `app/macos/` — HyperBuf.app (SwiftUI + WKWebView shell; SwiftPM + scripts, no Xcode project for now). Other OSes get their own `app/<platform>/` with the best native framework for that platform

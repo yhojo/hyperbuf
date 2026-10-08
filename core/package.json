@@ -1,0 +1,24 @@
+{
+  "name": "@hyperbuf/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "HyperBuf の共通 Web コア(OS 非依存)。シェルとの境界は HyperbufHost の契約のみ。",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "build": "node build.mjs",
+    "check": "npm run typecheck && npm run format:check && npm test"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "esbuild": "^0.28.2",
+    "prettier": "^3.9.9",
+    "typescript": "^7.0.2"
+  }
+}

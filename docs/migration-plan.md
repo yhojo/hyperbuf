@@ -113,6 +113,12 @@ PoC(Interaction、Rendering、Project navigation、連携プロトコル)で、�
 - **ドッグフーディング(M2)を早く始める。** 自分たちの文書を、実際にこのビューアで読みながら改善する。
 - 各段階で、PoC で見つけた問題(CSP、Unicode の分解、脚注の ID など)の回帰テストを、先に書く。
 
+### 進捗
+
+| # | 状態 | メモ |
+| --- | --- | --- |
+| M0 | **完了(2026-10-08)** | `core/`(TypeScript、型検査・Prettier・テスト・esbuild)、`app/macos/` と `cli/`(SwiftPM、Swift 6、`swift format`、Swift Testing)、`emacs/`(ERT)、`protocol/`、`fixtures/`(PoC の文書集とコーパス生成)、`scripts/check.sh`、CI の骨組み。`scripts/check.sh` が全体で通り、意図的に壊すと失敗することを確認した。**CI のワークフローは、GitHub に公開する前で、まだ実行していない**(構文のみ確認) |
+
 ## 7. PoC の扱い
 
 - PoC のブランチ(`poc/interaction-web`、`poc/swiftui-wkwebview`、`poc/tauri-shell`、`poc/rendering`、`poc/navigation`、`poc/integration`)は、削除せず残す(運用ルール)。

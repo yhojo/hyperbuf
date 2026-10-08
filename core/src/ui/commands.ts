@@ -12,8 +12,10 @@ import {
   split,
   visit,
 } from "../model.ts";
+import { isVirtualPath } from "../model.ts";
 import { headingsOf } from "./anchors.ts";
 import type { AppContext } from "./context.ts";
+import { locateFromDom } from "./locate-dom.ts";
 import { errorMessage, follow, openAt } from "./navigation.ts";
 import { searchProject } from "./search.ts";
 
@@ -37,6 +39,7 @@ export const COMMAND_NAMES = [
   "goto-heading",
   "goto-line",
   "search-project",
+  "edit-in-editor",
   "execute-command",
   "keyboard-quit",
 ] as const;
@@ -99,6 +102,34 @@ export function createCommands(ctx: AppContext): Commands {
     "search-project": async () => {
       const query = await minibuffer.prompt("Search project: ");
       if (query) await searchProject(ctx, query);
+    },
+    // ビューアで指した場所(選択・右クリック・いま読んでいる場所)を、元の位置にして、エディタ連携のために記録する
+    "edit-in-editor": async () => {
+      const entry = currentEntry(sel());
+      const buf = entry && model.buffers.get(entry.path);
+      if (!entry || !buf) return;
+      if (!host.markLocation) {
+        echo.message("このホストは、エディタへの連携に対応していません");
+        return;
+      }
+      if (isVirtualPath(entry.path)) {
+        echo.message("ファイルに対応しない文書(検索結果など)は、エディタで編集できません");
+        return;
+      }
+      const location = locateFromDom({
+        content: views.selected().content,
+        path: entry.path,
+        text: buf.text,
+        version: buf.version,
+        contextTarget: views.contextTarget(),
+      });
+      if (!location) {
+        echo.message("指した場所を、元の位置にできませんでした");
+        return;
+      }
+      const result = await host.markLocation(location);
+      const note = location.precision === "block" ? "(位置が曖昧なため、ブロック全体です)" : "";
+      echo.message(`${result.message}${note}`);
     },
     "execute-command": async () => {
       const name = await minibuffer.prompt("M-x ", COMMAND_NAMES, { allowFree: false });

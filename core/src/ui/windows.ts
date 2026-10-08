@@ -43,6 +43,7 @@ export class Views {
   readonly stats: RenderStats = { ms: 0, diagrams: "" };
   private readonly views = new Map<number, WinView>();
   private layoutSig = "";
+  private lastContextTarget: Element | null = null;
   private readonly opts: ViewsOptions;
 
   constructor(opts: ViewsOptions) {
@@ -77,6 +78,11 @@ export class Views {
         : (view.linkIndex + dir + links.length) % links.length;
     links.forEach((a, i) => a.classList.toggle("link-focus", i === view.linkIndex));
     links[view.linkIndex]?.scrollIntoView({ block: "nearest" });
+  }
+
+  /** 直近に右クリックした要素(「エディタで編集」が、指した場所を求めるのに使う)。 */
+  contextTarget(): Element | null {
+    return this.lastContextTarget;
   }
 
   /** 選択されているリンクの href。 */
@@ -139,6 +145,10 @@ export class Views {
       view.expectScroll = null;
       const entry = currentEntry(win);
       if (entry) entry.scroll = content.scrollTop;
+    });
+    content.addEventListener("contextmenu", (e) => {
+      this.opts.onSelect(win);
+      this.lastContextTarget = e.target instanceof Element ? e.target : null;
     });
     content.addEventListener("click", (e) => {
       this.opts.onSelect(win);

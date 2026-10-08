@@ -110,6 +110,21 @@ test("行アンカー: ブロック要素に元の行番号が付く", () => {
   assert.match(out, /<pre data-source-line="8"/);
 });
 
+test("元の位置: ブロック要素に、開始・終了のオフセットと行が付く", () => {
+  const md = "# 見出し\n\n段落 A\n段落 B\n\n- x\n";
+  const out = html(md);
+  // 見出し: 0 〜 5(「# 見出し」は 5 文字)、1 行目
+  assert.match(out, /<h1[^>]*data-source-start="0"[^>]*data-source-end="5"/);
+  // 段落: 7 〜 15(「段落 A\n段落 B」)、3〜4 行目
+  const p =
+    /<p[^>]*data-source-start="(\d+)"[^>]*data-source-end="(\d+)"[^>]*data-source-end-line="(\d+)"/.exec(
+      out,
+    );
+  assert.ok(p, out);
+  assert.equal(md.slice(Number(p[1]), Number(p[2])), "段落 A\n段落 B");
+  assert.equal(p[3], "4");
+});
+
 test("アラート", () => {
   const out = html("> [!WARNING]\n> careful\n");
   assert.match(out, /markdown-alert-warning/);

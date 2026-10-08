@@ -295,12 +295,19 @@ extension Host {
         proc.currentDirectoryURL = projectRoot
         proc.arguments = [
             "--null", "--line-number", "--ignore-case", "--fixed-strings", "--max-count", "3", "--no-heading",
-            "--color", "never", "-g", "*.md", "--", query, ".",
+            "--color", "never", "-g", "*.md", "-f", "-", ".",
         ]
+        // クエリは引数ではなく標準入力(-f -)で渡す。Process の引数はファイルシステム表現に変換され、
+        // 濃点・半濁点つきの文字(パ など)が分解されて、本文(合成済み)と一致しなくなるため。
+        // シェルを介さないので、クエリがコマンドとして解釈されることもない。
+        let input = Pipe()
+        proc.standardInput = input
         let pipe = Pipe()
         proc.standardOutput = pipe
         proc.standardError = FileHandle.nullDevice
         do { try proc.run() } catch { return ["error": "\(error)"] }
+        input.fileHandleForWriting.write(Data((query + "\n").utf8))
+        try? input.fileHandleForWriting.close()
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         proc.waitUntilExit()
         var all: [[String: Any]] = []

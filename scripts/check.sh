@@ -1,6 +1,6 @@
 #!/bin/bash
 # 全体のチェック(型検査・整形・ビルド・テスト)。CI(.github/workflows/ci.yml)と同じ内容。
-# 使い方: scripts/check.sh [core|app|cli|emacs]   (引数なしですべて)
+# 使い方: scripts/check.sh [core|protocol|app|cli|emacs]   (引数なしですべて)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -16,6 +16,12 @@ check_swift() { # $1=ディレクトリ
   (cd "$1" && swift build && swift test && swift format lint --strict --recursive Sources Tests --configuration .swift-format)
 }
 
+check_protocol() {
+  step "protocol: JSON Schema・例の検証"
+  (cd protocol && npm ci --silent && npm run check)
+  check_swift protocol/swift
+}
+
 check_emacs() {
   step "emacs: バイトコンパイル(警告をエラー扱い)・テスト"
   emacs -Q --batch -L emacs --eval '(setq byte-compile-error-on-warn t)' -f batch-byte-compile emacs/hyperbuf.el
@@ -27,8 +33,9 @@ case "${1:-all}" in
   core) check_core ;;
   app) check_swift app/macos ;;
   cli) check_swift cli ;;
+  protocol) check_protocol ;;
   emacs) check_emacs ;;
-  all) check_core; check_swift app/macos; check_swift cli; check_emacs ;;
-  *) echo "usage: scripts/check.sh [core|app|cli|emacs]" >&2; exit 1 ;;
+  all) check_core; check_protocol; check_swift app/macos; check_swift cli; check_emacs ;;
+  *) echo "usage: scripts/check.sh [core|protocol|app|cli|emacs]" >&2; exit 1 ;;
 esac
 printf '\nOK\n'

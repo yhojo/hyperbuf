@@ -1,0 +1,182 @@
+[
+  {
+    "name": "最小の open",
+    "request": {
+      "op": "open",
+      "path": "/Users/me/docs/design.md"
+    },
+    "expect": "ok"
+  },
+  {
+    "name": "行と v つき",
+    "request": {
+      "v": 1,
+      "id": "1",
+      "op": "open",
+      "path": "/Users/me/docs/design.md",
+      "line": 120
+    },
+    "expect": "ok"
+  },
+  {
+    "name": "アンカーつき(日本語)",
+    "request": {
+      "op": "open",
+      "path": "/Users/me/docs/design.md",
+      "anchor": "参照履歴"
+    },
+    "expect": "ok"
+  },
+  {
+    "name": "日本語のパス",
+    "request": {
+      "op": "open",
+      "path": "/Users/me/文書/ハイパーバッファ.md"
+    },
+    "expect": "ok"
+  },
+  {
+    "name": "スペースを含むパス",
+    "request": {
+      "op": "open",
+      "path": "/Users/me/My Docs/a b.md"
+    },
+    "expect": "ok"
+  },
+  {
+    "name": "未知のフィールドは無視",
+    "request": {
+      "op": "open",
+      "path": "/Users/me/docs/design.md",
+      "future": {
+        "x": 1
+      }
+    },
+    "expect": "ok"
+  },
+  {
+    "name": "id は数値でもよい",
+    "request": {
+      "op": "open",
+      "id": 7,
+      "path": "/Users/me/docs/design.md"
+    },
+    "expect": "ok"
+  },
+  {
+    "name": "相対パス",
+    "request": {
+      "op": "open",
+      "path": "docs/a.md"
+    },
+    "expect": "bad-request"
+  },
+  {
+    "name": "path なし",
+    "request": {
+      "op": "open"
+    },
+    "expect": "bad-request"
+  },
+  {
+    "name": ".. を含む",
+    "request": {
+      "op": "open",
+      "path": "/Users/me/../x/a.md"
+    },
+    "expect": "bad-request"
+  },
+  {
+    "name": "末尾が ..",
+    "request": {
+      "op": "open",
+      "path": "/Users/me/.."
+    },
+    "expect": "bad-request"
+  },
+  {
+    "name": "名前に .. を含むだけなら許す",
+    "request": {
+      "op": "open",
+      "path": "/Users/me/a..b.md"
+    },
+    "expect": "ok"
+  },
+  {
+    "name": "制御文字(改行)",
+    "request": {
+      "op": "open",
+      "path": "/Users/me/a\nb.md"
+    },
+    "expect": "bad-request"
+  },
+  {
+    "name": "NUL",
+    "request": {
+      "op": "open",
+      "path": "/Users/me/a\u0000b.md"
+    },
+    "expect": "bad-request"
+  },
+  {
+    "name": ".md 以外",
+    "request": {
+      "op": "open",
+      "path": "/etc/passwd"
+    },
+    "expect": "not-markdown"
+  },
+  {
+    "name": ".md.txt",
+    "request": {
+      "op": "open",
+      "path": "/Users/me/a.md.txt"
+    },
+    "expect": "not-markdown"
+  },
+  {
+    "name": "line が 0",
+    "request": {
+      "op": "open",
+      "path": "/Users/me/docs/design.md",
+      "line": 0
+    },
+    "expect": "bad-request"
+  },
+  {
+    "name": "line が負",
+    "request": {
+      "op": "open",
+      "path": "/Users/me/docs/design.md",
+      "line": -3
+    },
+    "expect": "bad-request"
+  },
+  {
+    "name": "anchor が 200 文字",
+    "request": {
+      "op": "open",
+      "path": "/Users/me/docs/design.md",
+      "anchor": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "expect": "ok"
+  },
+  {
+    "name": "anchor が 201 文字",
+    "request": {
+      "op": "open",
+      "path": "/Users/me/docs/design.md",
+      "anchor": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "expect": "bad-request"
+  },
+  {
+    "name": "未対応のバージョン",
+    "request": {
+      "v": 2,
+      "op": "open",
+      "path": "/Users/me/docs/design.md"
+    },
+    "expect": "unsupported-version"
+  }
+]

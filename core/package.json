@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/",
+    "test": "node --test \"test/**/*.test.ts\"",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "node build.mjs",

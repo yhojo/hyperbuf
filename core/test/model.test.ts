@@ -7,6 +7,7 @@ import {
   deleteOthers,
   deleteWindow,
   forward,
+  killBuffer,
   openBuffer,
   otherWindow,
   resolveLink,
@@ -102,4 +103,43 @@ test("仮想 buffer(ディレクトリを持たないパス)からのリンク�
     path: "area0/doc.md",
     anchor: "line:3",
   });
+});
+
+test("kill-buffer: どの window の履歴からも、その buffer への参照を取り除き、現在位置を保つ", () => {
+  const m = setup();
+  const w = selectedWindow(m);
+  visit(m, w, "b.md");
+  visit(m, w, "c.md");
+  visit(m, w, "b.md", "x");
+  // 履歴: a, b, c, b#x(現在)
+  const empty = killBuffer(m, "b.md");
+  assert.deepEqual(empty, []);
+  assert.deepEqual(paths(w), ["a.md", "c.md"]);
+  assert.equal(currentEntry(w)?.path, "c.md"); // 現在の参照が消えたので、ひとつ前の参照を表示する
+  assert.ok(!m.buffers.has("b.md"));
+  assert.ok(!m.mru.includes("b.md"));
+  // 現在でない参照を消すと、現在位置は、そのまま
+  killBuffer(m, "a.md");
+  assert.equal(currentEntry(w)?.path, "c.md");
+  assert.deepEqual(paths(w), ["c.md"]);
+});
+
+test("kill-buffer: 分割した window の履歴も、それぞれ整理される。履歴が空になった window を返す", () => {
+  const m = setup();
+  const w = selectedWindow(m);
+  const other = split(m, "row"); // 履歴: [a](複製)
+  visit(m, other, "b.md"); // other: a, b
+  const empty = killBuffer(m, "a.md");
+  assert.deepEqual(paths(w), []);
+  assert.deepEqual(paths(other), ["b.md"]);
+  assert.deepEqual(empty, [w]);
+  assert.equal(w.index, -1);
+  assert.equal(currentEntry(other)?.path, "b.md");
+});
+
+test("kill-buffer: ない buffer を閉じても、何も起きない", () => {
+  const m = setup();
+  const w = selectedWindow(m);
+  assert.deepEqual(killBuffer(m, "nope.md"), []);
+  assert.deepEqual(paths(w), ["a.md"]);
 });

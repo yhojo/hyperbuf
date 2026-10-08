@@ -21,7 +21,7 @@ Per component (run in the component directory):
 
 | Component | Check | Single test |
 | --- | --- | --- |
-| `core/` (TypeScript, Node >= 22.18, no test runner dependency; tests run TS directly via type stripping, so avoid TS-only syntax such as constructor parameter properties and enums — `erasableSyntaxOnly` enforces it) | `npm run check` (typecheck + prettier + tests); `npm run build`; `npm run dev` (build + dev server on :8765 serving `fixtures/sample-project`, or `node scripts/dev-server.mjs <project-dir> <port>`) | `node --test test/<file>.test.ts` |
+| `core/` (`npm run check` also verifies `docs/keybindings.md` is up to date: regenerate with `npm run keybindings`; TypeScript, Node >= 22.18, no test runner dependency; tests run TS directly via type stripping, so avoid TS-only syntax such as constructor parameter properties and enums — `erasableSyntaxOnly` enforces it) | `npm run check` (typecheck + prettier + tests); `npm run build`; `npm run dev` (build + dev server on :8765 serving `fixtures/sample-project`, or `node scripts/dev-server.mjs <project-dir> <port>`) | `node --test test/<file>.test.ts` |
 | `app/macos/`, `cli/` (SwiftPM, Swift 6, macOS 14+) | `swift build && swift test && swift format lint --strict --recursive Sources Tests --configuration .swift-format` | `swift test --filter <TestName>` |
 | `emacs/` | `scripts/check.sh emacs` (byte-compile with warnings as errors, then ERT) | `emacs -Q --batch -L emacs -l ert -l emacs/test/hyperbuf-test.el --eval '(ert-run-tests-batch-and-exit "<test-name-regexp>")'` |
 
@@ -34,6 +34,7 @@ Running the macOS app (needs `core/dist`, so build the core first):
 (cd app/macos && swift run HyperBuf ../../docs)      # opens a project directory (no argument → an Open panel)
 app/macos/scripts/make-app.sh [debug|release]         # builds app/macos/.build/HyperBuf.app (ad-hoc signed, Web core bundled)
 scripts/integration-test.sh [project-dir]             # needs a GUI session: opens every document in a debug HyperBuf and checks rendering, CSP, search, images
+scripts/integration-test-ui.sh                        # needs a GUI session: C-s / outline navigation / keymap config / describe-bindings / minibuffer / kill-buffer in a real WKWebView (synthetic key events; native key path is checked by hand)
 scripts/integration-test-ipc.sh                       # needs a GUI session: real .app + socket client + `hyperbuf` CLI + hyperbuf:// URL (open/outside-project confirm/timeout/errors)
 (cd cli && swift run hyperbuf docs/migration-plan.md:20)   # opens a file at a line in a running HyperBuf (launches it if needed)
 ```

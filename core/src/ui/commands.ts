@@ -12,7 +12,7 @@ import {
   split,
   visit,
 } from "../model.ts";
-import { isVirtualPath } from "../model.ts";
+import { isVirtualPath, killBuffer } from "../model.ts";
 import {
   currentIndex,
   nextIndex,
@@ -27,7 +27,7 @@ import { renderBindingsHelp } from "../help.ts";
 import { openBuffer } from "../model.ts";
 import { startIsearch } from "./isearch-dom.ts";
 import { locateFromDom } from "./locate-dom.ts";
-import { errorMessage, follow, openAt } from "./navigation.ts";
+import { ensureBuffer, errorMessage, follow, openAt } from "./navigation.ts";
 import { searchProject } from "./search.ts";
 
 export const COMMAND_NAMES = [
@@ -53,6 +53,7 @@ export const COMMAND_NAMES = [
   "prev-link",
   "follow-link",
   "switch-buffer",
+  "kill-buffer",
   "find-file",
   "goto-heading",
   "goto-line",
@@ -91,6 +92,7 @@ export const COMMAND_DOCS: Readonly<Record<CommandName, string>> = {
   "prev-link": "前のリンクを選ぶ",
   "follow-link": "選んでいるリンクをたどる",
   "switch-buffer": "開いている buffer を、最近使った順の候補から選んで表示する",
+  "kill-buffer": "buffer を閉じる(どの window の履歴からも、その参照を取り除く)",
   "find-file": "プロジェクトの Markdown を、あいまい検索で選んで開く",
   "goto-heading": "見出しを選んで、そこへ移動する",
   "goto-line": "元の Markdown の行番号を指定して、そこへ移動する",
@@ -174,11 +176,35 @@ export function createCommands(ctx: AppContext): Commands {
       if (href !== null) await follow(ctx, sel(), href);
     },
     "switch-buffer": async () => {
-      const path = await minibuffer.prompt("Switch to buffer: ", model.mru, { allowFree: false });
+      const path = await minibuffer.prompt("Switch to buffer: ", model.mru, {
+        allowFree: false,
+        history: "switch-buffer",
+      });
       if (path) visit(model, sel(), path);
     },
+    "kill-buffer": async () => {
+      const entry = currentEntry(sel());
+      const path = await minibuffer.prompt(`Kill buffer (${entry?.path ?? ""}): `, model.mru, {
+        allowFree: false,
+      });
+      const target = path ?? entry?.path;
+      if (path === null || !target || !model.buffers.has(target)) return;
+      const empty = killBuffer(model, target);
+      // 履歴が空になった window には、別の buffer を表示する(最近使ったもの、なければ、最初の文書)
+      for (const win of empty) {
+        const next = model.mru[0] ?? (await host.listFiles())[0];
+        if (!next) continue;
+        await ensureBuffer(ctx, next);
+        visit(model, win, next);
+      }
+      echo.message(`buffer を閉じました: ${target}`);
+    },
     "find-file": async () => {
-      const path = await minibuffer.prompt("Find file: ", await host.listFiles());
+      // 候補は、最近使った文書が先(入力が空のとき、すぐ選べる)。そのあとは、プロジェクト内の全文書
+      const all = await host.listFiles();
+      const recent = model.mru.filter((p) => !isVirtualPath(p) && all.includes(p));
+      const candidates = [...recent, ...all.filter((p) => !recent.includes(p))];
+      const path = await minibuffer.prompt("Find file: ", candidates, { history: "find-file" });
       if (!path) return;
       try {
         await openAt(ctx, path);

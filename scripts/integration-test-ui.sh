@@ -200,6 +200,47 @@ check("不正な設定(不明なコマンド・不正な表記・C-g)は、無�
       all(s in r["text"] for s in ["設定の問題", "no-such-command", "Ctrl-y", "C-g"]), r["text"][:600])
 check("起動時に、設定の問題の件数が知らされる(3 件)", "設定:" in startup_echo and "3 件" in startup_echo, startup_echo)
 
+print("ミニバッファ(候補・履歴)と kill-buffer")
+r = run("""
+await hb.open('index.md'); await sleep(200);
+await hb.open('architecture.md'); await sleep(200);
+await hb.open('long.md'); await sleep(200);
+const cands = () => [...document.querySelectorAll('#candidates li')];
+await fire('x','KeyX',{ctrlKey:true}); await fire('f','KeyF',{ctrlKey:true});       // C-x C-f
+const empty = { texts: cands().slice(0, 4).map((li) => li.textContent), count: document.getElementById('prompt-count').textContent };
+typeIn('arch'); await sleep(80);
+const typed = { first: cands()[0]?.textContent, marked: [...(cands()[0]?.querySelectorAll('b') ?? [])].map((b) => b.textContent), on: cands()[0]?.className };
+pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(150);
+const opened = document.querySelector('.win-header').textContent;
+// 入力の履歴(M-p)
+await fire('x','KeyX',{ctrlKey:true}); await fire('f','KeyF',{ctrlKey:true});
+pressIn('p','KeyP',{altKey:true}); await sleep(80);
+const recalled = input().value;
+pressIn('g','KeyG',{ctrlKey:true}); await sleep(80);
+return JSON.stringify({ empty, typed, opened, recalled });
+""")
+check("C-x C-f: 入力が空のとき、最近使った文書が先に出る", r["empty"]["texts"][:3] == ["long.md", "architecture.md", "index.md"], r["empty"])
+check("候補の件数が出る(n/全体)", "/" in r["empty"]["count"], r["empty"])
+check("入力した語に一致した部分が、強調される", r["typed"]["first"] == "architecture.md" and r["typed"]["marked"] == ["arch"] and r["typed"]["on"] == "on", r["typed"])
+check("RET で、その文書が開く", "architecture.md" in r["opened"], r["opened"])
+check("M-p で、前回確定した値(architecture.md)を呼び出せる(Emacs の履歴と同じ)", r["recalled"] == "architecture.md", r["recalled"])
+
+r = run("""
+await hb.open('interaction.md'); await sleep(200);
+const model = hb.ctx.model;
+const hasBefore = model.buffers.has('interaction.md');
+await fire('x','KeyX',{ctrlKey:true}); await fire('k','KeyK');                          // C-x k
+const label = document.getElementById('prompt-label').textContent;
+pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(200);
+const win = hb.ctx.model.root.win ?? null;
+const histories = (function walk(n) { return n.type === 'leaf' ? [n.win.history.map((e) => e.path)] : n.children.flatMap(walk); })(model.root);
+return JSON.stringify({ hasBefore, label, hasAfter: model.buffers.has('interaction.md'), mru: model.mru.slice(0, 3), histories, header: document.querySelector('.win-header').textContent, echo: document.getElementById('echo').textContent });
+""")
+check("C-x k: 既定は、いまの buffer", "interaction.md" in r["label"], r["label"])
+check("buffer が閉じて、履歴からも参照がなくなる", r["hasBefore"] and not r["hasAfter"] and all("interaction.md" not in h for h in r["histories"]), r)
+check("閉じた buffer を表示していた window は、ひとつ前の参照を表示する", "interaction.md" not in r["header"], r["header"])
+check("閉じたことが知らされる", "閉じました" in r["echo"], r["echo"])
+
 if failures:
     print(f"\nNG: {len(failures)} 件")
     sys.exit(1)

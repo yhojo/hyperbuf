@@ -29,6 +29,40 @@ function score(text: string, lower: string, tokens: string[]): number | null {
   return total - text.length * 0.01;
 }
 
+/** 一致した文字の範囲 [開始, 終了)(候補の強調表示用)。語ごとに、`score` と同じ優先順で、最初に見つかった場所。 */
+export function matchRanges(candidate: string, query: string): [number, number][] {
+  const lower = candidate.toLowerCase();
+  const base = lower.lastIndexOf("/") + 1;
+  const ranges: [number, number][] = [];
+  for (const t of query.toLowerCase().split(/\s+/).filter(Boolean)) {
+    let i = lower.indexOf(t, base);
+    if (i < 0) i = lower.indexOf(t);
+    if (i >= 0) {
+      ranges.push([i, i + t.length]);
+      continue;
+    }
+    let pos = -1; // 飛び飛びの一致: 1 文字ずつ
+    for (const ch of t) {
+      pos = lower.indexOf(ch, pos + 1);
+      if (pos < 0) break;
+      ranges.push([pos, pos + ch.length]);
+    }
+  }
+  return mergeRanges(ranges);
+}
+
+/** 重なる・隣り合う範囲を、まとめる。 */
+function mergeRanges(ranges: [number, number][]): [number, number][] {
+  const sorted = [...ranges].sort((a, b) => a[0] - b[0]);
+  const out: [number, number][] = [];
+  for (const [s, e] of sorted) {
+    const last = out[out.length - 1];
+    if (last && s <= last[1]) last[1] = Math.max(last[1], e);
+    else out.push([s, e]);
+  }
+  return out;
+}
+
 export function fuzzyFilter(candidates: readonly string[], query: string, limit = 8): string[] {
   const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (!tokens.length) return candidates.slice(0, limit);

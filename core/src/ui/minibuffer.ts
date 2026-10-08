@@ -6,7 +6,7 @@
 //  - prompt: 候補つきの入力(あいまい絞り込み)。M-p / M-n で、同じ種類の入力の履歴をたどる
 //  - live:   入力のたびに処理する(インクリメンタル検索)。特別なキー(C-s、C-r など)は、呼び出し側が扱う
 
-import { fuzzyFilter } from "../fuzzy.ts";
+import { fuzzyFilter, matchRanges } from "../fuzzy.ts";
 import { keyName } from "../keys.ts";
 import { byId } from "./dom.ts";
 
@@ -59,6 +59,19 @@ export interface Minibuffer {
   live(label: string, handlers: LiveHandlers, initial?: string): LiveSession;
 }
 
+/** 候補の文字列を、検索語に一致した部分を強調して、`parent` に入れる(textContent なので、HTML の注入はない)。 */
+function appendHighlighted(parent: HTMLElement, text: string, query: string): void {
+  let from = 0;
+  for (const [start, end] of matchRanges(text, query)) {
+    if (start > from) parent.append(document.createTextNode(text.slice(from, start)));
+    const mark = document.createElement("b");
+    mark.textContent = text.slice(start, end);
+    parent.append(mark);
+    from = end;
+  }
+  if (from < text.length) parent.append(document.createTextNode(text.slice(from)));
+}
+
 export function createMinibuffer(): Minibuffer {
   const mini = byId("minibuffer");
   const input = byId<HTMLInputElement>("prompt-input");
@@ -109,7 +122,7 @@ export function createMinibuffer(): Minibuffer {
           list.replaceChildren(
             ...shown.map((c, i) => {
               const li = document.createElement("li");
-              li.textContent = c;
+              appendHighlighted(li, c, input.value);
               li.className = i === on ? "on" : "";
               return li;
             }),

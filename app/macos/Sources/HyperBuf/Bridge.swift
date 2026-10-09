@@ -29,6 +29,8 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
           window.hyperbufHost = {
             name: "macos",
             getConfig: () => call({ op: "config" }),
+            loadSession: () => call({ op: "load-session" }),
+            saveSession: (snapshot) => call({ op: "save-session", snapshot }),
             listFiles: () => call({ op: "list" }),
             readFile: (path) => call({ op: "read", path }),
             onFileChanged: (cb) => { changeListeners.push(cb); },
@@ -75,7 +77,16 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
         switch op {
         case "config":
             // 利用者の設定のうち、Web コアが使うもの(検証は、Web コアが行う)
-            replyHandler(["keybindings": UserKeybindings.load(from: EditorConfig.configURL())], nil)
+            replyHandler(
+                [
+                    "keybindings": UserKeybindings.load(from: EditorConfig.configURL()),
+                    "restoreSession": SessionSettings.restoreEnabled(),
+                ], nil)
+        case "load-session":
+            replyHandler(session.sessionStore.load(for: project) ?? NSNull(), nil)
+        case "save-session":
+            guard let snapshot = body["snapshot"] else { return replyHandler(nil, "bad request") }
+            replyHandler(nil, session.sessionStore.save(snapshot, for: project) ? nil : "cannot save")
         case "list":
             // 数千ファイルでもメインスレッドを塞がないよう、別のスレッドで列挙する
             Task {

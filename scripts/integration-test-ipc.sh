@@ -45,6 +45,7 @@ trusted="$tmp/trusted-roots.json"
 open -a "$app" \
   --env "HYPERBUF_SOCKET_PATH=$sock" \
   --env "HYPERBUF_TRUSTED_ROOTS=$trusted" \
+  --env "HYPERBUF_SESSION_DIR=$tmp/sessions" \
   --env "HYPERBUF_TEST_LOG=$tmp/test.log" \
   --env "HYPERBUF_CONFIG=$tmp/config.json" \
   --env "HYPERBUF_TEST_COMMANDS=$tmp/cmd" \

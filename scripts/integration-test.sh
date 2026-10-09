@@ -13,7 +13,7 @@ script="$(pwd)/app/macos/IntegrationTests/smoke.js"
 
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
-HYPERBUF_TEST_SCRIPT="$script" app/macos/.build/debug/HyperBuf "$project" >"$log" 2>&1 &
+HYPERBUF_SESSION_DIR="$(mktemp -d)" HYPERBUF_TEST_SCRIPT="$script" app/macos/.build/debug/HyperBuf "$project" >"$log" 2>&1 &
 pid=$!
 for _ in $(seq 1 90); do
   if grep -qE '^(RESULT|ERROR):' "$log"; then break; fi

@@ -17,6 +17,9 @@ import { resolveBindings } from "./keymap.ts";
 import { createMinibuffer } from "./minibuffer.ts";
 import { follow, openAt } from "./navigation.ts";
 import { searchProject } from "./search.ts";
+import { applySelection } from "./selection-state.ts";
+import { createSessionSaver, restoreSession } from "./session.ts";
+import type { SessionSaver } from "./session.ts";
 import { Views } from "./windows.ts";
 
 export interface AppHandle {
@@ -26,6 +29,8 @@ export interface AppHandle {
   /** 選択中の window で文書を開き、描画する(外部連携・テスト用)。 */
   open(path: string, anchor?: string | null): Promise<void>;
   search(query: string): Promise<void>;
+  /** セッションを、いますぐ保存する(アプリの終了の直前に、シェルが呼ぶ)。 */
+  flushSession(): Promise<void>;
 }
 
 export async function startApp(options: {
@@ -49,7 +54,9 @@ export async function startApp(options: {
     onFollow: (win, href) => {
       void follow(ctx, win, href).then(() => views.refresh());
     },
+    onChange: () => saver?.schedule(),
   });
+  let saver: SessionSaver | undefined;
   // 利用者のキー割り当て(config.json の keybindings)を、標準に重ねる。問題のある設定は、無視して、知らせる
   const config: HostConfig | undefined = await host.getConfig?.().catch(() => undefined);
   const bindings = resolveBindings(config?.keybindings);
@@ -60,12 +67,28 @@ export async function startApp(options: {
 
   const files = await host.listFiles();
   const first = files.includes("index.md") ? "index.md" : files[0];
-  if (first) {
+  const useSession = config?.restoreSession !== false && !!host.saveSession;
+  const restored = useSession ? await restoreSession(ctx, files) : null;
+  if (restored) {
+    views.refresh();
+    if (restored.selection) applySelection(ctx, restored.selection);
+    echo.message(`${files.length} files / 前回の状態を復元しました`);
+  } else if (first) {
     await openAt(ctx, first);
     views.refresh();
     echo.message(`${files.length} files / host: ${host.name}`);
   } else {
     echo.message("Markdown ファイルがありません");
+  }
+  // 復元の前に保存すると、前回の状態を消してしまう。復元(または、初期表示)のあとに始める
+  if (useSession) {
+    saver = createSessionSaver(ctx);
+    const flushNow = (): void => void saver?.flush();
+    window.addEventListener("pagehide", flushNow);
+    document.addEventListener("selectionchange", () => saver?.schedule());
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") flushNow();
+    });
   }
   wireHostEvents(ctx, commands);
   if (bindings.problems.length) {
@@ -83,6 +106,9 @@ export async function startApp(options: {
     async search(query) {
       await searchProject(ctx, query);
       views.refresh();
+    },
+    async flushSession() {
+      await saver?.flush();
     },
   };
 }

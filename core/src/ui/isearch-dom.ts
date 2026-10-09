@@ -9,7 +9,7 @@
 import { findAll, firstMatch, isCaseSensitive, step } from "../isearch.ts";
 import type { AppContext } from "./context.ts";
 
-interface TextIndex {
+export interface TextIndex {
   text: string;
   nodes: { node: Text; start: number }[];
 }
@@ -53,7 +53,7 @@ function nodeAt(index: TextIndex, offset: number): { node: Text; start: number }
   return index.nodes[lo] ?? null;
 }
 
-function rangeFor(index: TextIndex, start: number, end: number): Range | null {
+export function rangeFor(index: TextIndex, start: number, end: number): Range | null {
   const a = nodeAt(index, start);
   const b = nodeAt(index, end - 1);
   if (!a || !b) return null;

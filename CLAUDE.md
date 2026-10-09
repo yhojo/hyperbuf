@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-HyperBuf is in **active implementation: migration plan M0–M6 are done (M3 navigation UI is on its way to `main`)**; M7 (session restore) and M8 (distribution) remain. The PoCs are finished and live on `poc/*` branches (not merged). The repository is mirrored to a private GitHub repo (`yhojo/hyperbuf`); CI runs on pushes to `main`. Progress, decisions and the order of work: `docs/migration-plan.md`. README.md (Japanese) is the product vision.
+HyperBuf is in **active implementation: migration plan M0–M6 are done and merged; M7 (session restore) is implemented on `feat/session-restore` and awaiting manual verification**; M8 (distribution) remains. How "which project opens at launch" works is still to be discussed with the user. The PoCs are finished and live on `poc/*` branches (not merged). The repository is mirrored to a private GitHub repo (`yhojo/hyperbuf`); CI runs on pushes to `main`. Progress, decisions and the order of work: `docs/migration-plan.md`. README.md (Japanese) is the product vision.
 
 When adding documents, follow the README's language (Japanese) unless told otherwise.
 
@@ -35,11 +35,12 @@ Running the macOS app (needs `core/dist`, so build the core first):
 app/macos/scripts/make-app.sh [debug|release]         # builds app/macos/.build/HyperBuf.app (ad-hoc signed, Web core bundled)
 scripts/integration-test.sh [project-dir]             # needs a GUI session: opens every document in a debug HyperBuf and checks rendering, CSP, search, images
 scripts/integration-test-ui.sh                        # needs a GUI session: C-s / outline navigation / keymap config / describe-bindings / minibuffer / kill-buffer in a real WKWebView (synthetic key events; native key path is checked by hand)
+scripts/integration-test-session.sh                   # needs a GUI session: quit → relaunch restores window layout / history / scroll (session restore, restoreSession setting, broken/missing data)
 scripts/integration-test-ipc.sh                       # needs a GUI session: real .app + socket client + `hyperbuf` CLI + hyperbuf:// URL (open/outside-project confirm/timeout/errors)
 (cd cli && swift run hyperbuf docs/migration-plan.md:20)   # opens a file at a line in a running HyperBuf (launches it if needed)
 ```
 
-Debug builds only: `HYPERBUF_TEST_COMMANDS=<dir>` makes the app run `N.js` files dropped into the directory inside the WebView and write `N.result` (used by `integration-test-ipc.sh` to select text and run `edit-in-editor`); `HYPERBUF_CONFIG` overrides the editor config path; `HYPERBUF_TEST_SCRIPT=<file.js>` runs a script inside the WebView after startup and prints `RESULT: …` (used by the integration tests; the script must resolve, never return a pending Promise); `HYPERBUF_WEB_ROOT` overrides where the Web core is loaded from; `HYPERBUF_SOCKET_PATH`, `HYPERBUF_TRUSTED_ROOTS` and `HYPERBUF_TEST_LOG` redirect the socket, the trusted-roots store and the Web core log so tests never touch the user's real state. The `hyperbuf` CLI also honours `HYPERBUF_SOCKET_PATH` and `HYPERBUF_APP` (path of a .app to launch).
+Debug builds only: `HYPERBUF_TEST_COMMANDS=<dir>` makes the app run `N.js` files dropped into the directory inside the WebView and write `N.result` (used by `integration-test-ipc.sh` to select text and run `edit-in-editor`); `HYPERBUF_CONFIG` overrides the editor config path; `HYPERBUF_TEST_SCRIPT=<file.js>` runs a script inside the WebView after startup and prints `RESULT: …` (used by the integration tests; the script must resolve, never return a pending Promise); `HYPERBUF_WEB_ROOT` overrides where the Web core is loaded from; `HYPERBUF_SOCKET_PATH`, `HYPERBUF_TRUSTED_ROOTS`, `HYPERBUF_SESSION_DIR` and `HYPERBUF_TEST_LOG` redirect the socket, the trusted-roots store, the session store and the Web core log so tests never touch the user's real state. The `hyperbuf` CLI also honours `HYPERBUF_SOCKET_PATH` and `HYPERBUF_APP` (path of a .app to launch).
 
 Build outputs (`dist/`, `.build/`, `node_modules/`, `*.app`) are never committed.
 

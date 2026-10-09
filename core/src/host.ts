@@ -18,9 +18,18 @@ export interface MarkResult {
 export interface HostConfig {
   /** キー列 → コマンド名(`null` は、標準の割り当てを外す)。 */
   keybindings?: Record<string, string | null>;
+  /** 前回の状態(window の配置・履歴・閲覧位置)を復元し、保存するか(既定は true)。 */
+  restoreSession?: boolean;
 }
 
 export interface HyperbufHost {
+  /**
+   * このプロジェクトの、前回のセッション(`SessionSnapshot`)。なければ null。
+   * 内容は信頼しない(Web コアが検証する)。保存先はシェルが決める(プロジェクトごと)。
+   */
+  loadSession?(): Promise<unknown>;
+  /** セッションを保存する。シェルは、大きさを制限する。 */
+  saveSession?(snapshot: unknown): Promise<void>;
   /** 利用者の設定。なければ、標準のまま。 */
   getConfig?(): Promise<HostConfig>;
   /** シェルの識別名(診断用)。 */

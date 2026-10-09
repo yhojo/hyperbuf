@@ -21,6 +21,7 @@
     "-e",
     "(hyperbuf-edit-here)"
   ],
+  "restoreSession": true,
   "keybindings": {
     "M-p": "back",
     "M-n": "forward",
@@ -29,6 +30,15 @@
   }
 }
 ```
+
+## セッションの復元(`restoreSession`)
+
+| キー             | 型     | 意味                                                                      |
+| ---------------- | ------ | ------------------------------------------------------------------------- |
+| `restoreSession` | 真偽値 | 前回の状態を復元し、保存するか。**既定は `true`**(`false` のときだけ無効) |
+
+- 復元の範囲・保存先・壊れたデータの扱いは、[session-restore.md](session-restore.md)。
+- `false` のあいだは、復元もしないし、保存もしない(それまでの保存は、そのまま残る)。
 
 ## エディタの連携(`editorName`・`editorCommand`)
 
@@ -78,3 +88,4 @@
 | `HYPERBUF_CONFIG`        | この設定ファイル       |
 | `HYPERBUF_SOCKET_PATH`   | ソケット               |
 | `HYPERBUF_TRUSTED_ROOTS` | 信頼するルートの保存先 |
+| `HYPERBUF_SESSION_DIR`   | セッションの保存先     |

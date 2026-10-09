@@ -23,6 +23,8 @@ export interface ViewsOptions {
   onFollow(win: Win, href: string): void;
   /** window が選ばれた(クリック)。 */
   onSelect(win: Win): void;
+  /** 表示を更新した、または、閲覧位置が動いた(セッションの保存の契機)。 */
+  onChange?(): void;
 }
 
 interface WinView {
@@ -122,6 +124,7 @@ export class Views {
       if (relayout) view.lastEntry = null;
       this.update(win, view);
     }
+    this.opts.onChange?.();
   }
 
   private build(node: LayoutNode): HTMLElement {
@@ -158,6 +161,7 @@ export class Views {
       view.expectScroll = null;
       const entry = currentEntry(win);
       if (entry) entry.scroll = content.scrollTop;
+      this.opts.onChange?.();
     });
     content.addEventListener("contextmenu", (e) => {
       this.opts.onSelect(win);

@@ -10,13 +10,25 @@ final class EditorWebView: WKWebView {
     // 起動直後から、クリックなしでキー操作を受け付ける。WKWebView は、ウィンドウに載っても、
     // 自分では、ファーストレスポンダにならない(クリックして初めてなる)
     private var keyObserver: NSObjectProtocol?
+    private var closeObserver: NSObjectProtocol?
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         keyObserver.map(NotificationCenter.default.removeObserver)
+        closeObserver.map(NotificationCenter.default.removeObserver)
         keyObserver = nil
+        closeObserver = nil
         guard let window else { return }
         takeKeyboardFocus()
+        // ウィンドウを閉じるときも、セッションを保存する(最後のウィンドウなら、そのまま終了する)
+        closeObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification, object: window, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.evaluateJavaScript(
+                    "window.__hyperbuf && window.__hyperbuf.flushSession && window.__hyperbuf.flushSession()")
+            }
+        }
         keyObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didBecomeKeyNotification, object: window, queue: .main
         ) { [weak self] _ in

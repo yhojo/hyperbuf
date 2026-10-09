@@ -36,6 +36,7 @@ export TMP_DIR="$tmp" PROJECT_DIR="$project"
 open -a "$app" \
   --env "HYPERBUF_SOCKET_PATH=$tmp/sock/hb.sock" \
   --env "HYPERBUF_TRUSTED_ROOTS=$tmp/trusted.json" \
+  --env "HYPERBUF_SESSION_DIR=$tmp/sessions" \
   --env "HYPERBUF_CONFIG=$tmp/config.json" \
   --env "HYPERBUF_TEST_COMMANDS=$tmp/cmd" \
   --args "$project"

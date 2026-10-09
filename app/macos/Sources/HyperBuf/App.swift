@@ -146,6 +146,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        // 画面の状態(window の配置・履歴・閲覧位置)を、保存してから終わる
+        guard let session = AppModel.shared.session else { return .terminateNow }
+        Task { @MainActor in
+            await session.flushSession()
+            NSApp.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         MainActor.assumeIsolated { AppModel.shared.stopServer() }
     }

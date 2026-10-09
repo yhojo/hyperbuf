@@ -15,6 +15,7 @@ final class ProjectSession: Identifiable {
     /// 利用者が「エディタで編集」で指した位置(エディタが `get-location` で取りに来る)。
     private(set) var markedLocation: LocationPayload?
     let editorConfig: EditorConfig
+    let sessionStore = SessionStore()
     /// Web コアの準備前に届いた「開く」要求。準備ができたら、順に渡す。
     private var pendingOpens: [[String: Any]] = []
 
@@ -41,6 +42,30 @@ final class ProjectSession: Identifiable {
     /// Web コアの `onOpen` に渡す。準備前なら、準備ができるまで保留する。
     func deliverOpen(_ instruction: [String: Any]) {
         if pageReady { evaluateOpen(instruction) } else { pendingOpens.append(instruction) }
+    }
+
+    /// セッションを、いますぐ保存させる(終了の直前)。Web コアの保存が終わるか、`timeout` 秒たつまで待つ。
+    func flushSession(timeout: Double = 1.5) async {
+        guard pageReady, let webView else { return }
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            var resumed = false
+            let finish: @MainActor () -> Void = {
+                if !resumed {
+                    resumed = true
+                    continuation.resume()
+                }
+            }
+            Task { @MainActor in
+                _ = try? await webView.callAsyncJavaScript(
+                    "await (window.__hyperbuf && window.__hyperbuf.flushSession ? window.__hyperbuf.flushSession() : null); return true;",
+                    contentWorld: .page)
+                finish()
+            }
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(timeout))
+                finish()
+            }
+        }
     }
 
     /// 「エディタで編集」が選ばれた(右クリックメニュー)。指した場所は、Web コアが求める。

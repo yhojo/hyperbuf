@@ -105,6 +105,9 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
   let matches: number[] = [];
   let current: number | null = null;
   let query = "";
+  // 入力が変わったときに、探し直す基準の位置: 最後に選んだ一致(なければ、検索を始めた位置)。
+  // 検索語が一時的に空になっても(日本語入力の確定では、いったん消して、入れ直す)、消えない
+  let anchor = origin.from;
 
   const labelOf = (): string => (dir === 1 ? "I-search: " : "I-search backward: ");
 
@@ -146,11 +149,16 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
     select();
   };
 
-  const search = (text: string, anchor: number): void => {
+  const remember = (): void => {
+    if (current !== null) anchor = matches[current] ?? anchor;
+  };
+
+  const search = (text: string, from: number): void => {
     query = text;
     matches = findAll(index.text, query, isCaseSensitive(query));
-    const first = firstMatch(matches, anchor, dir);
+    const first = firstMatch(matches, from, dir);
     current = first.index;
+    remember();
     show(first.wrapped);
   };
 
@@ -158,8 +166,7 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
     onInput(text) {
       // 検索語が変わっていない入力(日本語入力の確定など)では、探し直さない(選んだ一致が動いてしまう)
       if (text === query && current !== null) return;
-      // 入力が変わったら、(いまの一致の位置、なければ、検索を始めた位置)から探し直す
-      const anchor = current === null ? origin.from : (matches[current] ?? origin.from);
+      // 入力が変わったら、基準の位置から探し直す
       search(text, anchor);
     },
     onKey(name) {
@@ -168,11 +175,12 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
       if (!query && lastQuery) {
         // 検索語が空のときは、前回の検索語を使う
         session.setText(lastQuery);
-        search(lastQuery, origin.from);
+        search(lastQuery, anchor);
         return true;
       }
       const next = step(matches.length, current, dir);
       current = next.index;
+      remember();
       show(next.wrapped);
       return true;
     },

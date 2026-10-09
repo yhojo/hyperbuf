@@ -151,6 +151,16 @@ pressIn('Enter','Enter'); await sleep(80);
 return JSON.stringify({ duringIme, after: mini().hidden });
 """)
 check("日本語入力の確定の Enter(keyCode 229)では、検索を終えない。次の Enter で終える", r3["duringIme"]["hidden"] is False and r3["after"] is True, r3)
+r4 = run("""
+await hb.open('long.md'); await sleep(300); content().scrollTop = 0; await sleep(50);
+await fire('s','KeyS',{ctrlKey:true}); typeIn('セクション'); await sleep(80);
+pressIn('s','KeyS',{ctrlKey:true}); await sleep(50); pressIn('s','KeyS',{ctrlKey:true}); await sleep(80);
+typeIn(''); typeIn('セクション'); await sleep(80);
+const count = mini().count;
+pressIn('g','KeyG',{ctrlKey:true});
+return JSON.stringify({ count });
+""")
+check("検索語がいったん空になって元に戻っても(日本語入力の確定)、選んでいた一致から動かない", r4["count"].startswith("[3/"), r4)
 r2 = run("""
 await hb.open('long.md'); await sleep(300); content().scrollTop = 0; await sleep(50);
 await fire('s','KeyS',{ctrlKey:true}); typeIn('セクション'); await sleep(80);

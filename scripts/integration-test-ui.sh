@@ -142,6 +142,25 @@ pressIn('g','KeyG',{ctrlKey:true});
 return JSON.stringify({ reuse, lower, upper });
 """)
 check("空のときの C-s は、前回の検索語を使う", r["reuse"]["text"] == "セクション 20" and r["reuse"]["count"].startswith("["), r["reuse"])
+r2 = run("""
+await hb.open('long.md'); await sleep(300); content().scrollTop = 0; await sleep(50);
+await fire('s','KeyS',{ctrlKey:true}); typeIn('セクション'); await sleep(80);
+pressIn('s','KeyS',{ctrlKey:true}); await sleep(50); pressIn('s','KeyS',{ctrlKey:true}); await sleep(80);
+const before = mini().count;
+pressIn('Enter','Enter'); await sleep(100);
+const sel = String(getSelection());
+const rg = getSelection().rangeCount ? getSelection().getRangeAt(0) : null;
+const where = rg ? Math.round(rg.getBoundingClientRect().top) : null;
+const first = (() => { const w = document.createTreeWalker(content(), NodeFilter.SHOW_TEXT); for (let n = w.nextNode(); n; n = w.nextNode()) { const i = n.data.indexOf('セクション'); if (i >= 0) { const q = document.createRange(); q.setStart(n, i); q.setEnd(n, i + 5); return Math.round(q.getBoundingClientRect().top); } } return null; })();
+await fire('s','KeyS',{ctrlKey:true}); typeIn('参照'); await sleep(80);
+pressIn('g','KeyG',{ctrlKey:true}); await sleep(80);
+await fire('s','KeyS',{ctrlKey:true}); pressIn('s','KeyS',{ctrlKey:true}); await sleep(100);
+const reused = { text: input().value, count: mini().count };
+pressIn('g','KeyG',{ctrlKey:true});
+return JSON.stringify({ before, sel, where, first, reused });
+""")
+check("C-s を重ねて RET: 強調していた一致が、選択状態で残る(先頭の一致へ戻らない)", r2["before"].startswith("[3/") and r2["sel"] == "セクション" and r2["where"] != r2["first"], r2)
+check("C-g で抜けても、次の C-s C-s で、その検索語を使う", r2["reused"]["text"] == "参照", r2["reused"])
 check("大文字を含む検索語だけ、大文字小文字を区別する", r["lower"].startswith("[1/") and r["upper"] == "Failing", r)
 
 print("outline 風の見出し移動・スクロール")

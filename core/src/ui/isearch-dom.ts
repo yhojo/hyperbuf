@@ -156,6 +156,8 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
 
   const session = minibuffer.live(labelOf(), {
     onInput(text) {
+      // 検索語が変わっていない入力(日本語入力の確定など)では、探し直さない(選んだ一致が動いてしまう)
+      if (text === query && current !== null) return;
       // 入力が変わったら、(いまの一致の位置、なければ、検索を始めた位置)から探し直す
       const anchor = current === null ? origin.from : (matches[current] ?? origin.from);
       search(text, anchor);
@@ -178,8 +180,9 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
 
   const accepted = await session.done;
   clearHighlights();
+  // Emacs と同じく、取り消して(C-g)抜けたときも、検索語を覚える(次の C-s C-s で使える)
+  if (query) lastQuery = query;
   if (accepted && query) {
-    lastQuery = query;
     // 一致は、選択状態で残す(そのまま、「エディタで編集」の対象にもなる)。ミニバッファの入力欄が、
     // フォーカスを失うときに、文書の選択を解除してしまう WebView があるので、閉じたあとで、選択し直す
     const start = current === null ? undefined : matches[current];

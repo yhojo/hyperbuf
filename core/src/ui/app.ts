@@ -17,6 +17,7 @@ import { resolveBindings } from "./keymap.ts";
 import { createMinibuffer } from "./minibuffer.ts";
 import { follow, openAt } from "./navigation.ts";
 import { searchProject } from "./search.ts";
+import { applySelection } from "./selection-state.ts";
 import { createSessionSaver, restoreSession } from "./session.ts";
 import type { SessionSaver } from "./session.ts";
 import { Views } from "./windows.ts";
@@ -67,8 +68,10 @@ export async function startApp(options: {
   const files = await host.listFiles();
   const first = files.includes("index.md") ? "index.md" : files[0];
   const useSession = config?.restoreSession !== false && !!host.saveSession;
-  if (useSession && (await restoreSession(ctx, files))) {
+  const restored = useSession ? await restoreSession(ctx, files) : null;
+  if (restored) {
     views.refresh();
+    if (restored.selection) applySelection(ctx, restored.selection);
     echo.message(`${files.length} files / 前回の状態を復元しました`);
   } else if (first) {
     await openAt(ctx, first);
@@ -82,6 +85,7 @@ export async function startApp(options: {
     saver = createSessionSaver(ctx);
     const flushNow = (): void => void saver?.flush();
     window.addEventListener("pagehide", flushNow);
+    document.addEventListener("selectionchange", () => saver?.schedule());
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") flushNow();
     });

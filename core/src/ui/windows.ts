@@ -63,6 +63,11 @@ export class Views {
     this.selected().content.scrollBy({ top: dy });
   }
 
+  /** window の本文の要素(なければ undefined)。 */
+  contentOf(winId: number): HTMLElement | undefined {
+    return this.views.get(winId)?.content;
+  }
+
   /** 選択中の window を、指定の位置(上端)にスクロールする。 */
   scrollTo(top: number): void {
     this.selected().content.scrollTo({ top });

@@ -109,13 +109,22 @@ await hb.open('interaction.md'); await sleep(200);
 await press(['x','KeyX',{ctrlKey:true}], ['3','Digit3']);
 await hb.open('long.md'); await sleep(300);
 const c = document.querySelector('.win.selected .content'); c.scrollTop = 1500; await sleep(300);
+// 左の window(長い文書)の本文の一部を選択する
+const body = document.querySelectorAll('.win .content')[0];
+const target = [...body.querySelectorAll('p')].find((p) => p.textContent.length > 20);
+const r = document.createRange(); r.setStart(target.firstChild, 3); r.setEnd(target.firstChild, 14);
+getSelection().removeAllRanges(); getSelection().addRange(r);
+window.__picked = String(getSelection());
+await sleep(300);
 await press(['x','KeyX',{ctrlKey:true}], ['o','KeyO']);
 await press(['b','KeyB',{ctrlKey:true}]);
-return JSON.stringify(shape());
+const out = shape(); out.picked = window.__picked;
+return JSON.stringify(out);
 """)
 before = r
 check("2 つの window に分割され、それぞれの履歴がある", before["split"] == "row" and len(before["wins"]) == 2, before)
 check("復元の対象の状態ができた(左の window が長い文書、選択は右で、履歴を 1 つ戻してある)", before["wins"][0]["paths"][-1] == "long.md" and before["selected"] == 1 and before["wins"][1]["index"] == 0, before)
+check("選択範囲を作れた", len(before["picked"]) == 11, before["picked"])
 check("終了するとき、通常の終了の手順が完了する", quit_app())
 files = glob.glob(os.path.join(sessions, "*.json"))
 check("セッションが、プロジェクトごとのファイルに保存される", len(files) == 1, files)
@@ -132,6 +141,8 @@ after = run("return JSON.stringify(shape());")
 check("window の配置・各 window の履歴・選択が戻る", all(after[k] == before[k] for k in ("split", "selected", "wins")), (before, after))
 check("最近使った順が戻る", after["mru"] == before["mru"], (before["mru"], after["mru"]))
 check("復元したことが知らされる", "復元" in after["echo"], after["echo"])
+sel = run("await sleep(300); return JSON.stringify({ text: String(getSelection()) });")
+check("選択範囲が戻る", sel["text"] == before["picked"], (sel, before["picked"]))
 r = run("""
 await sleep(500);
 const c = [...document.querySelectorAll('.win .content')];
@@ -149,14 +160,31 @@ return JSON.stringify({ start, fwd, back: sel().history[sel().index].path });
 """)
 back = r
 check("復元した履歴で、Forward / Back が動く(buffer が読み込まれている)", back["start"] != back["fwd"] and back["back"] == back["start"], back)
+# 範囲の端が要素になる選択(段落全体、トリプルクリックなど)も、保存できる
+para = run("""
+const body = document.querySelectorAll('.win .content')[0];
+const p = [...body.querySelectorAll('p')].find((x) => x.textContent.length > 20);
+const r = document.createRange(); r.selectNodeContents(p);
+getSelection().removeAllRanges(); getSelection().addRange(r);
+await sleep(200); await hb.flushSession();
+return JSON.stringify({ text: p.textContent });
+""")
+saved_sel = json.load(open(files[0]))["snapshot"].get("selection")
+check("段落全体の選択(端が要素)も、位置と文字列で保存される", saved_sel is not None and saved_sel["text"].strip() == para["text"].strip(), (saved_sel, para))
 check("2 回目の終了", quit_app())
 
 print("文書がなくなった・保存が壊れた・設定で無効にした場合")
 os.remove(os.path.join(project, "interaction.md"))
+# 選択していた文書(long.md)を書き換える: 位置の文字列が合わなくなるので、選択範囲は戻さない
+long_path = os.path.join(project, "long.md")
+text = open(long_path, encoding="utf-8").read()
+open(long_path, "w", encoding="utf-8").write("# 先頭を足した\n\n新しい段落です。\n\n" + text)
 launch()
 time.sleep(1.0)
 gone = run("return JSON.stringify(shape());")
 check("なくなった文書は、履歴から外れ、残りで復元される", all("interaction.md" not in w["paths"] for w in gone["wins"]) and "復元" in gone["echo"], gone)
+sel = run("await sleep(300); return JSON.stringify({ text: String(getSelection()) });")
+check("文書が書き換わっていれば、ずれた場所を選ばない(選択範囲は戻さない)", sel["text"] == "", sel)
 check("3 回目の終了", quit_app())
 
 open(files[0], "w").write("{broken")

@@ -3,7 +3,7 @@
 // buffer の最近使った順。文書の内容は保存しない(復元時に、ホストから読み直す)。
 // 保存されたデータは、信頼しない入力として、厳密に検証する(壊れていたら、使わない)。
 
-import { isVirtualPath } from "./model.ts";
+import { currentEntry, isVirtualPath, windows } from "./model.ts";
 import type { HistoryEntry, LayoutNode, Model, Win } from "./model.ts";
 
 export const SESSION_VERSION = 1;
@@ -14,10 +14,26 @@ const MAX_MRU = 200;
 const MAX_WINDOWS = 32;
 const MAX_DEPTH = 16;
 const MAX_STRING = 4096;
+/** 保存する選択範囲の、最大の文字数(長いものは、保存しない)。 */
+export const MAX_SELECTION = 4096;
 
 export type SessionNode =
   | { type: "leaf"; id: number; index: number; history: HistoryEntry[] }
   | { type: "split"; dir: "row" | "col"; children: [SessionNode, SessionNode] };
+
+/**
+ * 選択範囲(文書内で選択していたテキスト)。表示されたテキスト(描画後の文字列)の中の位置で表し、
+ * 復元のときは、その位置の文字列が `text` と一致するときだけ使う(文書が書き換わっていれば、使わない)。
+ */
+export interface SessionSelection {
+  /** 選択があった window。 */
+  win: number;
+  /** そのときの、window の現在の文書。 */
+  path: string;
+  start: number;
+  end: number;
+  text: string;
+}
 
 export interface SessionSnapshot {
   version: typeof SESSION_VERSION;
@@ -25,6 +41,7 @@ export interface SessionSnapshot {
   winSeq: number;
   mru: string[];
   root: SessionNode;
+  selection?: SessionSelection;
 }
 
 /** 実在の文書だけを、保存の対象にする(`*search: …*` などの仮想 buffer は、復元できない)。 */
@@ -56,17 +73,24 @@ function snapshotNode(node: LayoutNode): SessionNode | null {
 }
 
 /** いまの状態の、保存用の写し。保存できるものがなければ null。 */
-export function takeSnapshot(model: Model): SessionSnapshot | null {
+export function takeSnapshot(
+  model: Model,
+  selection: SessionSelection | null = null,
+): SessionSnapshot | null {
   const root = snapshotNode(model.root);
   if (!root) return null;
   const ids = leafIds(root);
-  return {
+  const snapshot: SessionSnapshot = {
     version: SESSION_VERSION,
     selected: ids.includes(model.selected) ? model.selected : (ids[0] ?? 1),
     winSeq: model.winSeq,
     mru: model.mru.filter((p) => !isVirtualPath(p)).slice(0, MAX_MRU),
     root,
   };
+  if (selection && ids.includes(selection.win) && !isVirtualPath(selection.path)) {
+    snapshot.selection = selection;
+  }
+  return snapshot;
 }
 
 function leafIds(node: SessionNode): number[] {
@@ -122,7 +146,38 @@ export function parseSnapshot(value: unknown): SessionSnapshot | null {
   if (!node) return null;
   const ids = leafIds(node);
   if (new Set(ids).size !== ids.length) return null;
-  return { version: SESSION_VERSION, selected, winSeq, mru, root: node };
+  const snapshot: SessionSnapshot = { version: SESSION_VERSION, selected, winSeq, mru, root: node };
+  // 選択範囲だけが壊れているときは、選択範囲だけを捨てる(ほかの復元は、使える)
+  const selection = parseSelection(value["selection"]);
+  if (selection && ids.includes(selection.win)) snapshot.selection = selection;
+  return snapshot;
+}
+
+function parseSelection(v: unknown): SessionSelection | null {
+  if (!isRecord(v) || !isPath(v["path"])) return null;
+  const { win, start, end, text } = v;
+  if (typeof win !== "number" || !Number.isInteger(win) || win < 1) return null;
+  if (typeof start !== "number" || typeof end !== "number") return null;
+  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end <= start) return null;
+  if (typeof text !== "string" || text.length !== end - start || text.length > MAX_SELECTION) {
+    return null;
+  }
+  return { win, path: v["path"], start, end, text };
+}
+
+/**
+ * 復元した model に対して、使える選択範囲。その window が、保存したときと同じ文書を表示していなければ
+ * (なくなった文書が外れて、現在位置が変わったなど)、null。
+ */
+export function restoredSelection(
+  snapshot: SessionSnapshot,
+  model: Model,
+): SessionSelection | null {
+  const sel = snapshot.selection;
+  if (!sel) return null;
+  const win = windows(model).find((w) => w.id === sel.win);
+  const entry = win ? currentEntry(win) : null;
+  return entry && entry.path === sel.path ? sel : null;
 }
 
 function restoreWindow(

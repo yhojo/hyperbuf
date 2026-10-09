@@ -5,6 +5,7 @@ import {
   MAX_HISTORY,
   parseSnapshot,
   referencedPaths,
+  restoredSelection,
   restoreModel,
   takeSnapshot,
 } from "../src/session.ts";
@@ -170,4 +171,53 @@ test("選択中の window がなければ、先頭の window", () => {
 test("referencedPaths: 履歴にある文書を重複なく返す", () => {
   const restored = restoreModel(takeSnapshot(sample())!, all("a.md", "b.md", "c.md"))!;
   assert.deepEqual(referencedPaths(restored).sort(), ["a.md", "b.md", "c.md"]);
+});
+
+const selectionIn = (model: ReturnType<typeof sample>) => {
+  const win = windows(model)[1]!;
+  return { win: win.id, path: "c.md", start: 10, end: 15, text: "hello" };
+};
+
+test("選択範囲は、保存して復元できる。window や文書が変わっていれば使わない", () => {
+  const model = sample();
+  const snap = takeSnapshot(model, selectionIn(model))!;
+  const parsed = parseSnapshot(JSON.parse(JSON.stringify(snap)))!;
+  assert.deepEqual(parsed.selection, selectionIn(model));
+  const restored = restoreModel(parsed, all("a.md", "b.md", "c.md"))!;
+  assert.deepEqual(restoredSelection(parsed, restored), selectionIn(model));
+  // c.md がなくなると、その window の現在の文書が変わる(または、window ごとなくなる)ので、使わない
+  const without = restoreModel(parsed, all("a.md", "b.md"))!;
+  assert.equal(restoredSelection(parsed, without), null);
+});
+
+test("選択範囲だけが壊れていても、ほかは復元できる", () => {
+  const model = sample();
+  const good = JSON.parse(JSON.stringify(takeSnapshot(model, selectionIn(model))));
+  const only = (mutate: (s: any) => void) => {
+    const copy = JSON.parse(JSON.stringify(good));
+    mutate(copy);
+    return parseSnapshot(copy);
+  };
+  for (const mutate of [
+    (s: any) => (s.selection.start = -1),
+    (s: any) => (s.selection.end = s.selection.start),
+    (s: any) => (s.selection.text = "hi"),
+    (s: any) => (s.selection.win = 999),
+    (s: any) => (s.selection.path = ""),
+    (s: any) => (s.selection.text = "x".repeat(5000)),
+    (s: any) => (s.selection = "x"),
+  ]) {
+    const parsed = only(mutate);
+    assert.ok(parsed, "スナップショット自体は使える");
+    assert.equal(parsed.selection, undefined);
+  }
+});
+
+test("存在しない window や仮想 buffer の選択範囲は、保存しない", () => {
+  const model = sample();
+  assert.equal(takeSnapshot(model, { ...selectionIn(model), win: 999 })!.selection, undefined);
+  assert.equal(
+    takeSnapshot(model, { ...selectionIn(model), path: "*search: x*" })!.selection,
+    undefined,
+  );
 });

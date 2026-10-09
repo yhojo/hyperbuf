@@ -4,17 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-HyperBuf is in **early implementation (migration plan M0 done)**. The PoCs are finished and live on `poc/*` branches (not merged); `main` holds design docs plus the new, minimal scaffold of each component. The first real features land in M1 (`core/`) and M2 (`app/macos/`); see `docs/migration-plan.md`. README.md (Japanese) is the product vision.
+HyperBuf is in **active implementation: migration plan M0–M6 are done (M3 navigation UI is on its way to `main`)**; M7 (session restore) and M8 (distribution) remain. The PoCs are finished and live on `poc/*` branches (not merged). The repository is mirrored to a private GitHub repo (`yhojo/hyperbuf`); CI runs on pushes to `main`. Progress, decisions and the order of work: `docs/migration-plan.md`. README.md (Japanese) is the product vision.
 
 When adding documents, follow the README's language (Japanese) unless told otherwise.
 
 ## Commands
 
-Everything runs from the repo root through one script (same as CI, `.github/workflows/ci.yml`; CI itself has not run yet because the repo has no GitHub remote):
+Everything runs from the repo root through one script (same as CI, `.github/workflows/ci.yml`; the GUI integration tests below are not run in CI):
 
 ```bash
-scripts/check.sh            # all: core, app, cli, emacs
-scripts/check.sh core       # or: app | cli | emacs
+scripts/check.sh            # all: core, protocol, app, cli, emacs
+scripts/check.sh core       # or: protocol | app | cli | emacs
 ```
 
 Per component (run in the component directory):

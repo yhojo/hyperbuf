@@ -116,9 +116,12 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
     const start = matches[current];
     const range = start === undefined ? null : rangeFor(index, start, start + query.length);
     if (!range) return;
-    selection?.addRange(range);
-    revealRange(content, range);
     const registry = highlights();
+    // 文書に選択を作ると、WKWebView は、ミニバッファの入力欄からフォーカスを奪い、以後のキー入力が
+    // 届かなくなる。入力中は、ハイライトだけで示し、選択は、確定のあとに作る(ハイライトが使えない
+    // 場合に限り、選択で代用する)
+    if (!registry) selection?.addRange(range);
+    revealRange(content, range);
     if (registry) {
       const all = matches
         .slice(0, HIGHLIGHT_LIMIT)

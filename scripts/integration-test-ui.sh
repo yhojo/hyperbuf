@@ -112,7 +112,7 @@ await hb.open('long.md'); await sleep(300);
 await fire('s','KeyS',{ctrlKey:true});
 const opened = mini();
 typeIn('セクション 3'); await sleep(100);
-const typed = { ...mini(), sel: String(getSelection()), hl: CSS.highlights.get('hb-search')?.size };
+const typed = { ...mini(), sel: String(getSelection()), hl: CSS.highlights.get('hb-search')?.size, cur: CSS.highlights.get('hb-search-current')?.size, focus: document.activeElement?.id };
 pressIn('s','KeyS',{ctrlKey:true}); await sleep(80); const next = mini();
 pressIn('r','KeyR',{ctrlKey:true}); await sleep(80); const prev = mini();
 typeIn('存在しない語zzz'); await sleep(80); const failing = mini();
@@ -124,7 +124,8 @@ const accepted = { hidden: mini().hidden, sel: String(getSelection()), top: Math
 return JSON.stringify({ opened, typed, next, prev, failing, cancelled, accepted });
 """)
 check("C-s で検索が始まる", r["opened"]["label"] == "I-search: " and not r["opened"]["hidden"], r["opened"])
-check("入力のたびに、一致を数えて、選択・ハイライトする", r["typed"]["count"].startswith("[1/") and r["typed"]["sel"] == "セクション 3" and r["typed"]["hl"] >= 2, r["typed"])
+check("入力のたびに、一致を数えて、選択・ハイライトする", r["typed"]["count"].startswith("[1/") and r["typed"]["cur"] == 1 and r["typed"]["hl"] >= 2, r["typed"])
+check("入力中は、文書に選択を作らず、フォーカスが入力欄に残る(奪われると、続きの入力が届かない)", r["typed"]["sel"] == "" and r["typed"]["focus"] == "prompt-input", r["typed"])
 check("C-s で次、C-r で前の一致", r["next"]["count"].startswith("[2/") and r["prev"]["count"].startswith("[1/") and "backward" in r["prev"]["label"], (r["next"], r["prev"]))
 check("一致がなければ Failing", r["failing"]["count"] == "Failing" and r["failing"]["label"].startswith("Failing"), r["failing"])
 check("C-g で、始めた位置に戻り、選択・ハイライトが消える", r["cancelled"]["hidden"] and r["cancelled"]["top"] == 0 and r["cancelled"]["sel"] == "" and not r["cancelled"]["hl"], r["cancelled"])

@@ -7,6 +7,31 @@ final class EditorWebView: WKWebView {
     var onEditRequested: (() -> Void)?
     var editMenuTitle = "エディタで編集"
 
+    // 起動直後から、クリックなしでキー操作を受け付ける。WKWebView は、ウィンドウに載っても、
+    // 自分では、ファーストレスポンダにならない(クリックして初めてなる)
+    private var keyObserver: NSObjectProtocol?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        keyObserver.map(NotificationCenter.default.removeObserver)
+        keyObserver = nil
+        guard let window else { return }
+        takeKeyboardFocus()
+        keyObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didBecomeKeyNotification, object: window, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.takeKeyboardFocus() }
+        }
+    }
+
+    /// テキスト入力中は、奪わない。
+    private func takeKeyboardFocus() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let window = self.window else { return }
+            if !(window.firstResponder is NSText) { window.makeFirstResponder(self) }
+        }
+    }
+
     override func willOpenMenu(_ menu: NSMenu, with event: NSEvent) {
         super.willOpenMenu(menu, with: event)
         let item = NSMenuItem(title: editMenuTitle, action: #selector(editInEditor(_:)), keyEquivalent: "")

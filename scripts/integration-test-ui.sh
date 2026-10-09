@@ -174,6 +174,17 @@ pressIn('g','KeyG',{ctrlKey:true});
 return JSON.stringify({ during, after });
 """)
 check("日本語入力の変換中の一致に基準が引きずられず、確定した語を、変換を始めた位置から探す", r5["during"].startswith("[1/") and r5["after"].startswith("[1/"), r5)
+r6 = run("""
+await hb.open('long.md'); await sleep(300);
+await fire('x','KeyX',{ctrlKey:true}); await fire('b','KeyB');
+const before = input().value;
+typeIn('ab'); pressIn('Dead','KeyN',{altKey:true}); input().value = 'ab˜';
+input().dispatchEvent(new CompositionEvent('compositionstart')); await sleep(100);
+const restored = input().value;
+pressIn('g','KeyG',{ctrlKey:true}); await sleep(50);
+return JSON.stringify({ restored });
+""")
+check("Option つきの Dead キー(M-n の ˜ など)で始まった変換は、取り消して、入力欄が元に戻る", r6["restored"] == "ab", r6)
 r2 = run("""
 await hb.open('long.md'); await sleep(300); content().scrollTop = 0; await sleep(50);
 await fire('s','KeyS',{ctrlKey:true}); typeIn('セクション'); await sleep(80);

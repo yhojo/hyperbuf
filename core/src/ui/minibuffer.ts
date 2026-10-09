@@ -100,6 +100,24 @@ export function createMinibuffer(): Minibuffer {
     mini.hidden = false;
     input.focus();
   };
+  // Mac の Option+n(˜)、Option+e(´)などは、次の文字と合成する Dead キーで、keydown の
+  // preventDefault より先に、入力欄に変換中の文字として出てしまう。Option は Meta として使うので、
+  // Option つきのキーで始まった変換は、取り消す(入力欄を、押す前の内容に戻す)
+  let optionBase: string | null = null;
+  input.addEventListener("keydown", (e) => {
+    optionBase = e.altKey && !e.ctrlKey && !e.metaKey ? input.value : null;
+  });
+  input.addEventListener("compositionstart", () => {
+    if (optionBase === null) return;
+    const base = optionBase;
+    optionBase = null;
+    setTimeout(() => {
+      input.blur();
+      input.value = base;
+      input.focus();
+      input.dispatchEvent(new Event("input"));
+    }, 0);
+  });
   const close = (): void => {
     active = false;
     cancelCurrent = null;

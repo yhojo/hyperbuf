@@ -72,6 +72,14 @@ function appendHighlighted(parent: HTMLElement, text: string, query: string): vo
   if (from < text.length) parent.append(document.createTextNode(text.slice(from)));
 }
 
+/**
+ * 日本語入力(IME)の変換・確定のための、RET / ESC。確定のための Enter は、keyCode 229 で届く
+ * (WebKit では、確定のあとに届く)。これをミニバッファの RET として扱うと、確定と終了が同時に起きる。
+ */
+function isImeKey(e: KeyboardEvent): boolean {
+  return (e.isComposing || e.keyCode === 229) && !e.ctrlKey && !e.metaKey && !e.altKey;
+}
+
 export function createMinibuffer(): Minibuffer {
   const mini = byId("minibuffer");
   const input = byId<HTMLInputElement>("prompt-input");
@@ -152,6 +160,7 @@ export function createMinibuffer(): Minibuffer {
           update();
         };
         const onKey = (e: KeyboardEvent): void => {
+          if (isImeKey(e)) return;
           const name = keyName(e);
           if (name === "RET") {
             e.preventDefault();
@@ -209,6 +218,7 @@ export function createMinibuffer(): Minibuffer {
         if (document.activeElement !== input) input.focus();
       };
       const onKey = (e: KeyboardEvent): void => {
+        if (isImeKey(e)) return;
         const name = keyName(e);
         if (name === "RET") {
           e.preventDefault();

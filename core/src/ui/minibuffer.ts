@@ -203,7 +203,11 @@ export function createMinibuffer(): Minibuffer {
         input.removeEventListener("input", onInput);
         finish(accepted);
       };
-      const onInput = (): void => handlers.onInput(input.value);
+      const onInput = (): void => {
+        handlers.onInput(input.value);
+        // 処理の中でフォーカスが外れても(WebView による)、続けて入力できるようにする
+        if (document.activeElement !== input) input.focus();
+      };
       const onKey = (e: KeyboardEvent): void => {
         const name = keyName(e);
         if (name === "RET") {

@@ -111,7 +111,9 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
   const select = (): void => {
     clearHighlights();
     const selection = window.getSelection();
-    selection?.removeAllRanges();
+    // ハイライトが使えるときは、選択に触れない(入力欄にフォーカスがあるときに選択を操作すると、
+    // WKWebView は、入力欄のフォーカスを外す)
+    if (!highlights()) selection?.removeAllRanges();
     if (current === null) return;
     const start = matches[current];
     const range = start === undefined ? null : rangeFor(index, start, start + query.length);

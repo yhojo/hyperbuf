@@ -96,6 +96,17 @@ createServer(async (req, res) => {
     if (pathname === "/__project/files") {
       return send(res, 200, JSON.stringify(await listMarkdown()), MIME[".json"]);
     }
+    if (pathname === "/__project/config") {
+      // 開発用: 環境変数 HYPERBUF_CONFIG の JSON(keybindings だけを返す)
+      const file = process.env.HYPERBUF_CONFIG;
+      const config = file ? JSON.parse(await readFile(file, "utf8").catch(() => "{}")) : {};
+      return send(
+        res,
+        200,
+        JSON.stringify({ keybindings: config.keybindings ?? {} }),
+        MIME[".json"],
+      );
+    }
     if (pathname === "/__project/file") {
       const path = url.searchParams.get("path") ?? "";
       const file = path.endsWith(".md") ? await contained(path) : null;

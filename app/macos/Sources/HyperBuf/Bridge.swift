@@ -28,6 +28,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
           const encode = (path) => path.split("/").map(encodeURIComponent).join("/");
           window.hyperbufHost = {
             name: "macos",
+            getConfig: () => call({ op: "config" }),
             listFiles: () => call({ op: "list" }),
             readFile: (path) => call({ op: "read", path }),
             onFileChanged: (cb) => { changeListeners.push(cb); },
@@ -72,6 +73,9 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
         let project = session.project
         let access = session.fileAccess
         switch op {
+        case "config":
+            // 利用者の設定のうち、Web コアが使うもの(検証は、Web コアが行う)
+            replyHandler(["keybindings": UserKeybindings.load(from: EditorConfig.configURL())], nil)
         case "list":
             // 数千ファイルでもメインスレッドを塞がないよう、別のスレッドで列挙する
             Task {

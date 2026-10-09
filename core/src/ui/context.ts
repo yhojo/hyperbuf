@@ -1,4 +1,5 @@
 import type { HyperbufHost } from "../host.ts";
+import type { BindingsResult } from "../keybindings.ts";
 import type { Model } from "../model.ts";
 import type { Echo } from "./echo.ts";
 import type { Minibuffer } from "./minibuffer.ts";
@@ -11,4 +12,6 @@ export interface AppContext {
   views: Views;
   echo: Echo;
   minibuffer: Minibuffer;
+  /** いまのキー割り当てと、設定の問題(標準 + 利用者の設定)。describe-bindings が使う。 */
+  bindings: BindingsResult;
 }

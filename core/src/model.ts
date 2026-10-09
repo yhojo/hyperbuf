@@ -200,6 +200,34 @@ export function deleteOthers(model: Model): void {
   model.root = leaf(selectedWindow(model));
 }
 
+/**
+ * buffer を閉じる。どの window の履歴からも、その buffer への参照を取り除く
+ * (閉じた buffer を、Back / Forward で表示できなくなる、という状態を作らない)。
+ * 閉じた buffer を表示していた window は、履歴の、ひとつ前の参照を表示する。
+ * @returns 履歴が空になった window(表示するものがないので、呼び出し側が、別の buffer を開く)。
+ */
+export function killBuffer(model: Model, path: string): Win[] {
+  model.buffers.delete(path);
+  model.mru = model.mru.filter((p) => p !== path);
+  const empty: Win[] = [];
+  for (const win of windows(model)) {
+    // 現在位置(index)より前に残る参照の数から、新しい index を求める
+    let kept = 0;
+    let newIndex = -1;
+    const history: HistoryEntry[] = [];
+    win.history.forEach((entry, i) => {
+      if (entry.path === path) return;
+      history.push(entry);
+      if (i <= win.index) newIndex = kept;
+      kept += 1;
+    });
+    win.history = history;
+    win.index = history.length === 0 ? -1 : Math.max(newIndex, 0);
+    if (history.length === 0) empty.push(win);
+  }
+  return empty;
+}
+
 export function otherWindow(model: Model): void {
   const all = windows(model);
   const i = all.findIndex((w) => w.id === model.selected);

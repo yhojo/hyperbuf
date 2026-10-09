@@ -14,7 +14,15 @@ export interface MarkResult {
   message: string;
 }
 
+/** 利用者の設定(config.json)のうち、Web コアが使うもの。 */
+export interface HostConfig {
+  /** キー列 → コマンド名(`null` は、標準の割り当てを外す)。 */
+  keybindings?: Record<string, string | null>;
+}
+
 export interface HyperbufHost {
+  /** 利用者の設定。なければ、標準のまま。 */
+  getConfig?(): Promise<HostConfig>;
   /** シェルの識別名(診断用)。 */
   readonly name: string;
   /** プロジェクト内の Markdown の相対パス(隠しファイルと node_modules を除く)。 */

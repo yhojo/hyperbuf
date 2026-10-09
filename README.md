@@ -73,10 +73,15 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 | Switch buffer | `C-x b` | 表示するbufferを切り替える |
 | Find file | `C-x C-f` | ファイルを開く |
 | Command palette | `M-x` | 名前からコマンドを実行 |
-| Search in document | `C-s` | 文書内検索 |
+| Search in document | `C-s` / `C-r` | 文書内のインクリメンタル検索（入力のたびに一致を数えてハイライト、`RET` で確定、`C-g` で取消） |
+| Search in project | `M-s g` | プロジェクト全体の全文検索（結果は仮想bufferに出る） |
 | Back / Forward | `C-b` / `C-f`（別名 `Cmd+[` / `Cmd+]`） | 各windowの参照履歴を前後移動 |
+| Outline | `C-c C-n` / `C-p` / `C-f` / `C-b` / `C-u` | 次・前・同じレベルの次・同じレベルの前・上のレベルの見出しへ移動 |
+| Kill buffer | `C-x k` | bufferを閉じる |
+| Edit in editor | `C-c e` / 右クリック | 指した場所を、エディタで編集するために記録 |
+| Describe bindings | `C-h b` | キー割り当ての一覧（設定は `config.json` の `keybindings`） |
 
-*上記は初期案であり、ショートカット体系全体を確定するものではありません。*
+*キー割り当ての全体は [docs/keybindings.md](docs/keybindings.md)（コードから自動生成）、設定の方法は [docs/configuration.md](docs/configuration.md)。*
 
 ## Non-goals (initially)
 

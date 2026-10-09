@@ -2,6 +2,13 @@
 
 README.md に記載した方針・計画を変更した際の記録。新しいものを上に追記する。README は自由に更新してよいが、変更理由をここに残す。
 
+## 2026-10-09 01:48 JST — 操作の一覧の更新(M3)
+
+- **変更前**（README「Initial interaction sketch」）: 操作の一覧は、初期案(分割・buffer 切替・ファイルを開く・コマンド・文書内検索・Back/Forward)のみ。
+- **変更後**: 実装済みの操作を、一覧に追加した。文書内検索は `C-s` / `C-r`(インクリメンタル)、プロジェクト検索 `M-s g`、outline 風の見出し移動(`C-c C-n/p/f/b/u`。`C-c` 系を、このために取っておく方針の実装)、`C-x k`(buffer を閉じる)、`C-c e`(エディタで編集)、`C-h b`(キー割り当ての一覧)。キー割り当ては、`config.json` の `keybindings` で変えられる。一覧の全体は、`docs/keybindings.md`(コードから自動生成)に置く。
+- **理由**: README の一覧は「初期案」で、実装で確定した操作と食い違ってきたため。README では、代表的な操作だけを示し、全体は、コードから生成した文書に任せる(食い違いを防ぐ)。
+- 関連: `docs/keybindings.md`、`docs/configuration.md`。
+
 ## 2026-10-08 23:34 JST — 構成・名前・言語・対応OSの決定
 
 - **変更前**（README/CLAUDE.md）: 名前は「Hyperbuf（仮称）」。構成は `app/` `cli/` `emacs/` `docs/` の計画。Web コアは素の JavaScript、CLI や最小の macOS は未決。

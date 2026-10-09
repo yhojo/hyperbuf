@@ -10,8 +10,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "node build.mjs",
-    "check": "npm run typecheck && npm run format:check && npm test",
-    "dev": "npm run build && node scripts/dev-server.mjs"
+    "check": "npm run typecheck && npm run format:check && npm test && node scripts/gen-keybindings.ts --check",
+    "dev": "npm run build && node scripts/dev-server.mjs",
+    "keybindings": "node scripts/gen-keybindings.ts"
   },
   "engines": {
     "node": ">=22.18"

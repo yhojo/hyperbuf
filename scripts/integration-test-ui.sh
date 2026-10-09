@@ -161,6 +161,19 @@ pressIn('g','KeyG',{ctrlKey:true});
 return JSON.stringify({ count });
 """)
 check("検索語がいったん空になって元に戻っても(日本語入力の確定)、選んでいた一致から動かない", r4["count"].startswith("[3/"), r4)
+r5 = run("""
+await hb.open('long.md'); await sleep(300); content().scrollTop = 0; await sleep(50);
+const comp = (t) => { input().value = t; input().dispatchEvent(new InputEvent('input', { isComposing: true })); };
+await fire('s','KeyS',{ctrlKey:true});
+comp('ｓ'); await sleep(50); comp('セ'); await sleep(50); comp('セクション 7'); await sleep(50);
+const during = mini().count;
+typeIn(''); typeIn('セクション 7'); await sleep(80);
+const after = mini().count;
+const selTop = Math.round(content().scrollTop);
+pressIn('g','KeyG',{ctrlKey:true});
+return JSON.stringify({ during, after });
+""")
+check("日本語入力の変換中の一致に基準が引きずられず、確定した語を、変換を始めた位置から探す", r5["during"].startswith("[1/") and r5["after"].startswith("[1/"), r5)
 r2 = run("""
 await hb.open('long.md'); await sleep(300); content().scrollTop = 0; await sleep(50);
 await fire('s','KeyS',{ctrlKey:true}); typeIn('セクション'); await sleep(80);

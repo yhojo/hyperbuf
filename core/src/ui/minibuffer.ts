@@ -24,7 +24,8 @@ export interface PromptOptions {
 
 export interface LiveHandlers {
   /** 入力が変わった。 */
-  onInput(text: string): void;
+  /** `composing`: 日本語入力の変換中(確定前)の入力か。 */
+  onInput(text: string, composing: boolean): void;
   /**
    * 特別なキー。RET(確定)と C-g / ESC(取消)以外で、呼び出し側が扱うもの(C-s、C-r など)。
    * 扱ったら true(既定の動作を止める)。
@@ -212,8 +213,8 @@ export function createMinibuffer(): Minibuffer {
         input.removeEventListener("input", onInput);
         finish(accepted);
       };
-      const onInput = (): void => {
-        handlers.onInput(input.value);
+      const onInput = (e: Event): void => {
+        handlers.onInput(input.value, (e as InputEvent).isComposing === true);
         // 処理の中でフォーカスが外れても(WebView による)、続けて入力できるようにする
         if (document.activeElement !== input) input.focus();
       };

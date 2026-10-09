@@ -153,21 +153,23 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
     if (current !== null) anchor = matches[current] ?? anchor;
   };
 
-  const search = (text: string, from: number): void => {
+  // composing: 日本語入力の変換中は、基準の位置を動かさない(「さ」「さん」…と途中の一致に引きずられず、
+  // 確定した語を、変換を始めた位置から探す)
+  const search = (text: string, from: number, composing = false): void => {
     query = text;
     matches = findAll(index.text, query, isCaseSensitive(query));
     const first = firstMatch(matches, from, dir);
     current = first.index;
-    remember();
+    if (!composing) remember();
     show(first.wrapped);
   };
 
   const session = minibuffer.live(labelOf(), {
-    onInput(text) {
+    onInput(text, composing) {
       // 検索語が変わっていない入力(日本語入力の確定など)では、探し直さない(選んだ一致が動いてしまう)
       if (text === query && current !== null) return;
       // 入力が変わったら、基準の位置から探し直す
-      search(text, anchor);
+      search(text, anchor, composing);
     },
     onKey(name) {
       if (name !== "C-s" && name !== "C-r") return false;

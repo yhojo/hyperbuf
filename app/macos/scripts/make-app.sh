@@ -9,8 +9,13 @@ cd "$(dirname "$0")/../../.."   # リポジトリのルート
 
 config="${1:-release}"
 (cd core && npm ci --silent && npm run build >/dev/null)
-(cd app/macos && swift build -c "$config" >/dev/null)
-(cd cli && swift build -c "$config" >/dev/null)
+# ビルドしたマシンのソースの絶対パス(個人のパス)が、実行ファイルに残らないよう、置き換える
+root="$(pwd -P)"
+remap=()
+# debug ビルドは、ソースのパス(#filePath)から core/dist を探す(WebRoot.swift)ので、置き換えない
+if [ "$config" = "release" ]; then remap=(-Xswiftc -file-prefix-map -Xswiftc "$root=/hyperbuf"); fi
+(cd app/macos && swift build -c "$config" ${remap[@]+"${remap[@]}"} >/dev/null)
+(cd cli && swift build -c "$config" ${remap[@]+"${remap[@]}"} >/dev/null)
 
 app="app/macos/.build/HyperBuf.app"
 rm -rf "$app"

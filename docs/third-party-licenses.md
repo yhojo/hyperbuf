@@ -1,0 +1,197 @@
+# サードパーティのライセンス(自動生成)
+
+`node core/scripts/licenses.mjs summary` で生成する。**手で編集しない**(`npm run check` が、最新かを検査する)。
+アプリに同梱する全文つきの `THIRD-PARTY-NOTICES` は、`app/macos/scripts/make-app.sh` が、同じスクリプトで生成する。
+
+対象は、Web コア(`core/dist`)のバンドルに実際に入るもの。Swift 側(アプリ・CLI・プロトコル)は、サードパーティの依存を持たない。
+
+## 集計(npm のパッケージ 152 件)
+
+| ライセンス | 件数 |
+| --- | --- |
+| MIT | 118 |
+| ISC | 22 |
+| Apache-2.0 | 5 |
+| BSD-3-Clause | 5 |
+| EPL-2.0 | 1 |
+| BSD-2-Clause | 1 |
+
+- **MIT / ISC / BSD / Apache-2.0** など許容的なライセンスは、著作権表示とライセンス文を、配布物に含めれば足りる。
+- **dompurify**(Apache-2.0): (MPL-2.0 OR Apache-2.0) の二重ライセンス。Apache-2.0 を選ぶ(利用者が選べる)。
+- **elkjs**(EPL-2.0、要確認): 弱いコピーレフト(ファイル単位)。Mermaid の ELK レイアウト(layout: elk)用の遅延ロードのチャンク。改変せずに同梱し、ソースの入手先(https://github.com/kieler/elkjs)を表示する。GPL 系のライセンスとは相性が悪い(EPL-2.0 は、Secondary License の指定がなければ、GPL と結合できない)。使わないなら、バンドルから外せる。
+- **khroma**(MIT): package.json に license の欄がないが、同梱の license ファイルは MIT。
+- **rehype-katex**(MIT): パッケージに license ファイルがない。package.json の license(MIT)と author、README の「MIT © Junyoung Choi」から、MIT の標準の文面を補う(年は、パッケージから分からないので書かない)。
+- **remark-math**(MIT): パッケージに license ファイルがない。package.json の license(MIT)と author、README の「MIT © Junyoung Choi」から、MIT の標準の文面を補う(年は、パッケージから分からないので書かない)。
+
+## starry-night の文法(バンドルに入った 34 件)
+
+| ライセンス(SPDX) | 件数 |
+| --- | --- |
+| mit | 16 |
+| permissive | 13 |
+| isc | 2 |
+| apache-2.0 | 2 |
+| bsd-3-clause | 1 |
+
+文法ごとの出所とライセンス文は、`THIRD-PARTY-NOTICES` に入る(starry-night の `notice` から、バンドルに入ったものだけを取り出す)。コピーレフト(GPL 系)のものは、ない。
+
+## その他の同梱物
+
+- **KaTeX fonts**(OFL-1.1): フォントのファイルに埋め込まれたライセンス表記(SIL Open Font License 1.1)に従う。フォントを単体で販売しない。改変していない(予約された名前の制限は、改変版のときだけ)。
+
+## パッケージの一覧
+
+| パッケージ | バージョン | ライセンス |
+| --- | --- | --- |
+| @braintree/sanitize-url | 7.1.2 | MIT |
+| @chevrotain/gast | 13.2.0 | Apache-2.0 |
+| @chevrotain/regexp-to-ast | 13.2.0 | Apache-2.0 |
+| @chevrotain/utils | 13.2.0 | Apache-2.0 |
+| @iconify/utils | 3.1.7 | MIT |
+| @mermaid-js/parser | 2.0.1 | MIT |
+| @ungap/structured-clone | 1.4.0 | ISC |
+| @upsetjs/venn.js | 2.0.0 | MIT |
+| @wooorm/starry-night | 3.11.0 | MIT |
+| bail | 2.0.2 | MIT |
+| ccount | 2.0.1 | MIT |
+| character-entities-html4 | 2.1.0 | MIT |
+| character-entities-legacy | 3.0.0 | MIT |
+| chevrotain | 13.2.0 | Apache-2.0 |
+| comma-separated-tokens | 2.0.3 | MIT |
+| cose-base | 2.2.0 | MIT |
+| cose-base | 1.0.3 | MIT |
+| cytoscape | 3.34.3 | MIT |
+| cytoscape-cose-bilkent | 4.1.0 | MIT |
+| cytoscape-fcose | 2.2.0 | MIT |
+| d3-array | 2.12.1 | BSD-3-Clause |
+| d3-array | 3.2.4 | ISC |
+| d3-axis | 3.0.0 | ISC |
+| d3-brush | 3.0.0 | ISC |
+| d3-color | 3.1.0 | ISC |
+| d3-dispatch | 3.0.1 | ISC |
+| d3-ease | 3.0.1 | BSD-3-Clause |
+| d3-format | 3.1.2 | ISC |
+| d3-hierarchy | 3.1.2 | ISC |
+| d3-interpolate | 3.0.1 | ISC |
+| d3-path | 1.0.9 | BSD-3-Clause |
+| d3-path | 3.1.0 | ISC |
+| d3-sankey | 0.12.3 | BSD-3-Clause |
+| d3-scale | 4.0.2 | ISC |
+| d3-scale-chromatic | 3.1.0 | ISC |
+| d3-selection | 3.0.0 | ISC |
+| d3-shape | 1.3.7 | BSD-3-Clause |
+| d3-shape | 3.2.0 | ISC |
+| d3-time | 3.1.0 | ISC |
+| d3-time-format | 4.1.0 | ISC |
+| d3-timer | 3.0.1 | ISC |
+| d3-transition | 3.0.1 | ISC |
+| d3-zoom | 3.0.0 | ISC |
+| dagre-d3-es | 7.0.14 | MIT |
+| dayjs | 1.11.23 | MIT |
+| decode-named-character-reference | 1.3.0 | MIT |
+| dompurify | 3.4.16 | Apache-2.0 |
+| elkjs | 0.9.3 | EPL-2.0 |
+| entities | 6.0.1 | BSD-2-Clause |
+| es-toolkit | 1.52.0 | MIT |
+| escape-string-regexp | 5.0.0 | MIT |
+| extend | 3.0.2 | MIT |
+| github-markdown-css | 5.9.0 | MIT |
+| github-slugger | 2.0.0 | ISC |
+| hast-util-from-dom | 5.0.1 | ISC |
+| hast-util-from-html-isomorphic | 2.0.0 | MIT |
+| hast-util-from-parse5 | 8.0.3 | MIT |
+| hast-util-is-element | 3.0.0 | MIT |
+| hast-util-parse-selector | 4.0.0 | MIT |
+| hast-util-raw | 9.1.0 | MIT |
+| hast-util-sanitize | 5.0.2 | MIT |
+| hast-util-to-html | 9.0.5 | MIT |
+| hast-util-to-parse5 | 8.0.1 | MIT |
+| hast-util-to-string | 3.0.1 | MIT |
+| hast-util-to-text | 4.0.2 | MIT |
+| hast-util-whitespace | 3.0.0 | MIT |
+| hastscript | 9.0.1 | MIT |
+| html-void-elements | 3.0.0 | MIT |
+| internmap | 2.0.3 | ISC |
+| is-plain-obj | 4.1.0 | MIT |
+| katex | 0.16.47 | MIT |
+| katex | 0.16.47 | MIT |
+| katex | 0.19.0 | MIT |
+| khroma | 2.1.0 | MIT |
+| layout-base | 2.0.1 | MIT |
+| layout-base | 1.0.2 | MIT |
+| lodash-es | 4.18.1 | MIT |
+| longest-streak | 3.1.0 | MIT |
+| markdown-table | 3.0.4 | MIT |
+| marked | 16.4.2 | MIT |
+| mdast-util-find-and-replace | 3.0.3 | MIT |
+| mdast-util-from-markdown | 2.1.0 | MIT |
+| mdast-util-gfm | 3.1.0 | MIT |
+| mdast-util-gfm-autolink-literal | 2.0.1 | MIT |
+| mdast-util-gfm-footnote | 2.1.0 | MIT |
+| mdast-util-gfm-strikethrough | 2.0.1 | MIT |
+| mdast-util-gfm-table | 2.0.0 | MIT |
+| mdast-util-gfm-task-list-item | 2.0.0 | MIT |
+| mdast-util-math | 3.0.0 | MIT |
+| mdast-util-phrasing | 4.1.0 | MIT |
+| mdast-util-to-hast | 13.2.1 | MIT |
+| mdast-util-to-markdown | 2.2.0 | MIT |
+| mdast-util-to-string | 4.0.0 | MIT |
+| mermaid | 12.1.0 | MIT |
+| micromark | 4.0.3 | MIT |
+| micromark-core-commonmark | 2.0.4 | MIT |
+| micromark-extension-gfm | 3.0.0 | MIT |
+| micromark-extension-gfm-autolink-literal | 2.1.0 | MIT |
+| micromark-extension-gfm-footnote | 2.1.0 | MIT |
+| micromark-extension-gfm-strikethrough | 2.1.0 | MIT |
+| micromark-extension-gfm-table | 2.1.2 | MIT |
+| micromark-extension-gfm-task-list-item | 2.1.0 | MIT |
+| micromark-extension-math | 3.1.0 | MIT |
+| micromark-factory-destination | 2.0.1 | MIT |
+| micromark-factory-label | 2.0.1 | MIT |
+| micromark-factory-space | 2.1.0 | MIT |
+| micromark-factory-title | 2.0.1 | MIT |
+| micromark-factory-whitespace | 2.0.1 | MIT |
+| micromark-util-character | 2.1.1 | MIT |
+| micromark-util-chunked | 2.0.1 | MIT |
+| micromark-util-classify-character | 2.0.1 | MIT |
+| micromark-util-combine-extensions | 2.0.1 | MIT |
+| micromark-util-decode-numeric-character-reference | 2.0.2 | MIT |
+| micromark-util-decode-string | 2.0.1 | MIT |
+| micromark-util-edit-map | 1.0.0 | MIT |
+| micromark-util-html-tag-name | 2.0.1 | MIT |
+| micromark-util-normalize-identifier | 2.0.1 | MIT |
+| micromark-util-resolve-all | 2.0.1 | MIT |
+| micromark-util-sanitize-uri | 2.0.1 | MIT |
+| micromark-util-subtokenize | 2.1.0 | MIT |
+| parse5 | 7.3.0 | MIT |
+| property-information | 7.2.0 | MIT |
+| rehype-katex | 7.0.1 | MIT |
+| rehype-raw | 7.0.0 | MIT |
+| rehype-sanitize | 6.0.0 | MIT |
+| rehype-stringify | 10.0.1 | MIT |
+| remark-gfm | 4.0.1 | MIT |
+| remark-math | 6.0.0 | MIT |
+| remark-parse | 11.0.0 | MIT |
+| remark-rehype | 11.1.2 | MIT |
+| roughjs | 4.6.6 | MIT |
+| space-separated-tokens | 2.0.2 | MIT |
+| stringify-entities | 4.0.4 | MIT |
+| stylis | 4.4.0 | MIT |
+| trim-lines | 3.0.1 | MIT |
+| trough | 2.2.0 | MIT |
+| ts-dedent | 2.3.0 | MIT |
+| unified | 11.0.5 | MIT |
+| unist-util-find-after | 5.0.0 | MIT |
+| unist-util-is | 6.0.1 | MIT |
+| unist-util-position | 5.0.0 | MIT |
+| unist-util-stringify-position | 4.0.0 | MIT |
+| unist-util-visit | 5.1.0 | MIT |
+| unist-util-visit-parents | 6.0.2 | MIT |
+| uuid | 14.0.2 | MIT |
+| vfile | 6.0.3 | MIT |
+| vfile-location | 5.0.3 | MIT |
+| vfile-message | 4.0.3 | MIT |
+| vscode-oniguruma | 2.0.1 | MIT |
+| vscode-textmate | 9.3.2 | MIT |
+| web-namespaces | 2.0.1 | MIT |
+| zwitch | 2.0.4 | MIT |

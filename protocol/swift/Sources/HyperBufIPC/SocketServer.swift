@@ -20,7 +20,7 @@ public final class SocketServer: @unchecked Sendable {
 
     public let path: String
     private let handler: Handler
-    private let queue = DispatchQueue(label: "dev.hyperbuf.socket", attributes: .concurrent)
+    private let queue = DispatchQueue(label: "com.yhojo.hyperbuf.socket", attributes: .concurrent)
     private let lock = NSLock()
     private var listenFd: Int32 = -1
 

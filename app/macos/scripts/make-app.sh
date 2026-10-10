@@ -14,15 +14,17 @@ rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "app/macos/.build/$config/HyperBuf" "$app/Contents/MacOS/HyperBuf"
 cp -R core/dist "$app/Contents/Resources/web"
+# 同梱したサードパーティのソフトウェアの著作権表示とライセンス(配布の条件)。Web の配信範囲(web/)の外に置く
+(cd core && node scripts/licenses.mjs notices "../$app/Contents/Resources/THIRD-PARTY-NOTICES.txt" >/dev/null)
 
-# Bundle ID は、公開前に、取得するドメインに合わせて決める(docs/migration-plan.md §8)。
+# Bundle ID は、所有するドメイン(yhojo.com)の逆順(docs/migration-plan.md §8)。
 cat > "$app/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
   <key>CFBundleExecutable</key><string>HyperBuf</string>
-  <key>CFBundleIdentifier</key><string>dev.hyperbuf.app</string>
+  <key>CFBundleIdentifier</key><string>com.yhojo.hyperbuf</string>
   <key>CFBundleName</key><string>HyperBuf</string>
   <key>CFBundleDisplayName</key><string>HyperBuf</string>
   <key>CFBundlePackageType</key><string>APPL</string>
@@ -36,7 +38,7 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
   <key>CFBundleURLTypes</key>
   <array>
     <dict>
-      <key>CFBundleURLName</key><string>dev.hyperbuf.app.url</string>
+      <key>CFBundleURLName</key><string>com.yhojo.hyperbuf.url</string>
       <key>CFBundleURLSchemes</key><array><string>hyperbuf</string></array>
     </dict>
   </array>

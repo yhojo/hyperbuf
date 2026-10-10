@@ -25,7 +25,7 @@ public final class FileWatcher: @unchecked Sendable {
         var pending: DispatchWorkItem?
     }
 
-    private let queue = DispatchQueue(label: "dev.hyperbuf.filewatcher")
+    private let queue = DispatchQueue(label: "com.yhojo.hyperbuf.filewatcher")
     private var entries: [String: Entry] = [:]
     private var directories: [String: DispatchSourceFileSystemObject] = [:]
     private let onChange: @Sendable (String, State) -> Void

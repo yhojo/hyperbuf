@@ -25,6 +25,8 @@ Per component (run in the component directory):
 | `app/macos/`, `cli/` (SwiftPM, Swift 6, macOS 14+) | `swift build && swift test && swift format lint --strict --recursive Sources Tests --configuration .swift-format` | `swift test --filter <TestName>` |
 | `emacs/` | `scripts/check.sh emacs` (byte-compile with warnings as errors, then ERT) | `emacs -Q --batch -L emacs -l ert -l emacs/test/hyperbuf-test.el --eval '(ert-run-tests-batch-and-exit "<test-name-regexp>")'` |
 
+Third-party licenses (what is actually bundled in the Web core): `node core/scripts/licenses.mjs check` (part of `npm run check`: allowed licenses only, license texts present, `docs/third-party-licenses.md` up to date; regenerate with `npm run licenses` in `core/`). `make-app.sh` writes the full `THIRD-PARTY-NOTICES.txt` into the app bundle. Manual entries (KaTeX fonts, overrides) live in `legal/extra-licenses.json`.
+
 Formatters: Prettier (core), `swift format` (Swift; 4-space indent, config in each package's `.swift-format`). Fix with `npm run format` / `swift format format --in-place --recursive Sources Tests --configuration .swift-format`.
 
 Running the macOS app (needs `core/dist`, so build the core first):

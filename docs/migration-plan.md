@@ -155,7 +155,7 @@ PoC(Interaction、Rendering、Project navigation、連携プロトコル)で、�
 - **Homebrew:** `hyperbuf` の formula・cask は見つからない。
 - **ドメイン:** `hyperbuf.com` / `.dev` / `.app` / `.org` / `.io` は、DNS に存在しない(NXDOMAIN)。ただし、登録されていないとは限らない(WHOIS で未確認)。
 - **未確認:** 商標(USPTO、日本の J-PlatPat など)は未調査。公開の前に確認する。
-- **Bundle ID:** 慣習として、所有するドメインの逆順(例: `dev.hyperbuf.app`)を使う。ドメインを取得するか、別の形にするかを、公開前に決める。PoC は `dev.hyperbuf.poc` を使っている。
+- **Bundle ID(決定、2026-10-10): `com.yhojo.hyperbuf`。** 所有するドメイン(`yhojo.com`)の逆順(Bundle ID は文字列で、DNS の設定や登録の手続きは要らない)。PoC は `dev.hyperbuf.poc` を使っていた。
 
 ### 最小の macOS(合意済みの方針と、提案)
 

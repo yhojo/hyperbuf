@@ -22,6 +22,8 @@
     "(hyperbuf-edit-here)"
   ],
   "restoreSession": true,
+  "warnPaths": ["/usr", "/opt", "/tmp", "~/.ssh"],
+  "allowPaths": ["~/work", "/usr/share/doc"],
   "keybindings": {
     "M-p": "back",
     "M-n": "forward",
@@ -37,7 +39,7 @@
 | ---------------- | ------ | ------------------------------------------------------------------------- |
 | `restoreSession` | 真偽値 | 前回の状態を復元し、保存するか。**既定は `true`**(`false` のときだけ無効) |
 
-- 復元の範囲・保存先・壊れたデータの扱いは、[session-restore.md](session-restore.md)。
+- 復元の範囲・保存先・壊れたデータの扱いは、[session-restore.md](session-restore.md)(複数フレームは [project-model.md](project-model.md) §10)。
 - `false` のあいだは、復元もしないし、保存もしない(それまでの保存は、そのまま残る)。
 
 ## エディタの連携(`editorName`・`editorCommand`)
@@ -54,6 +56,21 @@
 - 不正なコマンド(相対パス、存在しない、実行できない、配列でない、など)は、無視する(エディタは、呼び出さない)。
 
 詳細: [integration-protocol.md](integration-protocol.md) §15、Emacs 側は [`emacs/README.md`](../emacs/README.md)。
+
+## ファイルのアクセス(`warnPaths`・`allowPaths`)
+
+ファイルを開く範囲は、プロジェクトではなく、**警告パス**と**許可パス**で決める(判定の規則: [project-model.md](project-model.md) §5)。
+
+| キー         | 型           | 意味                                                                                                                                      |
+| ------------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `warnPaths`  | 文字列の配列 | 警告パス。この下のファイルをリンクや外部連携から開くときは、ミニバッファで確認する。**書いたら、既定の一覧を置き換える**。`[]` で警告なし |
+| `allowPaths` | 文字列の配列 | 許可パス。警告パスの下で、確認を省く場所。**書いたら、既定の一覧を置き換える**                                                            |
+
+- 既定の警告パス: `/usr`、`/opt`、`/tmp`、`/var`、`/etc`、`/System`、`/Library`、`~/.ssh`、`~/.aws`、`~/.gnupg`、`~/Library`。既定の許可パス: `~/Library/Mobile Documents`(iCloud Drive)。
+- 絶対パス、または `~/…` で書く。シンボリックリンクは解決して照合する(`/tmp` は `/private/tmp` として扱う)。相対パス、型の違うもの、空のものは無視して、理由を `C-h b` の「設定の問題」に出す。
+- **一番長く一致したものが勝つ**(より具体的な指定が優先)。許可と警告が同じパスなら、警告として扱い、設定の問題として報告する。
+- **自分で打った・選んだパス(`C-x C-f`、`C-x p f`)は、判定しない。** 判定の対象は、リンクのクリック、外部連携(CLI・Emacs・URL スキーム)、文書が参照する画像。
+- 警告パスのファイルを承認すると、そのファイルのディレクトリ以下が記憶される(`~/Library/Application Support/HyperBuf/trusted-roots.json`)。記憶は `M-x forget-remembered-path` で取り消せる。
 
 ## キー割り当て(`keybindings`)
 
@@ -83,9 +100,9 @@
 
 テストが、利用者の実際の設定を使わないよう、デバッグビルドは、環境変数で、場所を差し替えられる(`CLAUDE.md` 参照)。
 
-| 環境変数                 | 差し替えるもの         |
-| ------------------------ | ---------------------- |
-| `HYPERBUF_CONFIG`        | この設定ファイル       |
-| `HYPERBUF_SOCKET_PATH`   | ソケット               |
-| `HYPERBUF_TRUSTED_ROOTS` | 信頼するルートの保存先 |
-| `HYPERBUF_SESSION_DIR`   | セッションの保存先     |
+| 環境変数                 | 差し替えるもの                                        |
+| ------------------------ | ----------------------------------------------------- |
+| `HYPERBUF_CONFIG`        | この設定ファイル                                      |
+| `HYPERBUF_SOCKET_PATH`   | ソケット                                              |
+| `HYPERBUF_TRUSTED_ROOTS` | 信頼するルートの保存先                                |
+| `HYPERBUF_SESSION_DIR`   | セッションの保存先(`session.json` を置くディレクトリ) |

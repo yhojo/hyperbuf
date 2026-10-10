@@ -5,7 +5,8 @@ public enum OpenURL {
     public static func make(_ request: Request) -> URL? {
         var components = URLComponents()
         components.scheme = HyperBufProtocol.urlScheme
-        components.host = "open"
+        // ping は、アプリの起動だけ(CLI の初回起動)。ファイルは、ソケットで送る
+        components.host = request.op == RequestOperation.ping.rawValue ? "ping" : "open"
         var items = [URLQueryItem(name: "v", value: String(request.v ?? HyperBufProtocol.version))]
         if let path = request.path { items.append(URLQueryItem(name: "path", value: path)) }
         if let line = request.line { items.append(URLQueryItem(name: "line", value: String(line))) }

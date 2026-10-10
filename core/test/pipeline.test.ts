@@ -4,7 +4,7 @@ import test from "node:test";
 import { createRenderer } from "../src/pipeline.ts";
 
 const renderer = await createRenderer();
-const ctx = { docPath: "docs/a.md", resolveResource: (p: string) => `res://${p}` };
+const ctx = { docPath: "/p/docs/a.md", resolveResource: (p: string) => `res://${p}` };
 const html = (md: string, docPath = ctx.docPath) =>
   renderer.renderMarkdown(md, { ...ctx, docPath }).html;
 const fixture = (name: string) =>
@@ -95,8 +95,8 @@ test("Mermaid ブロックには印だけを付ける", () => {
 
 test("画像: 相対パスは書き換え、外部 URL は読み込まない", () => {
   const out = html("![a](img/x.svg) ![b](https://example.com/p.png) ![c](../up.png)");
-  assert.match(out, /src="res:\/\/docs\/img\/x\.svg"/);
-  assert.match(out, /src="res:\/\/up\.png"/);
+  assert.match(out, /src="res:\/\/\/p\/docs\/img\/x\.svg"/);
+  assert.match(out, /src="res:\/\/\/p\/up\.png"/);
   assert.doesNotMatch(out, /example\.com\/p\.png/);
   assert.match(out, /blocked-image/);
 });

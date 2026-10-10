@@ -10,9 +10,13 @@ test("バージョンが取れる", () => {
 test("HyperbufHost の最小の実装が型検査を通る", async () => {
   const host: HyperbufHost = {
     name: "test",
-    listFiles: async () => ["index.md"],
+    home: "/home/test",
+    listDirectory: async () => ({ entries: [{ name: "index.md", dir: false }], truncated: false }),
+    listTree: async () => ({ files: ["index.md"], truncated: false }),
     readFile: async () => "# test",
     onFileChanged: () => {},
   };
-  assert.deepEqual(await host.listFiles(), ["index.md"]);
+  assert.deepEqual((await host.listDirectory("/home/test")).entries, [
+    { name: "index.md", dir: false },
+  ]);
 });

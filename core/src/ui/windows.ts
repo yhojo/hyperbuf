@@ -4,6 +4,7 @@
 import type { HistoryEntry, LayoutNode, Model, Win } from "../model.ts";
 import { currentEntry, windows } from "../model.ts";
 import type { Renderer } from "../pipeline.ts";
+import { uniquifyNames } from "../names.ts";
 import { findAnchor, visibleAnchor } from "./anchors.ts";
 import { hydrateDiagrams } from "./diagrams.ts";
 
@@ -17,8 +18,10 @@ export interface ViewsOptions {
   frame: HTMLElement;
   model: Model;
   renderer: Renderer;
-  /** ローカル画像の相対パスを、読み込める URL にする。 */
+  /** ローカル画像の絶対パスを、読み込める URL にする。 */
   resolveResource: (path: string) => string;
+  /** ホストのディレクトリ(バッファ名の `~` の短縮に使う)。 */
+  home: string;
   /** window 内のリンクが選ばれた(クリック)。 */
   onFollow(win: Win, href: string): void;
   /** window が選ばれた(クリック)。 */
@@ -45,6 +48,8 @@ export class Views {
   readonly stats: RenderStats = { ms: 0, diagrams: "" };
   private readonly views = new Map<number, WinView>();
   private layoutSig = "";
+  /** バッファの識別(絶対パス)→ 表示名(uniquify 済み)。 */
+  private names = new Map<string, string>();
   private lastContextTarget: Element | null = null;
   private readonly opts: ViewsOptions;
 
@@ -114,6 +119,7 @@ export class Views {
   /** model の状態に合わせて、全 window を描画し直す。 */
   refresh(): void {
     const { model, frame } = this.opts;
+    this.names = uniquifyNames([...model.buffers.keys()], this.opts.home);
     // 分割構成が変わったときだけ DOM を付け替える。付け替えるとスクロール位置が失われるので、
     // そのときは全 window で保存済みの位置を適用し直す。
     const sig = signature(model.root);
@@ -192,13 +198,25 @@ export class Views {
   private update(win: Win, view: WinView): void {
     const { model, renderer, resolveResource } = this.opts;
     const entry = currentEntry(win);
-    if (!entry) return;
+    const selected = win.id === model.selected;
+    view.el.classList.toggle("selected", selected);
+    if (!entry) {
+      // 開いているバッファがない(起動直後など)
+      view.header.textContent = `${selected ? "●" : "○"} (バッファなし)`;
+      if (view.lastKey !== "empty") {
+        view.content.innerHTML =
+          '<div class="empty-state">C-x C-f でファイルを開きます(C-x p f: 基準のディレクトリ以下から探す)</div>';
+        view.lastKey = "empty";
+        view.lastEntry = null;
+      }
+      return;
+    }
     const buf = model.buffers.get(entry.path);
     if (!buf) return;
     const key = `${entry.path}@${buf.version}`;
-    const selected = win.id === model.selected;
-    view.el.classList.toggle("selected", selected);
-    view.header.textContent = `${selected ? "●" : "○"} ${entry.path}${entry.anchor ? "#" + entry.anchor : ""}   [履歴 ${win.index + 1}/${win.history.length}]`;
+    const name = this.names.get(entry.path) ?? entry.path;
+    const gone = buf.missing ? "  (削除されました。移動された可能性があります)" : "";
+    view.header.textContent = `${selected ? "●" : "○"} ${name}${entry.anchor ? "#" + entry.anchor : ""}${gone}   [履歴 ${win.index + 1}/${win.history.length}]`;
 
     if (view.lastKey !== key) {
       // 外部更新(同じ文書の版が変わった)なら、見出し基準で閲覧位置を維持する

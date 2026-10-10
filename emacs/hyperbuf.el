@@ -77,7 +77,7 @@ nil なら選択中の window。それ以外は、次のいずれか。"
   :group 'hyperbuf)
 
 (defcustom hyperbuf-timeout 3
-  "アプリ内の確認(プロジェクト外のファイルなど)を待つ秒数。
+  "アプリ内の確認(警告パスのファイルなど)を待つ秒数。
 プレフィックス引数つきなら `hyperbuf-wait-timeout'。"
   :type 'number
   :group 'hyperbuf)

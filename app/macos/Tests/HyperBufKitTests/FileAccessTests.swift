@@ -4,52 +4,71 @@ import Testing
 @testable import HyperBufKit
 
 @Suite struct FileAccessTests {
-    private func setup() throws -> (project: TempProject, outside: TempProject, state: TempProject, access: FileAccess)
-    {
-        let project = try TempProject(files: ["a.md": "inside", "img/p.png": "png"])
-        let outside = try TempProject(files: ["notes/o.md": "outside", "notes/img/q.svg": "<svg/>", "x.txt": ""])
-        let state = try TempProject()
-        let trusted = TrustedRoots(url: state.url.appendingPathComponent("t.json"))
-        return (project, outside, state, FileAccess(project: Project(root: project.url), trusted: trusted))
+    private func access(_ t: TempProject, warn: [String] = [], allow: [String] = []) -> FileAccess {
+        FileAccess(
+            policy: PathPolicy(home: t.real, warn: warn, allow: allow),
+            remembered: RememberedPaths(url: t.url.appendingPathComponent("state/r.json")))
     }
 
-    @Test func relativePathsAreProjectOnly() throws {
-        let s = try setup()
-        defer { removeAll(s.project, s.outside, s.state) }
-        #expect(try s.access.readMarkdown("a.md") == "inside")
-        #expect(throws: ProjectError.outside) { try s.access.readMarkdown("../x.md") }
+    @Test func readsAbsoluteMarkdown() throws {
+        let t = try TempProject(files: ["docs/a.md": "# A\n"])
+        defer { t.remove() }
+        #expect(try access(t).readMarkdown(t.url.path + "/docs/a.md") == "# A\n")
     }
 
-    @Test func absolutePathsRequireATrustedRoot() throws {
-        let s = try setup()
-        defer { removeAll(s.project, s.outside, s.state) }
-        let file = s.outside.url.appendingPathComponent("notes/o.md").path
-        #expect(throws: ProjectError.outside) { try s.access.readMarkdown(file) }
-        s.access.trusted.add(s.outside.url.appendingPathComponent("notes").path)
-        #expect(try s.access.readMarkdown(file) == "outside")
-        // 信頼するルートの外は、引き続き読めない
-        let other = s.outside.url.appendingPathComponent("x.txt").path
-        #expect(throws: ProjectError.notMarkdown) { try s.access.readMarkdown(other) }
+    @Test func rejectsRelativeTraversalAndNul() throws {
+        let t = try TempProject(files: ["a.md": "x"])
+        defer { t.remove() }
+        let a = access(t)
+        #expect(throws: AccessError.invalidPath) { try a.readMarkdown("a.md") }
+        #expect(throws: AccessError.invalidPath) { try a.readMarkdown(t.url.path + "/../a.md") }
+        #expect(throws: AccessError.invalidPath) { try a.readMarkdown(t.url.path + "/a.md\0.md") }
+        #expect(throws: AccessError.notFound) { try a.readMarkdown(t.url.path + "/none.md") }
+        #expect(throws: AccessError.notMarkdown) { try a.readMarkdown(t.url.path + "/a.txt") }
     }
 
-    @Test func absolutePathsWithDotDotAreRejected() throws {
-        let s = try setup()
-        defer { removeAll(s.project, s.outside, s.state) }
-        s.access.trusted.add(s.outside.url.path)
-        let sneaky = s.outside.url.path + "/notes/../notes/o.md"
-        #expect(throws: ProjectError.outside) { try s.access.readMarkdown(sneaky) }
+    @Test func markdownReadingDoesNotJudgeTheWarnPaths() throws {
+        // 利用者が打った・選んだパス、判定済みの外部要求、復元されたセッションは、判定せずに読む
+        let t = try TempProject(files: ["w/a.md": "warned"])
+        defer { t.remove() }
+        let a = access(t, warn: [t.real + "/w"])
+        #expect(try a.readMarkdown(t.url.path + "/w/a.md") == "warned")
+        #expect(try a.decide(t.url.path + "/w/a.md") != .allow)
     }
 
-    @Test func imagesFollowTheSameRules() throws {
-        let s = try setup()
-        defer { removeAll(s.project, s.outside, s.state) }
-        let image = s.outside.url.appendingPathComponent("notes/img/q.svg").path
-        #expect(throws: ProjectError.outside) { try s.access.readResource(image) }
-        s.access.trusted.add(s.outside.url.path)
-        #expect(try s.access.readResource(image).mime == "image/svg+xml")
-        #expect(try s.access.readResource("img/p.png").mime == "image/png")
-        #expect(throws: ProjectError.unsupportedResource) {
-            try s.access.readResource(s.outside.url.path + "/notes/o.md")
-        }
+    @Test func aSymlinkToANonMarkdownTargetIsRefused() throws {
+        let t = try TempProject(files: ["secret.txt": "s", "ok.md": "ok"])
+        defer { t.remove() }
+        try FileManager.default.createSymbolicLink(
+            at: t.url.appendingPathComponent("link.md"), withDestinationURL: t.url.appendingPathComponent("secret.txt"))
+        let a = access(t)
+        #expect(throws: AccessError.notMarkdown) { try a.readMarkdown(t.url.path + "/link.md") }
+    }
+
+    @Test func recordsFingerprints() throws {
+        let t = try TempProject(files: ["a.md": "abc"])
+        defer { t.remove() }
+        let a = access(t)
+        _ = try a.readMarkdown(t.url.path + "/a.md")
+        #expect(a.fingerprints.get(t.real + "/a.md")?.size == 3)
+    }
+
+    @Test func resourcesAreJudgedAndOnlyImages() throws {
+        let t = try TempProject(files: ["img/p.png": "PNG", "w/q.png": "PNG", "n.txt": "x"])
+        defer { t.remove() }
+        let a = access(t, warn: [t.real + "/w"])
+        let ok = try a.readResource(t.url.path + "/img/p.png")
+        #expect(ok.mime == "image/png")
+        #expect(throws: AccessError.needsConfirmation) { try a.readResource(t.url.path + "/w/q.png") }
+        #expect(throws: AccessError.unsupportedResource) { try a.readResource(t.url.path + "/n.txt") }
+        #expect(throws: AccessError.invalidPath) { try a.readResource("img/p.png") }
+    }
+
+    @Test func rememberedPathsAllowResources() throws {
+        let t = try TempProject(files: ["w/q.png": "PNG"])
+        defer { t.remove() }
+        let a = access(t, warn: [t.real + "/w"])
+        #expect(a.remembered.add(t.real + "/w"))
+        #expect(try a.readResource(t.url.path + "/w/q.png").mime == "image/png")
     }
 }

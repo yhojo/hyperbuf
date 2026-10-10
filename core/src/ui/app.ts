@@ -2,7 +2,8 @@
 // ホストからのイベントを結びつける。
 
 import type { HostConfig, HyperbufHost } from "../host.ts";
-import { createModel } from "../model.ts";
+import { createModel, currentEntry, isVirtualPath, openBuffer, windows } from "../model.ts";
+import type { Model } from "../model.ts";
 import type { Renderer } from "../pipeline.ts";
 import { createCommands } from "./commands.ts";
 import type { Commands } from "./commands.ts";
@@ -47,6 +48,7 @@ export async function startApp(options: {
     model,
     renderer,
     resolveResource: host.resolveResource?.bind(host) ?? ((path) => path),
+    home: host.home,
     onSelect: (win) => {
       model.selected = win.id;
       views.refresh();
@@ -54,32 +56,68 @@ export async function startApp(options: {
     onFollow: (win, href) => {
       void follow(ctx, win, href).then(() => views.refresh());
     },
-    onChange: () => saver?.schedule(),
+    onChange: () => {
+      saver?.schedule();
+      syncWatch();
+    },
   });
   let saver: SessionSaver | undefined;
+  let watched = new Set<string>();
+  /** 表示中のファイルを、ホストに伝える。新しく表示されたものは、読み直して、古ければ更新する。 */
+  const syncWatch = (): void => {
+    const now = new Set(displayedPaths(model));
+    host.watch?.([...now]);
+    const added = [...now].filter((p) => !watched.has(p));
+    watched = now;
+    for (const path of added) void revalidate(path);
+  };
+  /** バッファの内容を、ファイルと照らし合わせる(監視していない間の変更・削除を拾う)。 */
+  const revalidate = async (path: string): Promise<void> => {
+    const buf = model.buffers.get(path);
+    if (!buf) return;
+    try {
+      const text = await host.readFile(path);
+      if (text !== buf.text || buf.missing) {
+        openBuffer(model, path, text);
+        buf.missing = false;
+        views.refresh();
+      }
+    } catch {
+      if (!buf.missing) {
+        buf.missing = true;
+        views.refresh();
+      }
+    }
+  };
   // 利用者のキー割り当て(config.json の keybindings)を、標準に重ねる。問題のある設定は、無視して、知らせる
   const config: HostConfig | undefined = await host.getConfig?.().catch(() => undefined);
   const bindings = resolveBindings(config?.keybindings);
-  const ctx: AppContext = { host, model, views, echo, minibuffer, bindings };
+  const ctx: AppContext = {
+    host,
+    model,
+    views,
+    echo,
+    minibuffer,
+    bindings,
+    problems: config?.problems ?? [],
+  };
 
   const commands = createCommands(ctx);
   const keyboard = installKeyboard(ctx, commands, createKeymap(bindings.bindings));
 
-  const files = await host.listFiles();
-  const first = files.includes("index.md") ? "index.md" : files[0];
   const useSession = config?.restoreSession !== false && !!host.saveSession;
-  const restored = useSession ? await restoreSession(ctx, files) : null;
+  const restored = useSession ? await restoreSession(ctx) : null;
+  views.refresh();
   if (restored) {
-    views.refresh();
     if (restored.selection) applySelection(ctx, restored.selection);
-    echo.message(`${files.length} files / 前回の状態を復元しました`);
-  } else if (first) {
-    await openAt(ctx, first);
-    views.refresh();
-    echo.message(`${files.length} files / host: ${host.name}`);
+    echo.message("前回の状態を復元しました");
   } else {
-    echo.message("Markdown ファイルがありません");
+    echo.message("C-x C-f でファイルを開きます");
   }
+  // アプリがアクティブになったときに、表示中のファイルを照合する(監視で拾えない場合の保険)
+  window.addEventListener("focus", () => {
+    for (const path of watched) void revalidate(path);
+  });
   // 復元の前に保存すると、前回の状態を消してしまう。復元(または、初期表示)のあとに始める
   if (useSession) {
     saver = createSessionSaver(ctx);
@@ -91,8 +129,9 @@ export async function startApp(options: {
     });
   }
   wireHostEvents(ctx, commands);
-  if (bindings.problems.length) {
-    echo.message(`設定: ${bindings.problems.length} 件の問題があります(C-h b で確認できます)`);
+  const problemCount = bindings.problems.length + ctx.problems.length;
+  if (problemCount) {
+    echo.message(`設定: ${problemCount} 件の問題があります(C-h b で確認できます)`);
   }
 
   return {
@@ -111,4 +150,14 @@ export async function startApp(options: {
       await saver?.flush();
     },
   };
+}
+
+/** 全 window が表示している、ファイルの文書のパス(重複なし)。 */
+function displayedPaths(model: Model): string[] {
+  const out = new Set<string>();
+  for (const win of windows(model)) {
+    const entry = currentEntry(win);
+    if (entry && !isVirtualPath(entry.path)) out.add(entry.path);
+  }
+  return [...out];
 }

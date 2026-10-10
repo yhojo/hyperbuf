@@ -1,17 +1,32 @@
 // 開発用ホスト: 開発サーバー(scripts/dev-server.mjs)の HTTP API を使う。
 // 本番では、シェル(macOS アプリなど)が `window.hyperbufHost` を注入するので、使われない。
 
-import type { HostConfig, HyperbufHost, SearchOptions, SearchResult } from "./host.ts";
+import type {
+  DirectoryListing,
+  HostConfig,
+  HyperbufHost,
+  SearchOptions,
+  SearchResult,
+  TreeListing,
+} from "./host.ts";
 
-export function createDevHost(base = ""): HyperbufHost {
+export async function createDevHost(base = ""): Promise<HyperbufHost> {
   const api = (path: string): string => `${base}/__project/${path}`;
-  const listeners: ((path: string) => void)[] = [];
+  const json = async <T>(url: string): Promise<T> => (await (await fetch(url)).json()) as T;
+  const { home } = await json<{ home: string }>(api("info"));
+  const listeners: ((path: string, state: "changed" | "deleted") => void)[] = [];
   let events: EventSource | null = null;
 
   return {
     name: "dev-server",
-    async listFiles() {
-      return (await (await fetch(api("files"))).json()) as string[];
+    home,
+    async listDirectory(dir, options) {
+      return json<DirectoryListing>(
+        api(`dir?path=${encodeURIComponent(dir)}&hidden=${options?.hidden ? 1 : 0}`),
+      );
+    },
+    async listTree(dir) {
+      return json<TreeListing>(api(`tree?path=${encodeURIComponent(dir)}`));
     },
     async getConfig() {
       const res = await fetch(api("config"));
@@ -27,16 +42,21 @@ export function createDevHost(base = ""): HyperbufHost {
       if (!events) {
         events = new EventSource(api("events"));
         events.onmessage = (e: MessageEvent<string>) => {
-          for (const l of listeners) l(e.data);
+          const { path, state } = JSON.parse(e.data) as {
+            path: string;
+            state: "changed" | "deleted";
+          };
+          for (const l of listeners) l(path, state);
         };
       }
     },
     resolveResource: (path) => api(`raw/${path.split("/").map(encodeURIComponent).join("/")}`),
-    async search(query: string, options: SearchOptions = {}) {
-      const res = await fetch(
-        api(`search?q=${encodeURIComponent(query)}&limit=${options.limit ?? 200}`),
+    async search(dir: string, query: string, options: SearchOptions = {}) {
+      return json<SearchResult>(
+        api(
+          `search?dir=${encodeURIComponent(dir)}&q=${encodeURIComponent(query)}&limit=${options.limit ?? 200}`,
+        ),
       );
-      return (await res.json()) as SearchResult;
     },
   };
 }

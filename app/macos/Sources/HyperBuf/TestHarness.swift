@@ -9,9 +9,12 @@ enum TestHarness {
     /// 結果を `N.result`(`RESULT: …` または `ERROR: …`)に書く。シェルスクリプトから、ページの操作
     /// (選択、コマンドの実行など)を、自動のテストで行うための入口。デバッグビルドのみ。
     @MainActor
-    static func startCommandChannel(for webView: WKWebView) {
+    static func startCommandChannel(for webView: WKWebView, slot: Int = 1) {
         #if DEBUG
-            guard let directory = ProcessInfo.processInfo.environment["HYPERBUF_TEST_COMMANDS"] else { return }
+            guard let base = ProcessInfo.processInfo.environment["HYPERBUF_TEST_COMMANDS"] else { return }
+            // スロット 1 は、指定のディレクトリ。ほかのフレームは、その下の `frame<N>`(複数フレームのテスト用)
+            let directory = slot == 1 ? base : base + "/frame\(slot)"
+            try? FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
             Task { @MainActor [weak webView] in
                 while let webView {
                     try? await Task.sleep(for: .milliseconds(100))
@@ -38,9 +41,9 @@ enum TestHarness {
     }
 
     @MainActor
-    static func attach(to webView: WKWebView, bridge: Bridge) {
+    static func attach(to webView: WKWebView, bridge: Bridge, slot: Int = 1) {
         #if DEBUG
-            guard let path = ProcessInfo.processInfo.environment["HYPERBUF_TEST_SCRIPT"],
+            guard slot == 1, let path = ProcessInfo.processInfo.environment["HYPERBUF_TEST_SCRIPT"],
                 let script = try? String(contentsOfFile: path, encoding: .utf8)
             else { return }
             bridge.onReady = { [weak webView] in

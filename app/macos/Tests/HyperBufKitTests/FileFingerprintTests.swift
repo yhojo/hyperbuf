@@ -18,11 +18,13 @@ import Testing
         let state = try TempProject()
         defer { removeAll(t, state) }
         let access = FileAccess(
-            project: Project(root: t.url), trusted: TrustedRoots(url: state.url.appendingPathComponent("t.json")))
-        let path = try access.absolutePath("a.md")
+            policy: PathPolicy(home: t.real, warn: [], allow: []),
+            remembered: RememberedPaths(url: state.url.appendingPathComponent("t.json")))
+        let file = t.url.path + "/a.md"
+        let path = try access.canonical(file)
         #expect(access.fingerprints.get(path) == nil)
 
-        _ = try access.readMarkdown("a.md")
+        _ = try access.readMarkdown(file)
         let first = try #require(access.fingerprints.get(path))
         #expect(first.sha256 == FileFingerprint.sha256Hex(Data("one\n".utf8)))
         #expect(first.size == 4)
@@ -30,7 +32,7 @@ import Testing
         // ファイルが変わっても、読み直すまでは、「ビューアが描画した版」の識別情報のまま
         try t.write("a.md", "two!\n")
         #expect(access.fingerprints.get(path) == first)
-        _ = try access.readMarkdown("a.md")
+        _ = try access.readMarkdown(file)
         let second = try #require(access.fingerprints.get(path))
         #expect(second.sha256 == FileFingerprint.sha256Hex(Data("two!\n".utf8)))
         #expect(second.sha256 != first.sha256)
@@ -43,9 +45,11 @@ import Testing
         let bytes = Data([0x23, 0x20, 0xFF, 0xFE, 0x0A])  // 不正な UTF-8 を含む
         try bytes.write(to: t.url.appendingPathComponent("raw.md"))
         let access = FileAccess(
-            project: Project(root: t.url), trusted: TrustedRoots(url: state.url.appendingPathComponent("t.json")))
-        _ = try access.readMarkdown("raw.md")
-        let path = try access.absolutePath("raw.md")
+            policy: PathPolicy(home: t.real, warn: [], allow: []),
+            remembered: RememberedPaths(url: state.url.appendingPathComponent("t.json")))
+        let file = t.url.path + "/raw.md"
+        _ = try access.readMarkdown(file)
+        let path = try access.canonical(file)
         // 文字列に直す前の、ディスク上のバイト列のハッシュ(エディタが、ディスクのファイルと比べるもの)
         #expect(access.fingerprints.get(path)?.sha256 == FileFingerprint.sha256Hex(bytes))
     }

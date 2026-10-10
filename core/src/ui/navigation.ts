@@ -2,6 +2,7 @@
 
 import { currentEntry, openBuffer, resolveLink, selectedWindow, visit } from "../model.ts";
 import type { Win } from "../model.ts";
+import { abbreviateHome } from "../paths.ts";
 import type { AppContext } from "./context.ts";
 
 /** buffer がなければ、ホストから読んで作る。 */
@@ -20,13 +21,36 @@ export async function openAt(
   visit(ctx.model, selectedWindow(ctx.model), path, anchor);
 }
 
-/** リンクをたどる。外部 URL は開かない(local first)。 */
+/**
+ * リンクやリソースが指すファイルへのアクセスを確かめる(docs/project-model.md §5)。
+ * 警告パスのファイルなら、ミニバッファで確認し、承認されたら、シェルに記憶させる。
+ * @returns 開いてよいか
+ */
+export async function confirmAccess(ctx: AppContext, path: string): Promise<boolean> {
+  const { host, minibuffer } = ctx;
+  if (!host.checkAccess) return true;
+  const [decision] = await host.checkAccess([path]);
+  if (!decision || decision.access === "allow") return true;
+  const answer = await minibuffer.prompt(
+    `${abbreviateHome(path, host.home)} は警告パスです。開きますか? `,
+    ["yes", "no"],
+    { allowFree: false },
+  );
+  if (answer !== "yes") return false;
+  return (await host.allow?.(decision.remember)) ?? false;
+}
+
+/** リンクをたどる。外部 URL は開かない(local first)。警告パスのファイルは、確認する。 */
 export async function follow(ctx: AppContext, win: Win, href: string): Promise<void> {
   const entry = currentEntry(win);
   if (!entry) return;
   const target = resolveLink(entry.path, href);
   if (!target) {
     ctx.echo.message(`外部リンクは開きません: ${href}`);
+    return;
+  }
+  if (!ctx.model.buffers.has(target.path) && !(await confirmAccess(ctx, target.path))) {
+    ctx.echo.message(`開きませんでした: ${abbreviateHome(target.path, ctx.host.home)}`);
     return;
   }
   try {

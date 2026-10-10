@@ -15,11 +15,29 @@ export const VISIBLE_CANDIDATES = 10;
 /** 入力の履歴を、種類ごとに保つ件数。 */
 const HISTORY_LIMIT = 50;
 
+/** 入力に応じて求める候補。`fragment` であいまい絞り込みをし、TAB は `prefix + 候補` で入力を置き換える。 */
+export interface PromptSource {
+  items: readonly string[];
+  /** 入力のうち、候補の前に置く部分(ディレクトリのパスなど)。 */
+  prefix: string;
+  /** 入力のうち、候補を絞り込む部分。 */
+  fragment: string;
+}
+
+/** `RET` の結果: `done` は確定、`text` は入力欄をその文字列にして続ける(ディレクトリに入る)、null は何もしない。 */
+export type PromptChoice = { done: string } | { text: string } | null;
+
 export interface PromptOptions {
   /** 候補にない自由な入力を受け付けるか。既定は true。 */
   allowFree?: boolean;
   /** 入力の履歴の種類(M-p / M-n でたどる)。省略すると、履歴は使わない。 */
   history?: string;
+  /** 入力欄の初めの文字列(ファイルを開くときの、基準のディレクトリなど)。 */
+  initial?: string;
+  /** 入力のたびに、候補を求める(省略すると、`candidates` を使う)。 */
+  source?: (text: string) => PromptSource | Promise<PromptSource>;
+  /** `RET` の扱い(省略すると、選んでいる候補、なければ入力そのもの)。 */
+  choose?: (picked: string | null, text: string, source: PromptSource) => PromptChoice;
 }
 
 export interface LiveHandlers {
@@ -132,30 +150,46 @@ export function createMinibuffer(): Minibuffer {
     cancel() {
       cancelCurrent?.();
     },
-    prompt(label, candidates = [], { allowFree = true, history } = {}) {
+    prompt(label, candidates = [], { allowFree = true, history, initial, source, choose } = {}) {
       return new Promise((resolve) => {
-        open(label);
+        open(label, initial ?? "");
         let shown: string[] = [];
         let on = 0;
+        let current: PromptSource = { items: candidates, prefix: "", fragment: "" };
+        let seq = 0;
+        let finished = false;
         // 履歴: 0 が、現在の入力。1 以上は、新しいものから順に、過去の入力。
         const past = history ? (histories.get(history) ?? []) : [];
         let cursor = 0;
         let draft = "";
 
-        const update = (): void => {
-          shown = fuzzyFilter(candidates, input.value, VISIBLE_CANDIDATES);
+        const render = (): void => {
           on = Math.min(on, Math.max(0, shown.length - 1));
-          countEl.textContent = candidates.length ? `${shown.length}/${candidates.length}` : "";
+          countEl.textContent = current.items.length
+            ? `${shown.length}/${current.items.length}`
+            : "";
           list.replaceChildren(
             ...shown.map((c, i) => {
               const li = document.createElement("li");
-              appendHighlighted(li, c, input.value);
+              appendHighlighted(li, c, current.fragment);
               li.className = i === on ? "on" : "";
               return li;
             }),
           );
         };
+        // 入力が変わったとき: 候補を求め直す(`source` は非同期。古い結果は捨てる)
+        const refresh = async (): Promise<void> => {
+          const token = ++seq;
+          const next = source
+            ? await source(input.value)
+            : { items: candidates, prefix: "", fragment: input.value };
+          if (token !== seq || finished) return;
+          current = next;
+          shown = fuzzyFilter(current.items, current.fragment, VISIBLE_CANDIDATES);
+          render();
+        };
         const done = (value: string | null): void => {
+          finished = true;
           close();
           input.removeEventListener("keydown", onKey);
           input.removeEventListener("input", onInput);
@@ -168,7 +202,7 @@ export function createMinibuffer(): Minibuffer {
         const onInput = (): void => {
           on = 0;
           cursor = 0;
-          update();
+          void refresh();
         };
         const recall = (step: 1 | -1): void => {
           if (!past.length) return;
@@ -176,25 +210,39 @@ export function createMinibuffer(): Minibuffer {
           cursor = Math.min(Math.max(cursor + step, 0), past.length);
           input.value = cursor === 0 ? draft : (past[cursor - 1] ?? "");
           on = 0;
-          update();
+          void refresh();
+        };
+        const accept = (): void => {
+          const picked = shown[on] ?? null;
+          if (!choose) {
+            done(picked ?? (allowFree && input.value ? input.value : null));
+            return;
+          }
+          const choice = choose(picked, input.value, current);
+          if (!choice) return;
+          if ("text" in choice) {
+            input.value = choice.text;
+            on = 0;
+            void refresh();
+          } else done(choice.done);
         };
         const onKey = (e: KeyboardEvent): void => {
           if (isImeKey(e)) return;
           const name = keyName(e);
           if (name === "RET") {
             e.preventDefault();
-            done(shown[on] ?? (allowFree && input.value ? input.value : null));
+            accept();
           } else if (name === "C-g" || name === "ESC") {
             e.preventDefault();
             done(null);
           } else if (name === "C-n" || name === "down") {
             e.preventDefault();
             on = Math.min(on + 1, shown.length - 1);
-            update();
+            render();
           } else if (name === "C-p" || name === "up") {
             e.preventDefault();
             on = Math.max(on - 1, 0);
-            update();
+            render();
           } else if (name === "M-p") {
             e.preventDefault();
             recall(1);
@@ -205,15 +253,15 @@ export function createMinibuffer(): Minibuffer {
             e.preventDefault();
             const picked = shown[on];
             if (picked) {
-              input.value = picked;
-              update();
+              input.value = current.prefix + picked;
+              void refresh();
             }
           }
         };
         input.addEventListener("keydown", onKey);
         input.addEventListener("input", onInput);
         cancelCurrent = () => done(null);
-        update();
+        void refresh();
       });
     },
     live(label, handlers, initial = "") {

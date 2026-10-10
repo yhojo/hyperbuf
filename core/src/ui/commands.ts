@@ -28,6 +28,9 @@ import { openBuffer } from "../model.ts";
 import { startIsearch } from "./isearch-dom.ts";
 import { locateFromDom } from "./locate-dom.ts";
 import { ensureBuffer, errorMessage, follow, openAt } from "./navigation.ts";
+import { abbreviateHome } from "../paths.ts";
+import { bufferNames } from "./directory.ts";
+import { promptFindFile, promptFindFileRecursive } from "./files.ts";
 import { searchProject } from "./search.ts";
 
 export const COMMAND_NAMES = [
@@ -55,6 +58,12 @@ export const COMMAND_NAMES = [
   "switch-buffer",
   "kill-buffer",
   "find-file",
+  "project-find-file",
+  "forget-remembered-path",
+  "make-frame",
+  "delete-frame",
+  "other-frame",
+  "delete-other-frames",
   "goto-heading",
   "goto-line",
   "isearch-forward",
@@ -93,13 +102,22 @@ export const COMMAND_DOCS: Readonly<Record<CommandName, string>> = {
   "follow-link": "選んでいるリンクをたどる",
   "switch-buffer": "開いている buffer を、最近使った順の候補から選んで表示する",
   "kill-buffer": "buffer を閉じる(どの window の履歴からも、その参照を取り除く)",
-  "find-file": "プロジェクトの Markdown を、あいまい検索で選んで開く",
+  "find-file":
+    "ファイルを開く(基準のディレクトリから始まるパス補完。ディレクトリは RET で入る。~/・../・絶対パスも可)",
+  "project-find-file":
+    "基準のディレクトリ以下の Markdown を、再帰で一覧にして絞り込み、開く(../・~/・絶対パスで基準を変えられる)",
+  "forget-remembered-path":
+    "警告パスの下で、承認して記憶した場所を、選んで取り消す(次から、また確認される)",
+  "make-frame": "新しいフレーム(macOS のウィンドウ)を作る。空いている最小の番号(Cmd-1〜)になる",
+  "delete-frame": "このフレームを閉じる(最後の 1 つなら、アプリを終了する)",
+  "other-frame": "次のフレームへ移る",
+  "delete-other-frames": "このフレームだけを残して、ほかのフレームを閉じる",
   "goto-heading": "見出しを選んで、そこへ移動する",
   "goto-line": "元の Markdown の行番号を指定して、そこへ移動する",
   "isearch-forward":
     "文書内を、インクリメンタルに検索する(C-s で次、C-r で前、RET で確定、C-g で取消)",
   "isearch-backward": "文書内を、後ろ向きにインクリメンタル検索する",
-  "search-project": "プロジェクト全体を全文検索して、結果を仮想 buffer に出す",
+  "search-project": "基準のディレクトリ以下を全文検索して、結果を仮想 buffer に出す",
   "edit-in-editor": "指した場所(選択・右クリック・画面の上端)を、エディタで編集するために記録する",
   "execute-command": "コマンドを、名前を選んで実行する",
   "describe-bindings": "キー割り当ての一覧を出す(設定の問題も)",
@@ -127,6 +145,29 @@ export function createCommands(ctx: AppContext): Commands {
     const target = index === null ? undefined : headings[index];
     if (target) views.scrollTo(target.top);
     else echo.message(none);
+  };
+
+  /** 開いているバッファを、名前(uniquify 済み)の候補から選ぶ。候補は、最近使った順。 */
+  const pickBuffer = async (label: string, history?: string): Promise<string | null> => {
+    const names = bufferNames(ctx);
+    const byName = new Map<string, string>();
+    for (const path of model.mru) byName.set(names.get(path) ?? path, path);
+    const picked = await minibuffer.prompt(label, [...byName.keys()], {
+      allowFree: false,
+      history,
+    });
+    return picked === null ? null : (byName.get(picked) ?? null);
+  };
+
+  /** 入力欄で選んだファイル(絶対パス)を開く。 */
+  const openPicked = async (picking: Promise<string | null>): Promise<void> => {
+    const path = await picking;
+    if (!path) return;
+    try {
+      await openAt(ctx, path);
+    } catch (err) {
+      echo.message(`開けません: ${path} (${errorMessage(err)})`);
+    }
   };
 
   const commands: Commands = {
@@ -176,42 +217,43 @@ export function createCommands(ctx: AppContext): Commands {
       if (href !== null) await follow(ctx, sel(), href);
     },
     "switch-buffer": async () => {
-      const path = await minibuffer.prompt("Switch to buffer: ", model.mru, {
-        allowFree: false,
-        history: "switch-buffer",
-      });
+      const path = await pickBuffer("Switch to buffer: ", "switch-buffer");
       if (path) visit(model, sel(), path);
     },
     "kill-buffer": async () => {
       const entry = currentEntry(sel());
-      const path = await minibuffer.prompt(`Kill buffer (${entry?.path ?? ""}): `, model.mru, {
-        allowFree: false,
-      });
+      const names = bufferNames(ctx);
+      const path = await pickBuffer(`Kill buffer (${names.get(entry?.path ?? "") ?? ""}): `);
       const target = path ?? entry?.path;
       if (path === null || !target || !model.buffers.has(target)) return;
       const empty = killBuffer(model, target);
-      // 履歴が空になった window には、別の buffer を表示する(最近使ったもの、なければ、最初の文書)
+      // 履歴が空になった window には、別の buffer(最近使ったもの)を表示する。なければ、空のまま
       for (const win of empty) {
-        const next = model.mru[0] ?? (await host.listFiles())[0];
+        const next = model.mru[0];
         if (!next) continue;
         await ensureBuffer(ctx, next);
         visit(model, win, next);
       }
-      echo.message(`buffer を閉じました: ${target}`);
+      echo.message(`buffer を閉じました: ${names.get(target) ?? target}`);
     },
-    "find-file": async () => {
-      // 候補は、最近使った文書が先(入力が空のとき、すぐ選べる)。そのあとは、プロジェクト内の全文書
-      const all = await host.listFiles();
-      const recent = model.mru.filter((p) => !isVirtualPath(p) && all.includes(p));
-      const candidates = [...recent, ...all.filter((p) => !recent.includes(p))];
-      const path = await minibuffer.prompt("Find file: ", candidates, { history: "find-file" });
-      if (!path) return;
-      try {
-        await openAt(ctx, path);
-      } catch (err) {
-        echo.message(`開けません: ${path} (${errorMessage(err)})`);
-      }
+    "find-file": () => openPicked(promptFindFile(ctx)),
+    "forget-remembered-path": async () => {
+      const remembered = (await host.listRemembered?.()) ?? [];
+      if (!remembered.length) return void echo.message("記憶したパスはありません");
+      const shown = new Map(remembered.map((p) => [abbreviateHome(p, host.home), p]));
+      const picked = await minibuffer.prompt("Forget remembered path: ", [...shown.keys()], {
+        allowFree: false,
+      });
+      const path = picked === null ? undefined : shown.get(picked);
+      if (path === undefined) return;
+      const ok = await host.forget?.(path);
+      echo.message(ok ? `取り消しました: ${picked}` : "取り消せませんでした");
     },
+    "make-frame": () => host.frame?.("make"),
+    "delete-frame": () => host.frame?.("delete"),
+    "other-frame": () => host.frame?.("other"),
+    "delete-other-frames": () => host.frame?.("delete-others"),
+    "project-find-file": () => openPicked(promptFindFileRecursive(ctx)),
     "goto-heading": async () => {
       const entry = currentEntry(sel());
       if (!entry) return;
@@ -230,7 +272,7 @@ export function createCommands(ctx: AppContext): Commands {
     "isearch-forward": () => startIsearch(ctx, 1),
     "isearch-backward": () => startIsearch(ctx, -1),
     "search-project": async () => {
-      const query = await minibuffer.prompt("Search project: ");
+      const query = await minibuffer.prompt("Search: ");
       if (query) await searchProject(ctx, query);
     },
     // ビューアで指した場所(選択・右クリック・いま読んでいる場所)を、元の位置にして、エディタ連携のために記録する
@@ -275,7 +317,7 @@ export function createCommands(ctx: AppContext): Commands {
         renderBindingsHelp({
           docs: COMMAND_DOCS,
           bindings: ctx.bindings.bindings,
-          problems: ctx.bindings.problems,
+          problems: [...ctx.bindings.problems, ...ctx.problems],
         }),
       );
       visit(model, sel(), path);

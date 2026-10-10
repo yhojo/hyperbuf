@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-HyperBuf is in **active implementation: migration plan M0–M7 are done and merged (M7 = session restore)**; M8 (distribution) remains. Next: M7b (no-project design: absolute-path buffers, `default-directory`, allow/warn paths, multiple frames) per `docs/project-model.md` (agreed, not implemented yet). The PoCs are finished and live on `poc/*` branches (not merged). The repository is mirrored to a private GitHub repo (`yhojo/hyperbuf`); CI runs on pushes to `main`. Progress, decisions and the order of work: `docs/migration-plan.md`. README.md (Japanese) is the product vision.
+HyperBuf is in **active implementation: migration plan M0–M7b are done and merged; M7b (the no-project design: absolute-path buffers, `default-directory`, allow/warn paths, multiple frames — `docs/project-model.md`) is done and merged**; M8 (distribution) remains. The PoCs are finished and live on `poc/*` branches (not merged). The repository is mirrored to a private GitHub repo (`yhojo/hyperbuf`); CI runs on pushes to `main`. Progress, decisions and the order of work: `docs/migration-plan.md`. README.md (Japanese) is the product vision.
 
 When adding documents, follow the README's language (Japanese) unless told otherwise.
 
@@ -31,12 +31,12 @@ Running the macOS app (needs `core/dist`, so build the core first):
 
 ```bash
 (cd core && npm run build)
-(cd app/macos && swift run HyperBuf ../../docs)      # opens a project directory (no argument → an Open panel)
+(cd app/macos && swift run HyperBuf ../../README.md)  # opens a file (a directory opens its index.md / README.md; no argument → restores the last session)
 app/macos/scripts/make-app.sh [debug|release]         # builds app/macos/.build/HyperBuf.app (ad-hoc signed, Web core bundled)
-scripts/integration-test.sh [project-dir]             # needs a GUI session: opens every document in a debug HyperBuf and checks rendering, CSP, search, images
+scripts/integration-test.sh [dir]                     # needs a GUI session: opens every document under dir in a debug HyperBuf and checks rendering, CSP, search, images
 scripts/integration-test-ui.sh                        # needs a GUI session: C-s / outline navigation / keymap config / describe-bindings / minibuffer / kill-buffer in a real WKWebView (synthetic key events; native key path is checked by hand)
-scripts/integration-test-session.sh                   # needs a GUI session: quit → relaunch restores window layout / history / scroll (session restore, restoreSession setting, broken/missing data)
-scripts/integration-test-ipc.sh                       # needs a GUI session: real .app + socket client + `hyperbuf` CLI + hyperbuf:// URL (open/outside-project confirm/timeout/errors)
+scripts/integration-test-session.sh                   # needs a GUI session: quit → relaunch restores frames / window layout / history / scroll / selection (session v2, restoreSession setting, broken/missing data, closing frames)
+scripts/integration-test-ipc.sh                       # needs a GUI session: real .app + socket client + `hyperbuf` CLI + hyperbuf:// URL (open / warn-path confirm / URL-scheme confirm / timeout / errors)
 (cd cli && swift run hyperbuf docs/migration-plan.md:20)   # opens a file at a line in a running HyperBuf (launches it if needed)
 ```
 
@@ -46,11 +46,11 @@ Build outputs (`dist/`, `.build/`, `node_modules/`, `*.app`) are never committed
 
 ## What the product is
 
-A keyboard-driven macOS viewer (not an editor) for browsing many cross-referenced Markdown documents in a project. Tagline: "Read like a hacker. No tabs. Just buffers."
+A keyboard-driven macOS viewer (not an editor) for browsing many cross-referenced Markdown documents. There is no "project" concept: buffers are identified by absolute path and everything is relative to the current buffer's directory (Emacs `default-directory`); see `docs/project-model.md`. Tagline: "Read like a hacker. No tabs. Just buffers."
 
 ## Key design concepts (from README.md)
 
-- **buffer / window / frame model** borrowed from Emacs: a buffer (document) is separate from a window (view). The same buffer can be shown in multiple windows, each keeping its own scroll position. Splitting is expected to use a split tree (`C-x 2/3/0/1/o`, `C-x b`, `C-x C-f`, `M-x`).
+- **buffer / window / frame model** borrowed from Emacs: a buffer (document) is separate from a window (view); a frame (macOS window, `Cmd-1`…`Cmd-9`, `C-x 5 …`) is an independent workspace with its own buffers/history/splits, persisted as `session.json` (version 2). The same buffer can be shown in multiple windows, each keeping its own scroll position. Splitting is expected to use a split tree (`C-x 2/3/0/1/o`, `C-x b`, `C-x C-f`, `M-x`).
 - **Back/Forward is reference history** (documents, anchors, positions per window). Buffer switches (`C-x b`) are also pushed onto it; the `C-x b` MRU order is managed separately. Splitting a window copies its history. Granularity and key binding are still open. Details: `docs/interaction-model.md`.
 - The README is a living vision document and may be changed freely, but every change to its stated plan/policy must be logged with a timestamp in `docs/plan-change-log.md`.
 - **Rendering engine must stay loosely coupled** from the viewing/navigation core, so renderer choices can change after PoCs.
@@ -64,7 +64,8 @@ A keyboard-driven macOS viewer (not an editor) for browsing many cross-reference
 - File watching should reload externally-updated files while preserving reading position.
 - **Decided:** the macOS shell is SwiftUI + WKWebView. The renderer/navigation core is a shell-independent web bundle; the only boundary is the `hyperbufHost` contract (`listFiles` / `readFile` / `onFileChanged`). Other OSes are expected to get their own native shell, not a shared cross-platform one. See `docs/poc-interaction-results.md`.
 - **Decided (rendering):** unified/remark/rehype with remark-gfm, remark-math + KaTeX, starry-night, Mermaid (strict, lazy-loaded), rehype-sanitize, github-markdown-css. Keep rehype-sanitize's `user-content-` id prefix; images only via `<img>`; no external network (starry-night's default CDN WASM fetch is disabled by bundling). See `docs/poc-rendering-results.md`.
-- **Decided (navigation):** file watching uses FSEvents (no polling); project search starts as an in-process Swift implementation behind the `host.search` contract (ripgrep to be re-evaluated when regex/ignore rules are needed; never pass queries as `Process` arguments — macOS decomposes voiced kana, pipe via stdin). File list/search covers `*.md` and directories only; excluded by default: hidden entries and `node_modules`; `.gitignore` is not interpreted. Virtual buffers (`*search: …*`) and line anchors (`path#line:N`) are part of the interaction model. Memory profiling is deferred to the later phase. See `docs/poc-navigation-results.md`.
+- **Decided (no project, access):** file access is judged by `warnPaths` / `allowPaths` (longest match wins; typed/chosen paths in `C-x C-f` / `C-x p f` are not judged; the URL scheme additionally confirms anything outside `allowPaths`; images are re-judged by the scheme handler at load time). Recursive listing/search starts at the buffer's directory and refuses `~` and `/`. Files displayed in windows are watched with non-recursive kqueue (not FSEvents). See `docs/project-model.md`.
+- **Decided (navigation):** (superseded where it mentions projects or FSEvents — see above) file watching uses FSEvents (no polling); project search starts as an in-process Swift implementation behind the `host.search` contract (ripgrep to be re-evaluated when regex/ignore rules are needed; never pass queries as `Process` arguments — macOS decomposes voiced kana, pipe via stdin). File list/search covers `*.md` and directories only; excluded by default: hidden entries and `node_modules`; `.gitignore` is not interpreted. Virtual buffers (`*search: …*`) and line anchors (`path#line:N`) are part of the interaction model. Memory profiling is deferred to the later phase. See `docs/poc-navigation-results.md`.
 - The remaining candidates in the README (MathJax, Graphviz/PlantUML/WaveDrom/D2) are **candidates to evaluate, not decisions**. Don't treat any as adopted without the user's confirmation.
 
 ## Coding conventions

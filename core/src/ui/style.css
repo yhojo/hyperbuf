@@ -178,3 +178,8 @@ body {
   color: var(--accent);
   font-weight: 700;
 }
+
+.empty-state {
+  padding: 2rem;
+  color: #888;
+}

@@ -29,12 +29,12 @@ public enum LocationBuilder {
     public static func build(
         _ web: WebLocation, access: FileAccess, now: Date = Date()
     ) -> Result<LocationPayload, ProtocolError> {
-        // 絶対パスは、プロジェクト内、または信頼するルートの内側に限る(それ以外は、エディタに渡さない)
+        // 実在する絶対パスだけを、エディタに渡す
         let absolute: String
         do {
-            absolute = try access.absolutePath(web.path)
+            absolute = try access.canonical(web.path)
         } catch {
-            return .failure(ProtocolError(.outsideProject, "このファイルの位置は、エディタに渡せません"))
+            return .failure(ProtocolError(.notFound, "このファイルの位置は、エディタに渡せません"))
         }
         guard absolute.hasSuffix(".md") else { return .failure(ProtocolError(.notMarkdown, ".md のみ扱えます")) }
         // ビューアが描画した版の識別情報。読んだ記録がなければ、「描画した版」が分からないので、渡さない

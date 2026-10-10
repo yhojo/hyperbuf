@@ -6,21 +6,21 @@ public struct StaticFiles: Sendable {
 
     public init(root: URL) {
         self.root = URL(
-            fileURLWithPath: Project.canonicalPath(root.path) ?? root.standardizedFileURL.path, isDirectory: true)
+            fileURLWithPath: PathUtil.canonicalPath(root.path) ?? root.standardizedFileURL.path, isDirectory: true)
     }
 
     /// 空のパスは `index.html`。
     public func read(_ relative: String) throws -> (data: Data, mime: String) {
         let path = relative.isEmpty ? "index.html" : relative
-        guard !path.contains("\0"), !path.split(separator: "/").contains("..") else { throw ProjectError.outside }
-        guard let real = Project.canonicalPath(root.appendingPathComponent(path).path) else {
-            throw ProjectError.notFound
+        guard !path.contains("\0"), !path.split(separator: "/").contains("..") else { throw AccessError.invalidPath }
+        guard let real = PathUtil.canonicalPath(root.appendingPathComponent(path).path) else {
+            throw AccessError.notFound
         }
-        guard real.hasPrefix(root.path + "/") else { throw ProjectError.outside }
+        guard real.hasPrefix(root.path + "/") else { throw AccessError.invalidPath }
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: real, isDirectory: &isDirectory), !isDirectory.boolValue,
             let data = try? Data(contentsOf: URL(fileURLWithPath: real), options: .mappedIfSafe)
-        else { throw ProjectError.notFound }
+        else { throw AccessError.notFound }
         return (data, MimeType.forExtension((real as NSString).pathExtension))
     }
 }

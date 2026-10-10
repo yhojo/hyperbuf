@@ -5,65 +5,67 @@ import Testing
 @testable import HyperBufKit
 
 @Suite struct OpenClassifierTests {
-    private func validated(_ path: String) -> ValidatedOpen {
+    private func open(_ path: String) -> ValidatedOpen {
         guard case .success(let v) = OpenRequestValidator.validate(path: path, line: nil, anchor: nil, version: nil)
-        else {
-            fatalError("検証に失敗: \(path)")
-        }
+        else { fatalError("検証に失敗: \(path)") }
         return v
     }
 
-    @Test func classifiesInsideTrustedOutsideAndMissing() throws {
-        let project = try TempProject(files: ["a.md": "", "sub/b.md": ""])
-        let other = try TempProject(files: ["repo/.git/HEAD": "", "repo/docs/c.md": "", "free/d.md": ""])
-        let state = try TempProject()
-        defer { removeAll(project, other, state) }
-        let trusted = TrustedRoots(url: state.url.appendingPathComponent("t.json"))
-        let p = Project(root: project.url)
+    private func classify(
+        _ path: String, _ t: TempProject, warn: [String] = [], allow: [String] = [], viaURL: Bool = false
+    ) -> Result<OpenClassifier.Outcome, ProtocolError> {
+        OpenClassifier.classify(
+            open(path), policy: PathPolicy(home: t.real, warn: warn, allow: allow),
+            remembered: RememberedPaths(url: t.url.appendingPathComponent("state/r.json")),
+            alwaysConfirmUnlessAllowed: viaURL)
+    }
 
-        let inside = OpenClassifier.classify(validated(project.url.path + "/sub/b.md"), project: p, trusted: trusted)
-        #expect(try inside.get() == .inside(relative: "sub/b.md"))
+    @Test func opensFilesOutsideTheWarnPaths() throws {
+        let t = try TempProject(files: ["a.md": "x"])
+        defer { t.remove() }
+        #expect(try classify(t.url.path + "/a.md", t).get() == .open(absolute: t.real + "/a.md"))
+    }
 
-        let cPath = other.url.path + "/repo/docs/c.md"
-        guard
-            case .outside(let absolute, let root) = try OpenClassifier.classify(
-                validated(cPath), project: p, trusted: trusted
-            ).get()
-        else {
-            Issue.record("範囲外のはず")
-            return
-        }
-        #expect(absolute == Project.canonicalPath(cPath))
-        #expect(root == Project.canonicalPath(other.url.path + "/repo"))  // .git を含む祖先を、信頼するルートとして提案する
-
-        trusted.add(root)
-        let after = OpenClassifier.classify(validated(cPath), project: p, trusted: trusted)
-        #expect(try after.get() == .trusted(absolute: Project.canonicalPath(cPath)!))
-
-        let missing = OpenClassifier.classify(validated(project.url.path + "/nope.md"), project: p, trusted: trusted)
-        guard case .failure(let error) = missing else {
+    @Test func missingFilesFail() throws {
+        let t = try TempProject()
+        defer { t.remove() }
+        guard case .failure(let error) = classify(t.url.path + "/none.md", t) else {
             Issue.record("失敗するはず")
             return
         }
         #expect(error.code == ErrorCode.notFound.rawValue)
     }
 
-    @Test func symlinkIntoTheProjectFromOutsideIsJudgedByItsTarget() throws {
-        let project = try TempProject(files: ["a.md": ""])
-        let outside = try TempProject(files: ["secret.md": ""])
-        defer { removeAll(project, outside) }
+    @Test func warnPathsNeedConfirmationWithAProposal() throws {
+        let t = try TempProject(files: ["w/sub/a.md": "x"])
+        defer { t.remove() }
+        let outcome = try classify(t.url.path + "/w/sub/a.md", t, warn: [t.real + "/w"]).get()
+        #expect(outcome == .confirm(absolute: t.real + "/w/sub/a.md", remember: t.real + "/w/sub"))
+    }
+
+    @Test func symlinksAreResolvedBeforeJudging() throws {
+        let t = try TempProject(files: ["w/a.md": "x", "ok/.keep": ""])
+        defer { t.remove() }
         try FileManager.default.createSymbolicLink(
-            at: project.url.appendingPathComponent("link.md"),
-            withDestinationURL: outside.url.appendingPathComponent("secret.md"))
-        let state = try TempProject()
-        defer { state.remove() }
-        let result = OpenClassifier.classify(
-            validated(project.url.path + "/link.md"), project: Project(root: project.url),
-            trusted: TrustedRoots(url: state.url.appendingPathComponent("t.json")))
-        // プロジェクト内にあるリンクでも、実体が範囲外なら、範囲外(確認が要る)
-        guard case .outside = try result.get() else {
-            Issue.record("範囲外のはず")
+            at: t.url.appendingPathComponent("ok/link.md"), withDestinationURL: t.url.appendingPathComponent("w/a.md"))
+        let outcome = try classify(t.url.path + "/ok/link.md", t, warn: [t.real + "/w"]).get()
+        guard case .confirm(let absolute, _) = outcome else {
+            Issue.record("警告パスの実体は、確認が要る")
             return
         }
+        #expect(absolute == t.real + "/w/a.md")
+    }
+
+    @Test func urlSchemeConfirmsEverythingExceptExplicitlyAllowedPaths() throws {
+        let t = try TempProject(files: ["docs/a.md": "x", "other/b.md": "x"])
+        defer { t.remove() }
+        // 許可パス(allowPaths)の中は、確認なし。それ以外は、警告パスの外でも確認する
+        #expect(
+            try classify(t.url.path + "/docs/a.md", t, allow: [t.real + "/docs"], viaURL: true).get()
+                == .open(absolute: t.real + "/docs/a.md"))
+        let other = try classify(t.url.path + "/other/b.md", t, allow: [t.real + "/docs"], viaURL: true).get()
+        #expect(other == .confirm(absolute: t.real + "/other/b.md", remember: t.real + "/other"))
+        // ソケット経由なら、同じファイルは確認なし
+        #expect(try classify(t.url.path + "/other/b.md", t).get() == .open(absolute: t.real + "/other/b.md"))
     }
 }

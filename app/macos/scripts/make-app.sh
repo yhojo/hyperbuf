@@ -40,6 +40,26 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
       <key>CFBundleURLSchemes</key><array><string>hyperbuf</string></array>
     </dict>
   </array>
+  <!-- Finder の「このアプリケーションで開く」・Dock へのドラッグ&ドロップ(Markdown とフォルダ)。
+       既定のアプリにはならない(Alternate)。docs/project-model.md §3.1 -->
+  <key>CFBundleDocumentTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeName</key><string>Markdown</string>
+      <key>CFBundleTypeRole</key><string>Viewer</string>
+      <key>LSHandlerRank</key><string>Alternate</string>
+      <key>LSItemContentTypes</key>
+      <array><string>net.daringfireball.markdown</string></array>
+      <key>CFBundleTypeExtensions</key><array><string>md</string><string>markdown</string></array>
+    </dict>
+    <dict>
+      <key>CFBundleTypeName</key><string>Folder</string>
+      <key>CFBundleTypeRole</key><string>Viewer</string>
+      <key>LSHandlerRank</key><string>Alternate</string>
+      <key>LSItemContentTypes</key>
+      <array><string>public.folder</string></array>
+    </dict>
+  </array>
 </dict>
 </plist>
 PLIST

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Yasuo Hojo
 # HyperBuf.app を組み立てる(開発用)。Web コア(core/dist)を Contents/Resources/web に同梱する。
-# 署名は ad-hoc(ローカルで動かす用)。Developer ID 署名と公証は M8 で、このスクリプトを拡張して行う。
+# 署名は ad-hoc(ローカルで動かす用)。Developer ID 署名・公証・パッケージ化は scripts/release.sh(docs/release.md)。
 # 使い方: app/macos/scripts/make-app.sh [debug|release]   (既定: release)  → app/macos/.build/HyperBuf.app
 set -euo pipefail
 cd "$(dirname "$0")/../../.."   # リポジトリのルート
@@ -10,12 +10,17 @@ cd "$(dirname "$0")/../../.."   # リポジトリのルート
 config="${1:-release}"
 (cd core && npm ci --silent && npm run build >/dev/null)
 (cd app/macos && swift build -c "$config" >/dev/null)
+(cd cli && swift build -c "$config" >/dev/null)
 
 app="app/macos/.build/HyperBuf.app"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "app/macos/.build/$config/HyperBuf" "$app/Contents/MacOS/HyperBuf"
 cp -R core/dist "$app/Contents/Resources/web"
+# CLI(hyperbuf)も同梱する。アプリの実行ファイル(HyperBuf)と、大文字小文字を区別しないファイルシステムで衝突しないよう、
+# Contents/MacOS ではなく、Resources/bin に置く。Homebrew cask の binary や、シンボリックリンクで PATH に通す
+mkdir -p "$app/Contents/Resources/bin"
+cp "cli/.build/$config/hyperbuf" "$app/Contents/Resources/bin/hyperbuf"
 # 同梱したサードパーティのソフトウェアの著作権表示とライセンス(配布の条件)。Web の配信範囲(web/)の外に置く
 cp LICENSE "$app/Contents/Resources/LICENSE.txt"
 cp NOTICE "$app/Contents/Resources/NOTICE.txt"
@@ -70,5 +75,10 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
 </dict>
 </plist>
 PLIST
+# バージョンは Version.swift が正(リリース時に更新する)。ビルド番号は、コミット数
+version="$(sed -n 's/^public let hyperBufVersion = "\(.*\)"$/\1/p' app/macos/Sources/HyperBufKit/Version.swift)"
+build="$(git rev-list --count HEAD 2>/dev/null || echo 0)"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" -c "Set :CFBundleVersion $build" "$app/Contents/Info.plist"
+codesign --force --sign - "$app/Contents/Resources/bin/hyperbuf" >/dev/null 2>&1
 codesign --force --sign - "$app" >/dev/null 2>&1
 echo "$app"

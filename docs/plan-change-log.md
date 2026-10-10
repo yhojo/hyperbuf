@@ -2,6 +2,13 @@
 
 README.md に記載した方針・計画を変更した際の記録。新しいものを上に追記する。README は自由に更新してよいが、変更理由をここに残す。
 
+## 2026-10-10 — Mermaid のレイアウトを dagre に固定し、elkjs を同梱しない(M8)
+
+- **変更前**（README「Architecture and technology」）: Diagrams は「Mermaid（決定、遅延ロード・strictモード）」。Mermaid 12.1 の既定のレイアウト（ELK。`elkjs` は EPL-2.0）をそのまま使っていた。
+- **変更後**: Mermaid のレイアウトを **dagre に固定**する（Mermaid 11 までの既定で、GitHub の表示と同じ）。`elkjs` は同梱しない。図が `layout: elk` を明示すると、その図だけが、図の位置にエラーとして表示される。
+- **理由**: 同梱するサードパーティのライセンスの洗い出し（M8）で、`elkjs` が EPL-2.0（弱いコピーレフト。GPL と結合できない）と分かった。dagre に固定すれば、GitHub の見た目に近づき、EPL の条件（ソースの入手先の表示）も不要になり、将来のライセンスの選択肢（GPL を含む）が広く残る。dist は約 3.6 MB 減る。
+- 関連: `docs/license-options.md`、`docs/third-party-licenses.md`。
+
 ## 2026-10-10 — プロジェクトを持たない設計と、複数フレーム(M7b)
 
 - **変更前**（README「1. Project-oriented reading」）: 「ディレクトリを単位としてプロジェクトを開き、内部のMarkdownファイルを横断して閲覧する」。ファイルのアクセスの範囲は、プロジェクト(+ 信頼するルート)。セッションは、プロジェクトごと。ウィンドウは 1 つ。

@@ -18,6 +18,10 @@ function loadMermaid(): Promise<MermaidApi> {
     mermaid.initialize({
       startOnLoad: false,
       securityLevel: "strict",
+      // Mermaid 12 の既定のレイアウトは ELK(elkjs。EPL-2.0)。GitHub と同じ見た目になる dagre(Mermaid 11 までの既定)に
+      // 固定し、elkjs は同梱しない(build-options.mjs。docs/license-options.md)。図が `layout: elk` を指定すると、
+      // その図は、図の位置にエラーとして表示される
+      layout: "dagre",
       theme: dark ? "dark" : "default",
       logLevel: "fatal",
     });

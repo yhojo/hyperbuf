@@ -5,7 +5,7 @@
 
 対象は、Web コア(`core/dist`)のバンドルに実際に入るもの。Swift 側(アプリ・CLI・プロトコル)は、サードパーティの依存を持たない。
 
-## 集計(npm のパッケージ 152 件)
+## 集計(npm のパッケージ 151 件)
 
 | ライセンス | 件数 |
 | --- | --- |
@@ -13,12 +13,10 @@
 | ISC | 22 |
 | Apache-2.0 | 5 |
 | BSD-3-Clause | 5 |
-| EPL-2.0 | 1 |
 | BSD-2-Clause | 1 |
 
 - **MIT / ISC / BSD / Apache-2.0** など許容的なライセンスは、著作権表示とライセンス文を、配布物に含めれば足りる。
 - **dompurify**(Apache-2.0): (MPL-2.0 OR Apache-2.0) の二重ライセンス。Apache-2.0 を選ぶ(利用者が選べる)。
-- **elkjs**(EPL-2.0、要確認): 弱いコピーレフト(ファイル単位)。Mermaid の ELK レイアウト(layout: elk)用の遅延ロードのチャンク。改変せずに同梱し、ソースの入手先(https://github.com/kieler/elkjs)を表示する。GPL 系のライセンスとは相性が悪い(EPL-2.0 は、Secondary License の指定がなければ、GPL と結合できない)。使わないなら、バンドルから外せる。
 - **khroma**(MIT): package.json に license の欄がないが、同梱の license ファイルは MIT。
 - **rehype-katex**(MIT): パッケージに license ファイルがない。package.json の license(MIT)と author、README の「MIT © Junyoung Choi」から、MIT の標準の文面を補う(年は、パッケージから分からないので書かない)。
 - **remark-math**(MIT): パッケージに license ファイルがない。package.json の license(MIT)と author、README の「MIT © Junyoung Choi」から、MIT の標準の文面を補う(年は、パッケージから分からないので書かない)。
@@ -90,7 +88,6 @@
 | dayjs | 1.11.23 | MIT |
 | decode-named-character-reference | 1.3.0 | MIT |
 | dompurify | 3.4.16 | Apache-2.0 |
-| elkjs | 0.9.3 | EPL-2.0 |
 | entities | 6.0.1 | BSD-2-Clause |
 | es-toolkit | 1.52.0 | MIT |
 | escape-string-regexp | 5.0.0 | MIT |

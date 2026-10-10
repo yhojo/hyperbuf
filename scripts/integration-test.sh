@@ -13,9 +13,13 @@ script="$(mktemp)"
 (cd core && npm ci --silent && npm run build >/dev/null)
 (cd app/macos && swift build >/dev/null)
 
+state=""
 log="$(mktemp)"
-trap 'rm -f "$log" "$script"' EXIT
-HYPERBUF_SESSION_DIR="$(mktemp -d)" HYPERBUF_TEST_SCRIPT="$script" app/macos/.build/debug/HyperBuf "$project" >"$log" 2>&1 &
+trap 'rm -rf "$log" "$script" "$state"' EXIT
+state="$(mktemp -d)"
+# 利用者の実際のソケット・記憶したパス・セッションには触れない(起動中の HyperBuf があっても、衝突しない)
+HYPERBUF_SOCKET_PATH="$state/hb.sock" HYPERBUF_TRUSTED_ROOTS="$state/trusted.json" HYPERBUF_SESSION_DIR="$state/sessions" \
+  HYPERBUF_TEST_SCRIPT="$script" app/macos/.build/debug/HyperBuf "$project" >"$log" 2>&1 &
 pid=$!
 for _ in $(seq 1 90); do
   if grep -qE '^(RESULT|ERROR):' "$log"; then break; fi
@@ -50,7 +54,10 @@ if "sample-project" in sys.argv[2]:
     images = r["docs"].get("rendering/05-images.md", {})
     if images.get("brokenImages") != 1: problems.append(f"存在しない画像だけが読めないはず: {images}")
     if images.get("blockedImages") != 1: problems.append(f"外部画像だけがブロックされるはず: {images}")
-    if sum(d["mermaid"] for d in r["docs"].values()) != 6: problems.append("Mermaid は 6 図が描画されるはず")
+    if sum(d["mermaid"] for d in r["docs"].values()) != 7: problems.append("Mermaid は 7 図が描画されるはず(ELK の図を除く)")
+    elk = r["docs"].get("rendering/08-elk.md", {})
+    if elk.get("renderErrors") != 1 or elk.get("mermaid") != 1:
+        problems.append(f"ELK の図は、エラーとして表示され、同じ文書の通常の図は描画されるはず: {elk}")
     mer = r["docs"].get("rendering/04-mermaid.md", {})
     if mer.get("renderErrors") != 1: problems.append(f"Mermaid の構文エラーは 1 件のはず: {mer}")
 if not r["search"] or r["search"]["items"] == 0:

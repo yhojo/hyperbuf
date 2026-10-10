@@ -20,11 +20,6 @@
       "license": "MIT",
       "reason": "package.json に license の欄がないが、同梱の license ファイルは MIT。"
     },
-    "elkjs": {
-      "license": "EPL-2.0",
-      "review": true,
-      "reason": "弱いコピーレフト(ファイル単位)。Mermaid の ELK レイアウト(layout: elk)用の遅延ロードのチャンク。改変せずに同梱し、ソースの入手先(https://github.com/kieler/elkjs)を表示する。GPL 系のライセンスとは相性が悪い(EPL-2.0 は、Secondary License の指定がなければ、GPL と結合できない)。使わないなら、バンドルから外せる。"
-    },
     "remark-math": {
       "license": "MIT",
       "copyright": "Junyoung Choi <fluke8259@gmail.com> (https://rokt33r.github.io)",

@@ -104,7 +104,7 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 | Markdown pipeline | **unified / remark / rehype（決定、`docs/poc-rendering-results.md`）**。raw HTML は rehype-sanitize で無害化 |
 | GFM / appearance | **remark-gfm、github-markdown-css（決定）**。GitHub との差は小さな変換で吸収する（例: 通貨表記の `$`） |
 | Mathematics | **KaTeX（決定）**。MathJax は未比較 |
-| Diagrams | **Mermaid（決定、遅延ロード・strictモード）**。Graphviz、PlantUML、WaveDrom、D2 は未評価（外部コマンドが絡むものは権限境界を先に決める） |
+| Diagrams | **Mermaid（決定、遅延ロード・strictモード、レイアウトは dagre に固定）**。Graphviz、PlantUML、WaveDrom、D2 は未評価（外部コマンドが絡むものは権限境界を先に決める） |
 | Syntax highlighting | **starry-night（決定）**。Shiki と比較し、速度・出力サイズ・GitHub互換で優位 |
 | Project search | **Swift 自前実装から開始（決定、`docs/poc-navigation-results.md`）**。`host.search` の契約でエンジンを差し替え可能にし、正規表現や除外規則が必要になった時点で ripgrep を再評価。インデックス方式は規模に応じて検討 |
 | File monitoring | **FSEvents（決定）**。ポーリングは削除を検知できず、ファイル数に比例して重いため採用しない |

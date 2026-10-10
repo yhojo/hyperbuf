@@ -1,6 +1,7 @@
 import Foundation
 
 public struct SearchHit: Sendable, Equatable, Codable {
+    /// 絶対パス。
     public let path: String
     public let line: Int
     public let text: String
@@ -11,20 +12,27 @@ public struct SearchResponse: Sendable, Equatable, Codable {
     /// 打ち切りの前の、該当した行の数(1 ファイルにつき最大 `maxPerFile` 行)。
     public let total: Int
     public let truncated: Bool
+    /// 検索しなかった理由(起点が `~` や `/` のとき、など)。
+    public let refused: String?
     public let listMs: Double
     public let scanMs: Double
 }
 
-/// プロジェクト内の全文検索(自前の並列走査)。docs/poc-navigation-results.md。
+/// ディレクトリ以下の全文検索(自前の並列走査)。docs/poc-navigation-results.md。
 ///
 /// 大文字小文字は ASCII だけ区別しない(日本語などは完全一致)。正規表現は未対応。
 /// 正規表現・除外規則が必要になったら、`host.search` の契約を保ったままエンジンを差し替える。
-public enum ProjectSearch {
+public enum TreeSearch {
     public static let maxPerFile = 3
 
-    public static func search(_ project: Project, query: String, limit: Int = 200) -> SearchResponse {
+    public static func search(dir: String, home: String, query: String, limit: Int = 200) -> SearchResponse {
         let t0 = DispatchTime.now()
-        let files = project.markdownFiles()
+        let tree = DirectoryLister.tree(dir, home: home)
+        if let refused = tree.refused {
+            return SearchResponse(results: [], total: 0, truncated: false, refused: refused, listMs: 0, scanMs: 0)
+        }
+        let root = PathUtil.canonicalPath(dir) ?? dir
+        let files = tree.files.map { root + "/" + $0 }
         let t1 = DispatchTime.now()
         let needle = Array(query.utf8).map(fold)
         var perFile = [[SearchHit]](repeating: [], count: files.count)
@@ -32,8 +40,7 @@ public enum ProjectSearch {
             perFile.withUnsafeMutableBufferPointer { buffer in
                 let out = UnsafeSendableBuffer(buffer)
                 DispatchQueue.concurrentPerform(iterations: files.count) { i in
-                    guard let url = try? project.resolve(files[i]),
-                        let data = try? Data(contentsOf: url, options: .mappedIfSafe)
+                    guard let data = try? Data(contentsOf: URL(fileURLWithPath: files[i]), options: .mappedIfSafe)
                     else { return }
                     out.set(i, scan(data, needle, path: files[i]))
                 }
@@ -44,7 +51,8 @@ public enum ProjectSearch {
         return SearchResponse(
             results: Array(all.prefix(max(0, limit))),
             total: all.count,
-            truncated: all.count > limit,
+            truncated: all.count > limit || tree.truncated,
+            refused: nil,
             listMs: millis(t0, t1),
             scanMs: millis(t1, t2)
         )

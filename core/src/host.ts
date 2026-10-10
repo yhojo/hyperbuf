@@ -20,6 +20,8 @@ export interface HostConfig {
   keybindings?: Record<string, string | null>;
   /** 前回の状態(window の配置・履歴・閲覧位置)を復元し、保存するか(既定は true)。 */
   restoreSession?: boolean;
+  /** シェルが見つけた設定の問題(許可パス / 警告パスなど)。`C-h b` の「設定の問題」に出す。 */
+  problems?: string[];
 }
 
 /** ディレクトリの 1 階層分の一覧の 1 件(`.md` のファイルとサブディレクトリだけ)。 */
@@ -81,6 +83,11 @@ export interface HyperbufHost {
   checkAccess?(paths: string[]): Promise<Access[]>;
   /** 確認を承認した: `remember` のパスを、記憶する(永続化)。シェルが提案したものだけが記憶される。 */
   allow?(remember: string): Promise<boolean>;
+  /** 記憶したパスの一覧と、取り消し(`forget-remembered-path`)。 */
+  listRemembered?(): Promise<string[]>;
+  forget?(path: string): Promise<boolean>;
+  /** フレーム(macOS のウィンドウ)の操作(`C-x 5 …`)。 */
+  frame?(action: "make" | "delete" | "other" | "delete-others"): Promise<void>;
   /** 表示中のファイル(絶対パス)の一覧。シェルは、これだけを監視する。 */
   watch?(paths: string[]): void;
   /** 表示中のファイルの変更(`changed`)・削除(`deleted`)の通知。 */

@@ -5,40 +5,34 @@ import Testing
 
 @Suite struct SessionStoreTests {
     private func store(_ t: TempProject) -> SessionStore {
-        SessionStore(directory: t.url.appendingPathComponent("sessions"))
+        SessionStore(directory: t.url.appendingPathComponent("state"))
     }
 
-    private let sample: [String: Any] = [
-        "version": 1, "selected": 1, "winSeq": 1, "mru": ["a.md"],
-        "root": [
-            "type": "leaf", "id": 1, "index": 0, "history": [["path": "a.md", "anchor": NSNull(), "scroll": 12.5]],
-        ],
-    ]
+    private func frame(_ slot: Int) -> [String: Any] {
+        [
+            "slot": slot, "rect": ["x": 10, "y": 20, "width": 900, "height": 600],
+            "snapshot": ["version": 1, "selected": 1, "winSeq": 1, "mru": ["/a.md"]],
+        ]
+    }
 
-    @Test func savesAndLoadsPerProject() throws {
+    @Test func savesAndLoadsTheFrameList() throws {
         let t = try TempProject()
-        let other = try TempProject()
-        defer {
-            t.remove()
-            other.remove()
-        }
+        defer { t.remove() }
         let s = store(t)
-        #expect(s.load(for: Project(root: t.url)) == nil)
-        #expect(s.save(sample, for: Project(root: t.url)))
-        let loaded = s.load(for: Project(root: t.url)) as? [String: Any]
-        #expect(loaded?["winSeq"] as? Int == 1)
-        #expect(s.load(for: Project(root: other.url)) == nil)  // 別のプロジェクトのものは読まない
+        #expect(s.load() == nil)
+        #expect(s.save(["version": 2, "active": 2, "frames": [frame(1), frame(2)]]))
+        let loaded = s.load()
+        #expect(loaded?["active"] as? Int == 2)
+        #expect((loaded?["frames"] as? [[String: Any]])?.compactMap { $0["slot"] as? Int } == [1, 2])
     }
 
     @Test func storeIsPrivate() throws {
         let t = try TempProject()
         defer { t.remove() }
         let s = store(t)
-        let project = Project(root: t.url)
-        #expect(s.save(sample, for: project))
+        #expect(s.save(["version": 2, "active": 1, "frames": [frame(1)]]))
         let dirMode = try FileManager.default.attributesOfItem(atPath: s.directory.path)[.posixPermissions] as? Int
-        let fileMode =
-            try FileManager.default.attributesOfItem(atPath: s.fileURL(for: project).path)[.posixPermissions] as? Int
+        let fileMode = try FileManager.default.attributesOfItem(atPath: s.fileURL.path)[.posixPermissions] as? Int
         #expect(dirMode == 0o700)
         #expect(fileMode == 0o600)
     }
@@ -47,10 +41,9 @@ import Testing
         let t = try TempProject()
         defer { t.remove() }
         let s = store(t)
-        let project = Project(root: t.url)
-        #expect(s.save(["a": 1], for: project))
-        #expect(s.save(["a": 2], for: project))
-        #expect((s.load(for: project) as? [String: Any])?["a"] as? Int == 2)
+        #expect(s.save(["version": 2, "active": 1, "frames": [frame(1)]]))
+        #expect(s.save(["version": 2, "active": 3, "frames": [frame(3)]]))
+        #expect(s.load()?["active"] as? Int == 3)
         #expect(try FileManager.default.contentsOfDirectory(atPath: s.directory.path).count == 1)
     }
 
@@ -58,23 +51,36 @@ import Testing
         let t = try TempProject()
         defer { t.remove() }
         let s = store(t)
-        let project = Project(root: t.url)
-        #expect(!s.save(["big": String(repeating: "x", count: SessionStore.maxBytes)], for: project))
-        #expect(!s.save(["bad": Date()], for: project))
-        #expect(s.load(for: project) == nil)
+        let big: [String: Any] = [
+            "version": 2,
+            "frames": [["slot": 1, "snapshot": ["x": String(repeating: "x", count: SessionStore.maxBytes)]]],
+        ]
+        #expect(!s.save(big))
+        #expect(!s.save(["bad": Date()]))
+        #expect(s.load() == nil)
     }
 
-    @Test func ignoresBrokenAndOversizedFiles() throws {
+    @Test func dropsFramesWithInvalidOrDuplicateSlots() throws {
         let t = try TempProject()
         defer { t.remove() }
         let s = store(t)
-        let project = Project(root: t.url)
-        #expect(s.save(sample, for: project))
-        try "{broken".write(to: s.fileURL(for: project), atomically: true, encoding: .utf8)
-        #expect(s.load(for: project) == nil)
+        #expect(s.save(["version": 2, "active": 1, "frames": [frame(1), frame(1), frame(0), frame(10), frame(4)]]))
+        let slots = (s.load()?["frames"] as? [[String: Any]])?.compactMap { $0["slot"] as? Int }
+        #expect(slots == [1, 4])
+    }
+
+    @Test func ignoresBrokenWrongVersionAndOversizedFiles() throws {
+        let t = try TempProject()
+        defer { t.remove() }
+        let s = store(t)
+        #expect(s.save(["version": 2, "active": 1, "frames": [frame(1)]]))
+        try "{broken".write(to: s.fileURL, atomically: true, encoding: .utf8)
+        #expect(s.load() == nil)
+        try #"{"version": 1, "frames": []}"#.write(to: s.fileURL, atomically: true, encoding: .utf8)
+        #expect(s.load() == nil)
         try String(repeating: " ", count: SessionStore.maxBytes + 1).write(
-            to: s.fileURL(for: project), atomically: true, encoding: .utf8)
-        #expect(s.load(for: project) == nil)
+            to: s.fileURL, atomically: true, encoding: .utf8)
+        #expect(s.load() == nil)
     }
 
     @Test func restoreSettingDefaultsToOn() throws {

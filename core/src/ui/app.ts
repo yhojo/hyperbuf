@@ -92,7 +92,15 @@ export async function startApp(options: {
   // 利用者のキー割り当て(config.json の keybindings)を、標準に重ねる。問題のある設定は、無視して、知らせる
   const config: HostConfig | undefined = await host.getConfig?.().catch(() => undefined);
   const bindings = resolveBindings(config?.keybindings);
-  const ctx: AppContext = { host, model, views, echo, minibuffer, bindings };
+  const ctx: AppContext = {
+    host,
+    model,
+    views,
+    echo,
+    minibuffer,
+    bindings,
+    problems: config?.problems ?? [],
+  };
 
   const commands = createCommands(ctx);
   const keyboard = installKeyboard(ctx, commands, createKeymap(bindings.bindings));
@@ -121,8 +129,9 @@ export async function startApp(options: {
     });
   }
   wireHostEvents(ctx, commands);
-  if (bindings.problems.length) {
-    echo.message(`設定: ${bindings.problems.length} 件の問題があります(C-h b で確認できます)`);
+  const problemCount = bindings.problems.length + ctx.problems.length;
+  if (problemCount) {
+    echo.message(`設定: ${problemCount} 件の問題があります(C-h b で確認できます)`);
   }
 
   return {

@@ -24,10 +24,10 @@ import Testing
             at: t.url.appendingPathComponent("link.txt"),
             withDestinationURL: outside.url.appendingPathComponent("secret.txt"))
         let files = StaticFiles(root: t.url)
-        #expect(throws: ProjectError.outside) { try files.read("../secret.txt") }
-        #expect(throws: ProjectError.outside) { try files.read("link.txt") }
-        #expect(throws: ProjectError.notFound) { try files.read("sub") }
-        #expect(throws: ProjectError.notFound) { try files.read("nope.js") }
+        #expect(throws: AccessError.invalidPath) { try files.read("../secret.txt") }
+        #expect(throws: AccessError.invalidPath) { try files.read("link.txt") }
+        #expect(throws: AccessError.notFound) { try files.read("sub") }
+        #expect(throws: AccessError.notFound) { try files.read("nope.js") }
     }
 }
 

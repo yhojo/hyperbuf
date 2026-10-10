@@ -12,6 +12,8 @@
 | `C-b`、 `s-[` | `back` | 参照履歴を戻る |
 | `C-c C-b` | `backward-same-level` | 同じレベルの、前の見出しへ(親をまたがない) |
 | `M-<` | `beginning-of-document` | 文書の先頭へ |
+| `C-x 5 0` | `delete-frame` | このフレームを閉じる(最後の 1 つなら、アプリを終了する) |
+| `C-x 5 1` | `delete-other-frames` | このフレームだけを残して、ほかのフレームを閉じる |
 | `C-x 1` | `delete-other-windows` | 選択中の window だけを残す |
 | `C-x 0` | `delete-window` | 選択中の window を閉じる |
 | `C-h b` | `describe-bindings` | キー割り当ての一覧を出す(設定の問題も) |
@@ -28,8 +30,10 @@
 | `C-s` | `isearch-forward` | 文書内を、インクリメンタルに検索する(C-s で次、C-r で前、RET で確定、C-g で取消) |
 | `C-g` | `keyboard-quit` | 入力途中のキーを取り消す |
 | `C-x k` | `kill-buffer` | buffer を閉じる(どの window の履歴からも、その参照を取り除く) |
+| `C-x 5 2` | `make-frame` | 新しいフレーム(macOS のウィンドウ)を作る。空いている最小の番号(Cmd-1〜)になる |
 | `C-c C-n` | `next-heading` | 次の見出しへ(参照履歴には積まない) |
 | `TAB` | `next-link` | 次のリンクを選ぶ |
+| `C-x 5 o` | `other-frame` | 次のフレームへ移る |
 | `C-x o` | `other-window` | 次の window を選択する |
 | `S-TAB` | `prev-link` | 前のリンクを選ぶ |
 | `C-c C-p` | `previous-heading` | 前の見出しへ(節の途中なら、その節の見出しへ) |
@@ -48,6 +52,7 @@
 
 | コマンド | 説明 |
 | --- | --- |
+| `forget-remembered-path` | 警告パスの下で、承認して記憶した場所を、選んで取り消す(次から、また確認される) |
 
 ## キーの表記
 

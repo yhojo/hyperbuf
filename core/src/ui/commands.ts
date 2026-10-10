@@ -28,6 +28,7 @@ import { openBuffer } from "../model.ts";
 import { startIsearch } from "./isearch-dom.ts";
 import { locateFromDom } from "./locate-dom.ts";
 import { ensureBuffer, errorMessage, follow, openAt } from "./navigation.ts";
+import { abbreviateHome } from "../paths.ts";
 import { bufferNames } from "./directory.ts";
 import { promptFindFile, promptFindFileRecursive } from "./files.ts";
 import { searchProject } from "./search.ts";
@@ -58,6 +59,11 @@ export const COMMAND_NAMES = [
   "kill-buffer",
   "find-file",
   "project-find-file",
+  "forget-remembered-path",
+  "make-frame",
+  "delete-frame",
+  "other-frame",
+  "delete-other-frames",
   "goto-heading",
   "goto-line",
   "isearch-forward",
@@ -100,6 +106,12 @@ export const COMMAND_DOCS: Readonly<Record<CommandName, string>> = {
     "ファイルを開く(基準のディレクトリから始まるパス補完。ディレクトリは RET で入る。~/・../・絶対パスも可)",
   "project-find-file":
     "基準のディレクトリ以下の Markdown を、再帰で一覧にして絞り込み、開く(../・~/・絶対パスで基準を変えられる)",
+  "forget-remembered-path":
+    "警告パスの下で、承認して記憶した場所を、選んで取り消す(次から、また確認される)",
+  "make-frame": "新しいフレーム(macOS のウィンドウ)を作る。空いている最小の番号(Cmd-1〜)になる",
+  "delete-frame": "このフレームを閉じる(最後の 1 つなら、アプリを終了する)",
+  "other-frame": "次のフレームへ移る",
+  "delete-other-frames": "このフレームだけを残して、ほかのフレームを閉じる",
   "goto-heading": "見出しを選んで、そこへ移動する",
   "goto-line": "元の Markdown の行番号を指定して、そこへ移動する",
   "isearch-forward":
@@ -225,6 +237,22 @@ export function createCommands(ctx: AppContext): Commands {
       echo.message(`buffer を閉じました: ${names.get(target) ?? target}`);
     },
     "find-file": () => openPicked(promptFindFile(ctx)),
+    "forget-remembered-path": async () => {
+      const remembered = (await host.listRemembered?.()) ?? [];
+      if (!remembered.length) return void echo.message("記憶したパスはありません");
+      const shown = new Map(remembered.map((p) => [abbreviateHome(p, host.home), p]));
+      const picked = await minibuffer.prompt("Forget remembered path: ", [...shown.keys()], {
+        allowFree: false,
+      });
+      const path = picked === null ? undefined : shown.get(picked);
+      if (path === undefined) return;
+      const ok = await host.forget?.(path);
+      echo.message(ok ? `取り消しました: ${picked}` : "取り消せませんでした");
+    },
+    "make-frame": () => host.frame?.("make"),
+    "delete-frame": () => host.frame?.("delete"),
+    "other-frame": () => host.frame?.("other"),
+    "delete-other-frames": () => host.frame?.("delete-others"),
     "project-find-file": () => openPicked(promptFindFileRecursive(ctx)),
     "goto-heading": async () => {
       const entry = currentEntry(sel());
@@ -289,7 +317,7 @@ export function createCommands(ctx: AppContext): Commands {
         renderBindingsHelp({
           docs: COMMAND_DOCS,
           bindings: ctx.bindings.bindings,
-          problems: ctx.bindings.problems,
+          problems: [...ctx.bindings.problems, ...ctx.problems],
         }),
       );
       visit(model, sel(), path);

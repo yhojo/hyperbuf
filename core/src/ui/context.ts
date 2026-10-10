@@ -14,4 +14,6 @@ export interface AppContext {
   minibuffer: Minibuffer;
   /** いまのキー割り当てと、設定の問題(標準 + 利用者の設定)。describe-bindings が使う。 */
   bindings: BindingsResult;
+  /** シェルが見つけた設定の問題(許可パス / 警告パスなど)。 */
+  problems: readonly string[];
 }

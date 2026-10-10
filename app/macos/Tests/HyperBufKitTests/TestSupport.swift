@@ -1,5 +1,7 @@
 import Foundation
 
+@testable import HyperBufKit
+
 /// 一時ディレクトリに、テスト用のプロジェクトを作る。
 struct TempProject {
     let url: URL
@@ -17,6 +19,9 @@ struct TempProject {
             at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
         try text.write(to: file, atomically: true, encoding: .utf8)
     }
+
+    /// `realpath` の形のパス(`/var/...` が `/private/var/...` になる)。判定・比較には、これを使う。
+    var real: String { PathUtil.canonicalPath(url.path) ?? url.path }
 
     func remove() { try? FileManager.default.removeItem(at: url) }
 }

@@ -3,33 +3,40 @@ import HyperBufKit
 import HyperBufProtocol
 import WebKit
 
-/// 1 つのプロジェクトを開いている間の状態。ファイルアクセス、ファイル監視、Web コアとのやり取りを持つ。
+/// 1 つのフレーム(macOS のウィンドウ)の状態。ファイルアクセス、ファイルの監視、Web コアとのやり取りを持つ。
+/// 各フレームは、独立した作業場(自分のバッファ・履歴・分割を、Web コアの中に持つ)。docs/project-model.md §10。
 @MainActor
-final class ProjectSession: Identifiable {
+final class FrameSession: Identifiable {
     let id = UUID()
-    let project: Project
-    let fileAccess: FileAccess
-    weak var webView: WKWebView?
-    private var watcher: FSWatcher?
-    private var pageReady = false
-    /// 利用者が「エディタで編集」で指した位置(エディタが `get-location` で取りに来る)。
-    private(set) var markedLocation: LocationPayload?
+    /// スロット番号(1〜9)。`Cmd-1` … `Cmd-9` に対応し、フレームを閉じても変わらない。
+    let slot: Int
+    let access: FileAccess
     let editorConfig: EditorConfig
-    let sessionStore = SessionStore()
+    /// 復元するセッション(Web コアの `loadSession` に渡す)。
+    let initialSnapshot: Any?
+    /// 最後に保存された、Web コアのセッション(ホストが、全フレームをまとめて書く)。
+    private(set) var lastSnapshot: Any?
+    weak var webView: WKWebView?
+    weak var window: NSWindow?
+    private var watcher: FileWatcher?
+    private var pageReady = false
+    /// アプリが提案した、記憶してよいパス(承認されたときだけ記憶する。Web 側から、任意のパスは足せない)。
+    private var proposals: Set<String> = []
     /// Web コアの準備前に届いた「開く」要求。準備ができたら、順に渡す。
     private var pendingOpens: [[String: Any]] = []
 
-    init(project: Project, trusted: TrustedRoots, editorConfig: EditorConfig = EditorConfig.load()) {
-        self.project = project
+    init(slot: Int, access: FileAccess, editorConfig: EditorConfig, snapshot: Any?) {
+        self.slot = slot
+        self.access = access
         self.editorConfig = editorConfig
-        fileAccess = FileAccess(project: project, trusted: trusted)
-        watcher = FSWatcher(root: project.root) { [weak self] paths in
-            // FSWatcher は、メインキューで通知する
-            MainActor.assumeIsolated {
-                for path in paths { self?.notifyChanged(path) }
-            }
+        initialSnapshot = snapshot
+        lastSnapshot = snapshot
+        watcher = FileWatcher { [weak self] path, state in
+            MainActor.assumeIsolated { self?.notifyChanged(path, state) }
         }
     }
+
+    // MARK: Web コアの準備
 
     /// Web コアが `ready` を呼んだ(`onOpen` などの登録が済んだ)。
     func pageDidBecomeReady() {
@@ -43,6 +50,10 @@ final class ProjectSession: Identifiable {
     func deliverOpen(_ instruction: [String: Any]) {
         if pageReady { evaluateOpen(instruction) } else { pendingOpens.append(instruction) }
     }
+
+    // MARK: セッション
+
+    func didSave(_ snapshot: Any) { lastSnapshot = snapshot }
 
     /// セッションを、いますぐ保存させる(終了の直前)。Web コアの保存が終わるか、`timeout` 秒たつまで待つ。
     func flushSession(timeout: Double = 1.5) async {
@@ -68,41 +79,61 @@ final class ProjectSession: Identifiable {
         }
     }
 
+    // MARK: アクセス判定と記憶
+
+    /// リンクやリソースが指すファイルの判定(Web コアの `checkAccess`)。存在しないものは allow(読むときに失敗する)。
+    func judge(_ path: String) -> [String: Any] {
+        guard let decision = try? access.decide(path) else { return ["access": "allow"] }
+        switch decision {
+        case .allow: return ["access": "allow"]
+        case .confirm(let remember):
+            proposals.insert(remember)
+            return ["access": "confirm", "remember": remember]
+        }
+    }
+
+    /// 承認された提案を、記憶する。提案していないパスは、記憶しない。
+    func acceptProposal(_ remember: String) -> Bool {
+        guard proposals.remove(remember) != nil else { return false }
+        return access.remembered.add(remember)
+    }
+
+    // MARK: ファイルの監視
+
+    /// 表示中のファイル(Web コアの `watch`)。これだけを監視する。
+    func setWatched(_ paths: [String]) {
+        var set = Set<String>()
+        for path in paths {
+            if let real = try? access.canonical(path) { set.insert(real) }
+        }
+        watcher?.setPaths(set)
+    }
+
+    private func notifyChanged(_ path: String, _ state: FileWatcher.State) {
+        guard let json = Self.json(path) else { return }
+        let name = state == .deleted ? "deleted" : "changed"
+        webView?.evaluateJavaScript("window.__hostChanged && window.__hostChanged(\(json), \"\(name)\")")
+    }
+
+    // MARK: Web コアへの呼び出し
+
     /// 「エディタで編集」が選ばれた(右クリックメニュー)。指した場所は、Web コアが求める。
     func requestEdit() {
         guard pageReady else { return }
         webView?.evaluateJavaScript("window.__hostEdit && window.__hostEdit()")
     }
 
-    /// Web コアが求めた位置を記録し、設定されていれば、エディタを呼び出す。
-    func markLocation(_ web: WebLocation) async -> [String: Any] {
-        switch LocationBuilder.build(web, access: fileAccess) {
-        case .failure(let error):
-            return ["ok": false, "triggered": false, "message": error.message]
-        case .success(let payload):
-            markedLocation = payload
-            guard editorConfig.command != nil else {
-                return [
-                    "ok": true, "triggered": false,
-                    "message": "位置を記録しました(エディタで M-x hyperbuf-visit-location)",
-                ]
-            }
-            switch await EditorCommand.run(editorConfig) {
-            case .success:
-                return ["ok": true, "triggered": true, "message": "\(editorConfig.name) を呼び出しました"]
-            case .failure(let failure):
-                return [
-                    "ok": true, "triggered": false,
-                    "message": "位置は記録しましたが、エディタを呼び出せませんでした(\(failure))",
-                ]
-            }
-        }
-    }
-
     /// Web コアの `onOpenCancel` に、取り消された要求の id を渡す(確認待ちのミニバッファを閉じる)。
     func cancelOpen(_ id: String) {
         guard pageReady, let json = Self.json(id) else { return }
         webView?.evaluateJavaScript("window.__hostOpenCancel && window.__hostOpenCancel(\(json))")
+    }
+
+    /// コマンド(`find-file` など)を実行させる。メニューから。
+    func runCommand(_ name: String) {
+        guard pageReady, let json = Self.json(name) else { return }
+        webView?.evaluateJavaScript(
+            "window.__hyperbuf && window.__hyperbuf.commands[\(json)] && window.__hyperbuf.commands[\(json)]()")
     }
 
     /// Web コアの `onQuery` に問い合わせる。準備前なら null。
@@ -114,24 +145,16 @@ final class ProjectSession: Identifiable {
         return value.map { JSONValue(any: $0) } ?? .null
     }
 
-    /// いまの表示(`get-view`)。相対パスには、絶対パス(`absolutePath`)を添える。
+    /// いまの表示(`get-view`)。パスは、絶対パス。
     func view() async -> JSONValue {
         guard case .object(var view) = await query("get-view") else { return .null }
-        if let path = view["path"]?.string, !path.hasPrefix("*"), let absolute = try? fileAccess.absolutePath(path) {
-            view["absolutePath"] = .string(absolute)
-        }
+        if let path = view["path"]?.string, !path.hasPrefix("*") { view["absolutePath"] = .string(path) }
         return .object(view)
     }
 
     private func evaluateOpen(_ instruction: [String: Any]) {
         guard let json = Self.json(instruction) else { return }
         webView?.evaluateJavaScript("window.__hostOpen && window.__hostOpen(\(json))")
-    }
-
-    /// Web コアの `onFileChanged` に通知する。パスは JSON 文字列として渡す(注入を避ける)。
-    private func notifyChanged(_ path: String) {
-        guard let json = Self.json(path) else { return }
-        webView?.evaluateJavaScript("window.__hostChanged && window.__hostChanged(\(json))")
     }
 
     private static func json(_ value: Any) -> String? {

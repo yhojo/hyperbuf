@@ -2,8 +2,8 @@ import Foundation
 import HyperBufKit
 import WebKit
 
-/// `hyperbuf://app/*`(Web コア)、`hyperbuf://project/*`(プロジェクトの画像)、
-/// `hyperbuf://trusted/*`(信頼するルートの内側の画像)を配る。
+/// `hyperbuf://app/*`(Web コア)と、`hyperbuf://file/<絶対パス>`(文書が参照する画像)を配る。
+/// 画像は、読み込みのたびに `FileAccess` が判定する(警告パスの画像は、404 になる。Web コアの判断を信用しない)。
 /// file:// だと ES modules が読めないこと、ファイルアクセスの範囲を自分で管理したいことから、カスタムスキームを使う。
 @MainActor
 final class SchemeHandler: NSObject, WKURLSchemeHandler {
@@ -20,19 +20,15 @@ final class SchemeHandler: NSObject, WKURLSchemeHandler {
             task.didFailWithError(URLError(.badURL))
             return
         }
-        let relative = String(url.path.dropFirst()).removingPercentEncoding ?? ""
         do {
             switch url.host {
             case "app":
+                let relative = String(url.path.dropFirst())
                 let file = try web.read(relative)
                 respond(task, url: url, status: 200, mime: file.mime, csp: ContentSecurityPolicy.app, body: file.data)
-            case "project":
-                let file = try access.readResource(relative)
-                respond(
-                    task, url: url, status: 200, mime: file.mime, csp: ContentSecurityPolicy.resource, body: file.data)
-            case "trusted":
-                // 信頼するルートの内側の画像(絶対パス)。承認されていない場所は、FileAccess が拒否する
-                let file = try access.readResource("/" + relative)
+            case "file":
+                // `url.path` は、パーセントエンコードを戻した絶対パス
+                let file = try access.readResource(url.path)
                 respond(
                     task, url: url, status: 200, mime: file.mime, csp: ContentSecurityPolicy.resource, body: file.data)
             default:

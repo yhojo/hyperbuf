@@ -14,7 +14,7 @@
 - 試作: `HYPERBUF_SPIKE_FRAMES=N` で、N 個のフレーム(それぞれ `NSWindow` + `NSHostingView(WebShell)` + 独立した `ProjectSession`)を開く。各フレームで、実際の文書(`docs/` の設計文書)を 3 枚、順に開いて描画する(フレームごとに、開く文書をずらす)。
 - 測定: 起動の 30 秒後に、アプリ本体と、新しく現れた WebKit のプロセス(`WebContent`、`GPU`、`Networking`)の、`footprint`(物理フットプリント)を合計する。起動前の WebKit のプロセスは除く。
 - ビルド: debug(テスト用の環境変数でセッション・ソケットの保存先を差し替えるため)。メモリの大半は WebKit のプロセスで、Swift の debug/release の差は、数 MB と見込む。
-- 環境: macOS 26(Darwin 25.6)、Apple Silicon。
+- 環境: macOS 26.7.1、Apple Silicon(arm64)、物理メモリ 48 GB。メモリの少ない Mac(8〜16 GB)では、同じフットプリントでも、圧迫のされ方が違う点に注意(未測定)。
 
 ## 結果(MB)
 

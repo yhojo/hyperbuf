@@ -1,6 +1,6 @@
 // セッションの保存(変更のたびに、少し待ってから書く)と、起動時の復元。
 
-import { createModel, killBuffer, windows } from "../model.ts";
+import { createModel, killBuffer, removeWindow, windows } from "../model.ts";
 import {
   parseSnapshot,
   referencedPaths,
@@ -55,12 +55,12 @@ export function createSessionSaver(ctx: AppContext): SessionSaver {
  */
 export async function restoreSession(
   ctx: AppContext,
-  files: readonly string[],
 ): Promise<{ selection: SessionSelection | null } | null> {
   const saved = await ctx.host.loadSession?.().catch(() => null);
   const snapshot = parseSnapshot(saved);
   if (!snapshot) return null;
-  const restored = restoreModel(snapshot, new Set(files));
+  // 文書が存在するかは、読んでみて分かる(読めなかったものは、下で履歴から外す)
+  const restored = restoreModel(snapshot, () => true);
   if (!restored) return null;
   Object.assign(ctx.model, restored);
   for (const path of referencedPaths(ctx.model)) {
@@ -70,9 +70,12 @@ export async function restoreSession(
       killBuffer(ctx.model, path); // 読めなくなった文書は、履歴から外す
     }
   }
-  if (windows(ctx.model).some((w) => w.index < 0)) {
-    Object.assign(ctx.model, createModel()); // 表示できる文書が残らなかった
-    return null;
+  // 表示できる文書が残らなかった window は、取り除く(分割をたたむ)。すべてなくなれば、通常の起動
+  for (const win of windows(ctx.model)) {
+    if (win.index < 0 && !removeWindow(ctx.model, win)) {
+      Object.assign(ctx.model, createModel());
+      return null;
+    }
   }
   return { selection: restoredSelection(snapshot, ctx.model) };
 }

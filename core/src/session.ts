@@ -180,14 +180,17 @@ export function restoredSelection(
   return entry && entry.path === sel.path ? sel : null;
 }
 
-function restoreWindow(
-  node: Extract<SessionNode, { type: "leaf" }>,
-  available: ReadonlySet<string>,
-) {
+/** 存在する文書のパスの集合、または、存在するかの判定。 */
+type Available = ReadonlySet<string> | ((path: string) => boolean);
+
+const hasIn = (available: Available): ((path: string) => boolean) =>
+  typeof available === "function" ? available : (p) => available.has(p);
+
+function restoreWindow(node: Extract<SessionNode, { type: "leaf" }>, available: Available) {
   const history: HistoryEntry[] = [];
   let index = -1;
   node.history.forEach((entry, i) => {
-    if (!available.has(entry.path)) return; // なくなった文書は、履歴から外す
+    if (!hasIn(available)(entry.path)) return; // なくなった文書は、履歴から外す
     if (i <= node.index) index = history.length;
     history.push({ ...entry });
   });
@@ -196,7 +199,7 @@ function restoreWindow(
   return win;
 }
 
-function restoreNode(node: SessionNode, available: ReadonlySet<string>): LayoutNode | null {
+function restoreNode(node: SessionNode, available: Available): LayoutNode | null {
   if (node.type === "leaf") {
     const win = restoreWindow(node, available);
     return win ? { type: "leaf", win } : null;
@@ -208,13 +211,10 @@ function restoreNode(node: SessionNode, available: ReadonlySet<string>): LayoutN
 
 /**
  * 保存された状態から、model を作る(buffer の内容は空。呼び出し側が、ホストから読む)。
- * `available`: いま存在する文書のパス。なくなった文書は、履歴と最近使った順から外す。
+ * `available`: いま存在する文書のパス(の集合、または、存在するかの判定)。なくなった文書は、履歴と最近使った順から外す。
  * 復元できる window が 1 つもなければ null。
  */
-export function restoreModel(
-  snapshot: SessionSnapshot,
-  available: ReadonlySet<string>,
-): Model | null {
+export function restoreModel(snapshot: SessionSnapshot, available: Available): Model | null {
   const root = restoreNode(snapshot.root, available);
   if (!root) return null;
   const ids: number[] = [];
@@ -225,7 +225,7 @@ export function restoreModel(
   walk(root);
   return {
     buffers: new Map(),
-    mru: snapshot.mru.filter((p) => available.has(p)),
+    mru: snapshot.mru.filter(hasIn(available)),
     winSeq: Math.max(snapshot.winSeq, ...ids),
     root,
     selected: ids.includes(snapshot.selected) ? snapshot.selected : (ids[0] ?? 1),

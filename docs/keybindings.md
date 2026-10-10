@@ -18,7 +18,7 @@
 | `C-c e` | `edit-in-editor` | 指した場所(選択・右クリック・画面の上端)を、エディタで編集するために記録する |
 | `M->` | `end-of-document` | 文書の末尾へ |
 | `M-x` | `execute-command` | コマンドを、名前を選んで実行する |
-| `C-x C-f` | `find-file` | プロジェクトの Markdown を、あいまい検索で選んで開く |
+| `C-x C-f` | `find-file` | ファイルを開く(基準のディレクトリから始まるパス補完。ディレクトリは RET で入る。~/・../・絶対パスも可) |
 | `RET` | `follow-link` | 選んでいるリンクをたどる |
 | `C-f`、 `s-]` | `forward` | 参照履歴を進む |
 | `C-c C-f` | `forward-same-level` | 同じレベルの、次の見出しへ(親をまたがない) |
@@ -33,11 +33,12 @@
 | `C-x o` | `other-window` | 次の window を選択する |
 | `S-TAB` | `prev-link` | 前のリンクを選ぶ |
 | `C-c C-p` | `previous-heading` | 前の見出しへ(節の途中なら、その節の見出しへ) |
+| `C-x p f` | `project-find-file` | 基準のディレクトリ以下の Markdown を、再帰で一覧にして絞り込み、開く(../・~/・絶対パスで基準を変えられる) |
 | `C-n` | `scroll-line-down` | 1 行分、下へスクロールする |
 | `C-p` | `scroll-line-up` | 1 行分、上へスクロールする |
 | `C-v`、 `SPC` | `scroll-page-down` | 1 画面分、下へスクロールする |
 | `DEL`、 `M-v`、 `S-SPC` | `scroll-page-up` | 1 画面分、上へスクロールする |
-| `M-s g` | `search-project` | プロジェクト全体を全文検索して、結果を仮想 buffer に出す |
+| `M-s g` | `search-project` | 基準のディレクトリ以下を全文検索して、結果を仮想 buffer に出す |
 | `C-x 2` | `split-below` | window を、上下に分割する(履歴は、複製される) |
 | `C-x 3` | `split-right` | window を、左右に分割する(履歴は、複製される) |
 | `C-x b` | `switch-buffer` | 開いている buffer を、最近使った順の候補から選んで表示する |

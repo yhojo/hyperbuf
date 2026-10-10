@@ -1,10 +1,15 @@
 // 操作モデル(docs/interaction-model.md)。DOM やシェルに依存しない純粋なロジック。
 
+import { parseVirtualPath } from "./names.ts";
+import { dirname, joinPath } from "./paths.ts";
+
 export interface Buffer {
   readonly path: string;
   text: string;
   /** 内容が更新されるたびに増える。描画のやり直しの判定に使う。 */
   version: number;
+  /** ファイルが削除された(または移動された)。バッファは残し、ヘッダに知らせる。 */
+  missing?: boolean;
 }
 
 export interface HistoryEntry {
@@ -39,18 +44,28 @@ export interface LinkTarget {
   anchor: string | null;
 }
 
-/** href を現在の文書からの相対で解決する。外部 URL は null。 */
+/**
+ * href を現在の文書(絶対パス)からの相対で解決して、絶対パスにする。外部 URL は null。
+ * `/` で始まる href は、ファイルシステムの絶対パスとして扱う(プロジェクトという単位がないため)。
+ */
 export function resolveLink(fromPath: string, href: string): LinkTarget | null {
   if (/^[a-z][a-z0-9+.-]*:/i.test(href)) return null;
-  const [pathPart = "", anchor = null] = href.split("#");
+  const hash = href.indexOf("#");
+  const pathPart = hash < 0 ? href : href.slice(0, hash);
+  const anchor = hash < 0 ? null : href.slice(hash + 1);
   if (pathPart === "") return { path: fromPath, anchor };
-  const parts = fromPath.split("/").slice(0, -1);
-  for (const seg of pathPart.split("/")) {
-    if (seg === "" || seg === ".") continue;
-    if (seg === "..") parts.pop();
-    else parts.push(seg);
+  // リンクの URL は、パーセントエンコードされている(日本語のファイル名など)ので、戻す
+  let decoded = pathPart;
+  try {
+    decoded = decodeURIComponent(pathPart);
+  } catch {
+    // 不正なエンコードは、そのまま使う
   }
-  return { path: parts.join("/"), anchor };
+  // 仮想 buffer(検索結果など)からの相対リンクは、起点のディレクトリ(なければ `/`)からとする
+  const base = isVirtualPath(fromPath)
+    ? (parseVirtualPath(fromPath).dir ?? "/")
+    : dirname(fromPath);
+  return { path: joinPath(base, decoded), anchor };
 }
 
 /** ファイルに対応しない buffer(`*search: …*` など)のパスか。実在の `.md` のパスは、`*` で終わらない。 */
@@ -184,7 +199,11 @@ export function split(model: Model, dir: SplitDirection): Win {
 }
 
 export function deleteWindow(model: Model): boolean {
-  const win = selectedWindow(model);
+  return removeWindow(model, selectedWindow(model));
+}
+
+/** window を取り除き、分割をたたむ。唯一の window は取り除けない(false)。選択中のものなら、隣に移る。 */
+export function removeWindow(model: Model, win: Win): boolean {
   const node = nodeOf(model, win);
   const parent = findParent(model.root, node);
   if (!parent || parent.type !== "split") return false;
@@ -192,7 +211,7 @@ export function deleteWindow(model: Model): boolean {
   const grand = findParent(model.root, parent);
   if (!grand) model.root = sibling;
   else replaceChild(grand, parent, sibling);
-  model.selected = firstLeaf(sibling).win.id;
+  if (model.selected === win.id) model.selected = firstLeaf(sibling).win.id;
   return true;
 }
 

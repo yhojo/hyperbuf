@@ -4,20 +4,32 @@ import type { OpenRequest } from "../host.ts";
 import { currentEntry, openBuffer, selectedWindow } from "../model.ts";
 import type { Commands } from "./commands.ts";
 import type { AppContext } from "./context.ts";
+import { abbreviateHome } from "../paths.ts";
 import { errorMessage, openAt } from "./navigation.ts";
 
 export function wireHostEvents(ctx: AppContext, commands: Commands): void {
   const { host, model, views, echo, minibuffer } = ctx;
 
-  // 外部更新: 開いている buffer だけ読み直す。位置の維持は Views が行う。
-  host.onFileChanged(async (path) => {
-    if (!model.buffers.has(path)) return;
+  // 表示中のファイルの変更・削除。変更なら読み直し(位置の維持は Views が行う)、削除なら残して知らせる
+  host.onFileChanged(async (path, state) => {
+    const buf = model.buffers.get(path);
+    if (!buf) return;
+    if (state === "deleted") {
+      buf.missing = true;
+      views.refresh();
+      return;
+    }
     try {
       openBuffer(model, path, await host.readFile(path));
       views.refresh();
-      echo.message(`外部更新を反映: ${path}`);
+      echo.message(`外部更新を反映: ${abbreviateHome(path, host.home)}`);
     } catch (err) {
-      echo.message(`外部更新を反映できません: ${path} (${errorMessage(err)})`);
+      // 読めない = 消えた(または、置換の途中)。バッファは残して、知らせる
+      buf.missing = true;
+      views.refresh();
+      echo.message(
+        `外部更新を反映できません: ${abbreviateHome(path, host.home)} (${errorMessage(err)})`,
+      );
     }
   });
 
@@ -40,29 +52,31 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
       respond({ ok: false, error: { code, message } });
     };
     if (req.error) return fail("bad-request", req.error);
-    if (req.outside) {
-      // プロジェクトの範囲外は、ダイアログではなくミニバッファで確認する(docs/integration-protocol.md §6)。
-      // 承認されたら、シェルが提案したルートが、信頼するルートに加わる(永続化される)。
-      const where = req.root ? `${req.root} を信頼して、` : "";
+    if (req.confirm) {
+      // 警告パスのファイルは、ダイアログではなくミニバッファで確認する(docs/project-model.md §5)。
+      // 承認されたら、シェルが提案したパスが記憶される(永続化される)。
+      const where = req.remember ? `${abbreviateHome(req.remember, host.home)} を記憶して、` : "";
       confirming = req.id ?? null;
       const answer = await minibuffer.prompt(
-        `${where}${req.path} を開きますか(プロジェクトの外です)? `,
+        `${where}${abbreviateHome(req.path, host.home)} を開きますか(警告パスです)? `,
         ["yes", "no"],
         { allowFree: false },
       );
       confirming = null;
-      host.log?.(`OUTSIDE ${req.path} answer=${answer}`);
+      host.log?.(`CONFIRM ${req.path} answer=${answer}`);
       // 回答は、承認でも拒否でも、シェルに伝える(承認が受理されたときだけ、読めるようになる)
-      const granted = (await host.confirmOutside?.(req.id ?? "", answer === "yes")) ?? false;
+      const granted = (await host.confirmOpen?.(req.id ?? "", answer === "yes")) ?? false;
       if (answer !== "yes" || !granted) {
-        return fail("outside-project", "範囲外のため開きませんでした");
+        return fail("outside-project", "警告パスのため開きませんでした");
       }
     }
     const anchor = req.anchor ?? (req.line ? `line:${req.line}` : null);
     try {
       await openAt(ctx, req.path, anchor);
       views.refresh();
-      echo.message(`連携で開きました: ${req.path}${anchor ? "#" + anchor : ""}`);
+      echo.message(
+        `連携で開きました: ${abbreviateHome(req.path, host.home)}${anchor ? "#" + anchor : ""}`,
+      );
       respond({ ok: true, result: { path: req.path } });
     } catch (err) {
       fail("not-found", `開けません: ${req.path} (${errorMessage(err)})`);

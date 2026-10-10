@@ -10,6 +10,7 @@ import {
   killBuffer,
   openBuffer,
   otherWindow,
+  removeWindow,
   resolveLink,
   selectedWindow,
   split,
@@ -92,17 +93,47 @@ test("window の削除・単独化・移動", () => {
 });
 
 test("リンク解決", () => {
-  assert.deepEqual(resolveLink("docs/a.md", "b.md#x"), { path: "docs/b.md", anchor: "x" });
-  assert.deepEqual(resolveLink("docs/a.md", "../c.md"), { path: "c.md", anchor: null });
-  assert.deepEqual(resolveLink("docs/a.md", "#top"), { path: "docs/a.md", anchor: "top" });
-  assert.equal(resolveLink("a.md", "https://example.com"), null);
+  assert.deepEqual(resolveLink("/p/docs/a.md", "b.md#x"), { path: "/p/docs/b.md", anchor: "x" });
+  assert.deepEqual(resolveLink("/p/docs/a.md", "../c.md"), { path: "/p/c.md", anchor: null });
+  assert.deepEqual(resolveLink("/p/docs/a.md", "#top"), { path: "/p/docs/a.md", anchor: "top" });
+  assert.deepEqual(resolveLink("/p/docs/a.md", "/etc/x.md"), { path: "/etc/x.md", anchor: null });
+  assert.deepEqual(resolveLink("/a.md", "../../b.md"), { path: "/b.md", anchor: null });
+  assert.deepEqual(resolveLink("/p/a.md", "x%20y.md"), { path: "/p/x y.md", anchor: null });
+  assert.deepEqual(resolveLink("/p/a.md", "%E6%97%A5%E6%9C%AC.md#a"), {
+    path: "/p/日本.md",
+    anchor: "a",
+  });
+  assert.deepEqual(resolveLink("/p/a.md", "bad%E0%A4.md"), {
+    path: "/p/bad%E0%A4.md",
+    anchor: null,
+  });
+  assert.equal(resolveLink("/p/a.md", "https://example.com"), null);
 });
 
-test("仮想 buffer(ディレクトリを持たないパス)からのリンクはルートからの相対になる", () => {
-  assert.deepEqual(resolveLink("*search: x*", "area0/doc.md#line:3"), {
-    path: "area0/doc.md",
+test("仮想 buffer からの相対リンクは、起点のディレクトリ(なければ /)からになる", () => {
+  assert.deepEqual(resolveLink("*search: x @ /p/docs*", "area0/doc.md#line:3"), {
+    path: "/p/docs/area0/doc.md",
     anchor: "line:3",
   });
+  assert.deepEqual(resolveLink("*Help: keybindings*", "x.md"), { path: "/x.md", anchor: null });
+  assert.deepEqual(resolveLink("*search: x @ /p*", "/abs/doc.md"), {
+    path: "/abs/doc.md",
+    anchor: null,
+  });
+});
+
+test("removeWindow: 指定した window を取り除き、選択中なら隣に移る。唯一の window は取り除けない", () => {
+  const m = createModel();
+  const first = selectedWindow(m);
+  assert.equal(removeWindow(m, first), false);
+  const second = split(m, "row");
+  assert.equal(removeWindow(m, second), true);
+  assert.equal(windows(m).length, 1);
+  assert.equal(m.selected, first.id);
+  const third = split(m, "col");
+  m.selected = third.id;
+  assert.equal(removeWindow(m, third), true);
+  assert.equal(m.selected, first.id);
 });
 
 test("kill-buffer: どの window の履歴からも、その buffer への参照を取り除き、現在位置を保つ", () => {

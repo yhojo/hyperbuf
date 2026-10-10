@@ -15,6 +15,7 @@ export const DEFAULT_BINDINGS: Readonly<Record<string, CommandName>> = {
   "C-x b": "switch-buffer",
   "C-x k": "kill-buffer",
   "C-x C-f": "find-file",
+  "C-x p f": "project-find-file",
   "M-x": "execute-command",
   // Back / Forward は、編集における C-f/C-b が文字の流れを泳ぐのと同じく、参照の流れを泳ぐ操作
   "C-f": "forward",

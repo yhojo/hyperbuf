@@ -21,7 +21,7 @@ declare global {
   }
 }
 
-const host = window.hyperbufHost ?? createDevHost();
+const host = window.hyperbufHost ?? (await createDevHost());
 // starry-night は既定で外部 CDN から WASM を取得するため、同梱したファイルを指す(local first)
 const renderer = await createRenderer({ onigUrl: new URL(onigWasm, import.meta.url) });
 window.__hyperbuf = await startApp({ host, renderer }).catch((err: unknown) => {

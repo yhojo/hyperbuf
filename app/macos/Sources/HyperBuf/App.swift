@@ -90,6 +90,7 @@ final class AppModel: NSObject, NSWindowDelegate {
         window.minSize = NSSize(width: 600, height: 400)
         window.delegate = self
         window.isReleasedWhenClosed = false
+        window.isRestorable = false  // macOS のウィンドウの復元は使わない(復元は、セッションが行う)
         frame.window = window
         frames[slot] = frame
         activeSlot = slot
@@ -134,6 +135,13 @@ final class AppModel: NSObject, NSWindowDelegate {
 
     /// メニューから、アクティブなフレームでコマンドを実行する。
     func runCommand(_ name: String) { activeFrame?.runCommand(name) }
+
+    // MARK: メニューの操作(MainMenu から)
+
+    @objc func menuNewFrame(_ sender: Any?) { newFrame() }
+    @objc func menuOpenFile(_ sender: Any?) { runCommand("find-file") }
+    @objc func menuRevealConfig(_ sender: Any?) { ConfigLocation.reveal() }
+    @objc func menuActivateFrame(_ sender: NSMenuItem) { activate(slot: sender.tag) }
 
     private func updateTitles() {
         for frame in frames.values {
@@ -302,6 +310,19 @@ final class AppModel: NSObject, NSWindowDelegate {
     }
 }
 
+/// 設定ファイル(`config.json`)の場所を、Finder で表示する。アプリは設定ファイルを書き換えない
+/// (なければ、置き場所のディレクトリを表示する)。
+enum ConfigLocation {
+    @MainActor static func reveal() {
+        let url = EditorConfig.configURL()
+        if FileManager.default.fileExists(atPath: url.path) {
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        } else {
+            NSWorkspace.shared.open(url.deletingLastPathComponent())
+        }
+    }
+}
+
 /// 起動の引数(ファイル、ディレクトリ)の解釈。docs/project-model.md §3.1。
 enum Launch {
     /// 開くファイルの絶対パス。ディレクトリは `index.md`、なければ `README.md`(どちらもなければ、何もしない)。
@@ -371,6 +392,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApplication.shared.activate(ignoringOtherApps: true)
         Task { @MainActor in
             let model = AppModel.shared
+            MainMenu.install(model: model)
             model.startServer()
             model.start(arguments: CommandLine.arguments)
         }
@@ -405,31 +427,4 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
-}
-
-@main
-struct HyperBufApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
-
-    var body: some Scene {
-        // フレームのウィンドウは、AppModel が AppKit で作る。SwiftUI のシーンは、メニューのためだけに置く
-        Settings {
-            Text("設定は config.json に書きます(docs/configuration.md)")
-                .padding(24)
-        }
-        .commands {
-            CommandGroup(replacing: .newItem) {
-                Button("新しいフレーム") { AppModel.shared.newFrame() }
-                    .keyboardShortcut("n", modifiers: .command)
-                Button("ファイルを開く…") { AppModel.shared.runCommand("find-file") }
-                    .keyboardShortcut("o", modifiers: .command)
-            }
-            CommandMenu("フレーム") {
-                ForEach(1...SessionStore.maxFrames, id: \.self) { slot in
-                    Button("フレーム \(slot)") { AppModel.shared.activate(slot: slot) }
-                        .keyboardShortcut(KeyEquivalent(Character("\(slot)")), modifiers: .command)
-                }
-            }
-        }
-    }
 }

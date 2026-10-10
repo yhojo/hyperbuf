@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-HyperBuf is in **active implementation: migration plan M0–M7 are done and merged (M7 = session restore)**; M8 (distribution) remains. How "which project opens at launch" works is still to be discussed with the user. The PoCs are finished and live on `poc/*` branches (not merged). The repository is mirrored to a private GitHub repo (`yhojo/hyperbuf`); CI runs on pushes to `main`. Progress, decisions and the order of work: `docs/migration-plan.md`. README.md (Japanese) is the product vision.
+HyperBuf is in **active implementation: migration plan M0–M7 are done and merged (M7 = session restore)**; M8 (distribution) remains. Next: M7b (no-project design: absolute-path buffers, `default-directory`, allow/warn paths, multiple frames) per `docs/project-model.md` (agreed, not implemented yet). The PoCs are finished and live on `poc/*` branches (not merged). The repository is mirrored to a private GitHub repo (`yhojo/hyperbuf`); CI runs on pushes to `main`. Progress, decisions and the order of work: `docs/migration-plan.md`. README.md (Japanese) is the product vision.
 
 When adding documents, follow the README's language (Japanese) unless told otherwise.
 

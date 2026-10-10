@@ -129,6 +129,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             model.startServer()
             if let project = ProjectPicker.fromArguments() {
                 model.open(project)
+                if let n = ProcessInfo.processInfo.environment["HYPERBUF_SPIKE_FRAMES"].flatMap(Int.init) {
+                    try? await Task.sleep(for: .seconds(1))
+                    Spike.run(model: model, count: n)
+                }
                 return
             }
             // URL スキームで起動された場合、「開く」要求が、少し遅れて届く。要求があれば、そのファイルを手がかりに

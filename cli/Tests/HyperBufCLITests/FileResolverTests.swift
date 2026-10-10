@@ -28,12 +28,28 @@ import Testing
         defer { t.remove() }
         try t.write("a.txt", "x")
         try t.write("dir/b.md", "x")
-        for bad in ["missing.md", "a.txt", "dir", "a.md:3"] {
+        for bad in ["missing.md", "a.txt", "dir", "a.md:3", "dir:3"] {
             guard case .failure = FileResolver.resolve(bad, cwd: t.path) else {
                 Issue.record("失敗するはず: \(bad)")
                 continue
             }
         }
+    }
+
+    @Test func aDirectoryOpensItsIndexOrReadme() throws {
+        let t = try TempDir()
+        defer { t.remove() }
+        try t.write("both/index.md", "x")
+        try t.write("both/README.md", "x")
+        try t.write("readme/README.md", "x")
+        try t.write("none/other.md", "x")
+        #expect(try FileResolver.resolve("both", cwd: t.path).get().path == t.path + "/both/index.md")
+        #expect(try FileResolver.resolve("readme/", cwd: t.path).get().path == t.path + "/readme/README.md")
+        guard case .failure(let failure) = FileResolver.resolve("none", cwd: t.path) else {
+            Issue.record("index.md も README.md もなければ、失敗する")
+            return
+        }
+        #expect(failure.message.contains("index.md"))
     }
 
     @Test func resolvesDotsLexicallyWithoutFollowingSymlinks() throws {

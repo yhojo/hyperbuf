@@ -92,11 +92,10 @@ public struct CLI: Sendable {
                     env.stderr("hyperbuf: 起動したアプリに接続できません")
                     return .cannotLaunch
                 }
-                // アプリが起動していない: 最初のファイルの URL で起動する(アプリが、そのファイルからプロジェクトを選ぶ)
-                var plain = request
-                plain.id = nil
-                plain.timeoutMs = nil
-                guard let url = OpenURL.make(plain) else { return .failure }
+                // アプリが起動していない: `hyperbuf://ping`(起動だけ)で起動し、ソケットが現れるのを待って、
+                // ソケットで送る。URL スキームは、起点を特定できない経路なので、許可パスにないファイルは確認が
+                // 出る。CLI の要求は、すべてソケットを通す(docs/project-model.md §5.2)
+                guard let url = OpenURL.make(Request(op: .ping)) else { return .failure }
                 do {
                     try env.launcher.launch(url: url, activate: !options.noActivate)
                 } catch let error as LaunchError {
@@ -107,13 +106,11 @@ public struct CLI: Sendable {
                     return .cannotLaunch
                 }
                 launched = true
-                remaining = remaining.dropFirst()
-                if remaining.isEmpty {
-                    env.stderr("hyperbuf: HyperBuf を起動して、開く要求を渡しました(結果は、アプリの画面に表示されます)")
-                } else if !waitForSocket(env) {
+                if !waitForSocket(env) {
                     env.stderr("hyperbuf: 起動したアプリに接続できません")
                     return .cannotLaunch
                 }
+                // 同じ要求を、ソケットで送り直す(`remaining` は、そのまま)
             } catch SocketClient.ClientError.timeout {
                 env.stderr("hyperbuf: アプリの応答がありません(アプリ内で確認を待っているかもしれません。--wait で、長く待てます)")
                 return .refused

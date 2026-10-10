@@ -165,6 +165,13 @@ final class AppModel: NSObject, NSWindowDelegate {
             updateTitles()
         } else {
             persistNow()
+            // 最後のフレームを閉じる = 終了。SwiftUI の Settings シーンがあると、「最後のウィンドウを閉じたら終了」が
+            // 働かないので、明示的に終了する(セッションは、終了の手順で保存される)。
+            // GCD のメインキューのブロックの中で terminate すると、終了待ち(terminateLater)の入れ子の実行ループが、
+            // 同じ(直列の)メインキューにある保存の Task を動かせず、固まる。実行ループ経由で呼ぶ
+            if !closingForQuit {
+                NSApp.perform(#selector(NSApplication.terminate(_:)), with: nil, afterDelay: 0)
+            }
         }
         schedulePersist()
     }

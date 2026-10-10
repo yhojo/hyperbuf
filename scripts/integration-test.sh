@@ -5,14 +5,16 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-project="${1:-fixtures/sample-project}"
-script="$(pwd)/app/macos/IntegrationTests/smoke.js"
+project="$(cd "${1:-fixtures/sample-project}" && pwd -P)"
+script="$(mktemp)"
+# 検査の対象のディレクトリ(絶対パス)を、先頭に付けて渡す
+{ printf 'const PROJECT = %s;\n' "$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$project")"; cat "$(pwd)/app/macos/IntegrationTests/smoke.js"; } >"$script"
 
 (cd core && npm ci --silent && npm run build >/dev/null)
 (cd app/macos && swift build >/dev/null)
 
 log="$(mktemp)"
-trap 'rm -f "$log"' EXIT
+trap 'rm -f "$log" "$script"' EXIT
 HYPERBUF_SESSION_DIR="$(mktemp -d)" HYPERBUF_TEST_SCRIPT="$script" app/macos/.build/debug/HyperBuf "$project" >"$log" 2>&1 &
 pid=$!
 for _ in $(seq 1 90); do

@@ -16,11 +16,12 @@ const app = window.__hyperbuf;
 const host = window.hyperbufHost;
 const out = { host: host?.name, files: 0, docs: {}, search: null };
 
-const files = await host.listFiles();
+// PROJECT は、scripts/integration-test.sh が、先頭に付ける(絶対パス)
+const files = (await host.listTree(PROJECT)).files;
 out.files = files.length;
 for (const file of files) {
   const t0 = performance.now();
-  await app.open(file);
+  await app.open(`${PROJECT}/${file}`);
   // Mermaid の描画待ち(最大 20 秒)
   for (let i = 0; i < 200 && document.querySelector(".win.selected .content pre.mermaid-source"); i++) {
     await sleep(100);
@@ -49,7 +50,9 @@ for (const file of files) {
 
 // 全文検索 → 仮想 buffer
 if (files.length) {
-  const word = (await host.readFile(files[0])).match(/[\p{L}\p{N}]{4,}/u)?.[0] ?? "a";
+  const first = `${PROJECT}/${files[0]}`;
+  const word = (await host.readFile(first)).match(/[\p{L}\p{N}]{4,}/u)?.[0] ?? "a";
+  await app.open(first); // 基準のディレクトリ(検索の起点)を、この文書のものにする
   await app.search(word);
   await sleep(200);
   const header = document.querySelector(".win.selected .win-header")?.textContent ?? "";

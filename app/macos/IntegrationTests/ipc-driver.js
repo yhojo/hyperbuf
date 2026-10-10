@@ -1,6 +1,7 @@
 // 統合テスト(IPC)用のドライバ(WebView の中で実行される)。
-// ミニバッファの「範囲外のファイルを開きますか」に、パスの名前で自動的に答える:
-//   /approve/ を含むパス → yes、/deny/ を含むパス → no、/wait/ を含むパス → 答えない(期限切れで閉じることの確認)。
+// ミニバッファの「警告パスのファイルを開きますか」に、パスの名前で自動的に答える:
+//   /approve/ または /urlconf/ を含むパス → yes、/deny/ を含むパス → no、/wait/ を含むパス → 答えない(期限切れで閉じることの確認)。
+// 答えたことは、テスト用のログに `ANSWERED <見出し>` として記録する。
 let answered = null;
 setInterval(() => {
   const mini = document.getElementById("minibuffer");
@@ -18,10 +19,12 @@ setInterval(() => {
     input.value = text;
     input.dispatchEvent(new Event("input"));
   };
-  if (label.includes("/approve/")) {
+  if (label.includes("/approve/") || label.includes("/urlconf/")) {
+    window.hyperbufHost.log("ANSWERED " + label);
     type("yes");
     press("Enter", "Enter");
   } else if (label.includes("/deny/")) {
+    window.hyperbufHost.log("ANSWERED " + label);
     type("no");
     press("Enter", "Enter");
   } else if (label.includes("/wait/")) {

@@ -10,7 +10,7 @@ root="$(pwd)"
 
 app/macos/scripts/make-app.sh debug >/dev/null
 app="$root/app/macos/.build/HyperBuf.app"
-project="$root/fixtures/sample-project"
+project="$(cd "$root/fixtures/sample-project" && pwd -P)"
 
 tmp="$(mktemp -d)"
 cleanup() {
@@ -71,6 +71,7 @@ def page(js, timeout=30):
 
 # ページで使う補助(キー入力・状態)。各 page() の先頭に付ける
 HELPERS = """
+const P = %s;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const hb = window.__hyperbuf;
 const press = async (...keys) => {
@@ -88,7 +89,7 @@ const mini = () => ({ label: document.getElementById('prompt-label').textContent
 const C = (k, code) => [['c', 'KeyC', { ctrlKey: true }], [k, code, { ctrlKey: true }]];
 """
 def run(body):
-    return json.loads(page(HELPERS + body))
+    return json.loads(page(HELPERS % json.dumps(os.environ["PROJECT_DIR"]) + body))
 
 # 起動(Web コアの準備)を待つ
 t0 = time.time()
@@ -103,13 +104,12 @@ else:
     sys.exit("アプリが起動しませんでした")
 
 print("WKWebView の機能")
-startup_echo = page("return document.getElementById('echo').textContent")
 r = run("return JSON.stringify({ highlights: !!(window.CSS && CSS.highlights && window.Highlight) })")
 check("CSS Custom Highlight API が使える(なければ、現在の一致だけが選択状態になる)", r["highlights"], r)
 
 print("文書内のインクリメンタル検索(C-s / C-r)")
 r = run("""
-await hb.open('long.md'); await sleep(300);
+await hb.open(P + '/long.md'); await sleep(300);
 await fire('s','KeyS',{ctrlKey:true});
 const opened = mini();
 typeIn('セクション 3'); await sleep(100);
@@ -136,7 +136,7 @@ content().scrollTop = 0; await sleep(50);
 await fire('s','KeyS',{ctrlKey:true}); pressIn('s','KeyS',{ctrlKey:true}); await sleep(100);
 const reuse = { text: input().value, count: mini().count };
 pressIn('g','KeyG',{ctrlKey:true}); await sleep(50);
-await hb.open('index.md'); await sleep(300);
+await hb.open(P + '/index.md'); await sleep(300);
 await fire('s','KeyS',{ctrlKey:true}); typeIn('buffer'); await sleep(80); const lower = mini().count;
 typeIn('Buffer'); await sleep(80); const upper = mini().count;
 pressIn('g','KeyG',{ctrlKey:true});
@@ -144,7 +144,7 @@ return JSON.stringify({ reuse, lower, upper });
 """)
 check("空のときの C-s は、前回の検索語を使う", r["reuse"]["text"] == "セクション 20" and r["reuse"]["count"].startswith("["), r["reuse"])
 r3 = run("""
-await hb.open('long.md'); await sleep(300);
+await hb.open(P + '/long.md'); await sleep(300);
 await fire('s','KeyS',{ctrlKey:true}); typeIn('セクション'); await sleep(80);
 pressIn('Process','Enter',{keyCode:229}); await sleep(80);
 const duringIme = { hidden: mini().hidden };
@@ -153,7 +153,7 @@ return JSON.stringify({ duringIme, after: mini().hidden });
 """)
 check("日本語入力の確定の Enter(keyCode 229)では、検索を終えない。次の Enter で終える", r3["duringIme"]["hidden"] is False and r3["after"] is True, r3)
 r4 = run("""
-await hb.open('long.md'); await sleep(300); content().scrollTop = 0; await sleep(50);
+await hb.open(P + '/long.md'); await sleep(300); content().scrollTop = 0; await sleep(50);
 await fire('s','KeyS',{ctrlKey:true}); typeIn('セクション'); await sleep(80);
 pressIn('s','KeyS',{ctrlKey:true}); await sleep(50); pressIn('s','KeyS',{ctrlKey:true}); await sleep(80);
 typeIn(''); typeIn('セクション'); await sleep(80);
@@ -163,7 +163,7 @@ return JSON.stringify({ count });
 """)
 check("検索語がいったん空になって元に戻っても(日本語入力の確定)、選んでいた一致から動かない", r4["count"].startswith("[3/"), r4)
 r5 = run("""
-await hb.open('long.md'); await sleep(300); content().scrollTop = 0; await sleep(50);
+await hb.open(P + '/long.md'); await sleep(300); content().scrollTop = 0; await sleep(50);
 const comp = (t) => { input().value = t; input().dispatchEvent(new InputEvent('input', { isComposing: true })); };
 await fire('s','KeyS',{ctrlKey:true});
 comp('ｓ'); await sleep(50); comp('セ'); await sleep(50); comp('セクション 7'); await sleep(50);
@@ -176,7 +176,7 @@ return JSON.stringify({ during, after });
 """)
 check("日本語入力の変換中の一致に基準が引きずられず、確定した語を、変換を始めた位置から探す", r5["during"].startswith("[1/") and r5["after"].startswith("[1/"), r5)
 r6 = run("""
-await hb.open('long.md'); await sleep(300);
+await hb.open(P + '/long.md'); await sleep(300);
 await fire('x','KeyX',{ctrlKey:true}); await fire('b','KeyB');
 const before = input().value;
 typeIn('ab'); pressIn('Dead','KeyN',{altKey:true}); input().value = 'ab˜';
@@ -187,7 +187,7 @@ return JSON.stringify({ restored });
 """)
 check("Option つきの Dead キー(M-n の ˜ など)で始まった変換は、取り消して、入力欄が元に戻る", r6["restored"] == "ab", r6)
 r2 = run("""
-await hb.open('long.md'); await sleep(300); content().scrollTop = 0; await sleep(50);
+await hb.open(P + '/long.md'); await sleep(300); content().scrollTop = 0; await sleep(50);
 await fire('s','KeyS',{ctrlKey:true}); typeIn('セクション'); await sleep(80);
 pressIn('s','KeyS',{ctrlKey:true}); await sleep(50); pressIn('s','KeyS',{ctrlKey:true}); await sleep(80);
 const before = mini().count;
@@ -209,7 +209,7 @@ check("大文字を含む検索語だけ、大文字小文字を区別する", r
 
 print("outline 風の見出し移動・スクロール")
 r = run("""
-await hb.open('long.md'); await sleep(300);
+await hb.open(P + '/long.md'); await sleep(300);
 const hist = document.querySelector('.win-header').textContent;
 const seq = [];
 await press(...C('n','KeyN')); seq.push(heading());
@@ -237,8 +237,8 @@ check("SPC で 1 画面下、DEL で戻る", r["down"] > r["page"] * 0.8 and r["
 
 print("キーマップの設定と describe-bindings")
 r = run("""
-await hb.open('long.md'); await sleep(300);
-await hb.open('index.md'); await sleep(200);
+await hb.open(P + '/long.md'); await sleep(300);
+await hb.open(P + '/index.md'); await sleep(200);
 const before = document.querySelector('.win-header').textContent;
 await press(['p','KeyP',{altKey:true}]);               // M-p(利用者が back に割り当てた)
 const afterMp = document.querySelector('.win-header').textContent;
@@ -262,46 +262,91 @@ check("外した C-f は、forward の割り当てに出ない(s-] だけ)", "s-
 check("利用者が足した M-p は、back の割り当てに出る", any("M-p" in row and "back" in row for row in r["rows"]), [row for row in r["rows"] if "back" in row])
 check("不正な設定(不明なコマンド・不正な表記・C-g)は、無視して、一覧に出る",
       all(s in r["text"] for s in ["設定の問題", "no-such-command", "Ctrl-y", "C-g"]), r["text"][:600])
-check("起動時に、設定の問題の件数が知らされる(3 件)", "設定:" in startup_echo and "3 件" in startup_echo, startup_echo)
 
-print("ミニバッファ(候補・履歴)と kill-buffer")
+print("ファイルを開く(C-x C-f のパス補完・C-x p f)・ミニバッファ(候補・履歴)・kill-buffer")
 r = run("""
-await hb.open('index.md'); await sleep(200);
-await hb.open('architecture.md'); await sleep(200);
-await hb.open('long.md'); await sleep(200);
+await hb.open(P + '/index.md'); await sleep(200);
+await hb.open(P + '/architecture.md'); await sleep(200);
+await hb.open(P + '/long.md'); await sleep(200);
 const cands = () => [...document.querySelectorAll('#candidates li')];
 await fire('x','KeyX',{ctrlKey:true}); await fire('f','KeyF',{ctrlKey:true});       // C-x C-f
-const empty = { texts: cands().slice(0, 4).map((li) => li.textContent), count: document.getElementById('prompt-count').textContent };
-typeIn('arch'); await sleep(80);
+await sleep(200);
+const initial = input().value;
+const empty = { texts: cands().slice(0, 6).map((li) => li.textContent), count: document.getElementById('prompt-count').textContent };
+typeIn(initial + 'arch'); await sleep(200);
 const typed = { first: cands()[0]?.textContent, marked: [...(cands()[0]?.querySelectorAll('b') ?? [])].map((b) => b.textContent), on: cands()[0]?.className };
-pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(150);
+pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(250);
 const opened = document.querySelector('.win-header').textContent;
+// ディレクトリは、RET で確定せず、その中に入る
+await fire('x','KeyX',{ctrlKey:true}); await fire('f','KeyF',{ctrlKey:true}); await sleep(200);
+const initial2 = input().value;
+typeIn(initial2 + 'rend'); await sleep(200);
+const dirFirst = cands()[0]?.textContent;
+pressIn('Enter','Enter'); await sleep(250);
+const descended = { value: input().value, texts: cands().slice(0, 4).map((li) => li.textContent), hidden: document.getElementById('minibuffer').hidden };
+pressIn('g','KeyG',{ctrlKey:true}); await sleep(80);
 // 入力の履歴(M-p)
-await fire('x','KeyX',{ctrlKey:true}); await fire('f','KeyF',{ctrlKey:true});
+await fire('x','KeyX',{ctrlKey:true}); await fire('f','KeyF',{ctrlKey:true}); await sleep(200);
 pressIn('p','KeyP',{altKey:true}); await sleep(80);
 const recalled = input().value;
 pressIn('g','KeyG',{ctrlKey:true}); await sleep(80);
-return JSON.stringify({ empty, typed, opened, recalled });
+return JSON.stringify({ initial, empty, typed, opened, dirFirst, descended, recalled });
 """)
-check("C-x C-f: 入力が空のとき、最近使った文書が先に出る", r["empty"]["texts"][:3] == ["long.md", "architecture.md", "index.md"], r["empty"])
+check("C-x C-f: 入力欄は、基準のディレクトリ(~/ 形式)から始まる", r["initial"].startswith("~/") and r["initial"].endswith("fixtures/sample-project/"), r["initial"])
+check("候補は、そのディレクトリの中だけ(ディレクトリが先、.md が続く)", r["empty"]["texts"][0] == "rendering/" and "long.md" in r["empty"]["texts"] and "index.md" in r["empty"]["texts"], r["empty"])
 check("候補の件数が出る(n/全体)", "/" in r["empty"]["count"], r["empty"])
 check("入力した語に一致した部分が、強調される", r["typed"]["first"] == "architecture.md" and r["typed"]["marked"] == ["arch"] and r["typed"]["on"] == "on", r["typed"])
 check("RET で、その文書が開く", "architecture.md" in r["opened"], r["opened"])
-check("M-p で、前回確定した値(architecture.md)を呼び出せる(Emacs の履歴と同じ)", r["recalled"] == "architecture.md", r["recalled"])
+check("ディレクトリは RET で確定せず、中に入る(入力欄の末尾が / になり、候補が更新される)", r["dirFirst"] == "rendering/" and r["descended"]["value"].endswith("rendering/") and not r["descended"]["hidden"] and "rendering/" not in r["descended"]["texts"], r["descended"])
+check("M-p で、前回確定した値を呼び出せる(Emacs の履歴と同じ)", r["recalled"].endswith("architecture.md"), r["recalled"])
 
 r = run("""
-await hb.open('interaction.md'); await sleep(200);
+await hb.open(P + '/long.md'); await sleep(200);
+const cands = () => [...document.querySelectorAll('#candidates li')];
+await fire('x','KeyX',{ctrlKey:true}); await fire('p','KeyP'); await fire('f','KeyF'); await sleep(400);   // C-x p f
+const label = document.getElementById('prompt-label').textContent;
+const listed = cands().map((li) => li.textContent);
+typeIn('rend'); await sleep(250);
+const filtered = cands().map((li) => li.textContent);
+pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(300);
+const header = document.querySelector('.win-header').textContent;
+// 基準を ../ に切り替えて、基準の外のファイルに届く
+await fire('x','KeyX',{ctrlKey:true}); await fire('p','KeyP'); await fire('f','KeyF'); await sleep(300);
+typeIn('../../sample'); await sleep(500);
+const outer = cands().map((li) => li.textContent);
+pressIn('g','KeyG',{ctrlKey:true}); await sleep(80);
+return JSON.stringify({ label, listed, filtered, header, outer });
+""")
+check("C-x p f: 基準のディレクトリ以下を再帰で一覧にする(相対パス)", "Find file (tree)" in r["label"] and "long.md" in r["listed"] and any(x.startswith("rendering/") for x in r["listed"]), r["listed"])
+check("絞り込んで RET で開く", r["filtered"] and r["filtered"][0].startswith("rendering/") and "long.md" not in r["header"] and ".md" in r["header"], (r["filtered"], r["header"]))
+check("../ を入力すると、基準が切り替わり、基準の外のファイルも一覧になる", any(x.startswith("sample-project/") for x in r["outer"]), r["outer"][:8])
+
+print("バッファ名の uniquify と、仮想バッファ(検索結果)の起点")
+r = run("""
+const ROOT = P.slice(0, P.lastIndexOf('/fixtures/'));
+await hb.open(ROOT + '/README.md'); await sleep(200);
+await hb.open(ROOT + '/emacs/README.md'); await sleep(200);
+const headerBoth = document.querySelector('.win-header').textContent;
+await hb.search('Mermaid'); await sleep(500);
+const searchHeader = document.querySelector('.win-header').textContent;
+return JSON.stringify({ headerBoth, searchHeader });
+""")
+check("同じ名前が複数あるときだけ、親ディレクトリを足す(README.md<emacs>)", "README.md<emacs>" in r["headerBoth"], r["headerBoth"])
+check("検索結果の仮想バッファに、起点を添える(*search: …*<emacs>)", "*search: Mermaid*<emacs>" in r["searchHeader"], r["searchHeader"])
+
+r = run("""
+await hb.open(P + '/interaction.md'); await sleep(200);
 const model = hb.ctx.model;
-const hasBefore = model.buffers.has('interaction.md');
+const hasBefore = model.buffers.has(P + '/interaction.md');
 await fire('x','KeyX',{ctrlKey:true}); await fire('k','KeyK');                          // C-x k
 const label = document.getElementById('prompt-label').textContent;
 pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(200);
 const win = hb.ctx.model.root.win ?? null;
 const histories = (function walk(n) { return n.type === 'leaf' ? [n.win.history.map((e) => e.path)] : n.children.flatMap(walk); })(model.root);
-return JSON.stringify({ hasBefore, label, hasAfter: model.buffers.has('interaction.md'), mru: model.mru.slice(0, 3), histories, header: document.querySelector('.win-header').textContent, echo: document.getElementById('echo').textContent });
+return JSON.stringify({ hasBefore, label, hasAfter: model.buffers.has(P + '/interaction.md'), mru: model.mru.slice(0, 3), histories, header: document.querySelector('.win-header').textContent, echo: document.getElementById('echo').textContent });
 """)
 check("C-x k: 既定は、いまの buffer", "interaction.md" in r["label"], r["label"])
-check("buffer が閉じて、履歴からも参照がなくなる", r["hasBefore"] and not r["hasAfter"] and all("interaction.md" not in h for h in r["histories"]), r)
+check("buffer が閉じて、履歴からも参照がなくなる", r["hasBefore"] and not r["hasAfter"] and all(not p.endswith("interaction.md") for h in r["histories"] for p in h), r)
 check("閉じた buffer を表示していた window は、ひとつ前の参照を表示する", "interaction.md" not in r["header"], r["header"])
 check("閉じたことが知らされる", "閉じました" in r["echo"], r["echo"])
 

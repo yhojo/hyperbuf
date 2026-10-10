@@ -19,6 +19,25 @@ private final class Recorder: @unchecked Sendable {
     func add(_ r: Request) { lock.withLock { items.append(r) } }
 }
 
+/// 起動の要求を受けたら、ソケットのサーバーを立てる(アプリの起動の模擬)。
+private final class ServerStartingLauncher: AppLauncher, @unchecked Sendable {
+    private let lock = NSLock()
+    private let start: @Sendable () throws -> SocketServer
+    private var launched: [URL] = []
+    private var running: SocketServer?
+    var urls: [URL] { lock.withLock { launched } }
+
+    init(start: @escaping @Sendable () throws -> SocketServer) { self.start = start }
+
+    func launch(url: URL, activate: Bool) throws {
+        lock.withLock { launched.append(url) }
+        let server = try start()
+        lock.withLock { running = server }
+    }
+
+    func stop() { lock.withLock { running?.stop() } }
+}
+
 @Suite(.serialized) struct RunTests {
     private func server(
         _ path: String, recorder: Recorder, respond: @escaping @Sendable (Request) -> Response?
@@ -126,20 +145,39 @@ private final class Recorder: @unchecked Sendable {
         #expect(output.err.contains("--wait"))
     }
 
-    @Test func launchesTheAppWithTheOpenURLWhenItIsNotRunning() throws {
+    @Test func launchesWithPingThenSendsTheRequestOverTheSocket() throws {
+        let t = try TempDir()
+        let sock = socketPath()
+        defer {
+            t.remove()
+            cleanup(sock)
+        }
+        try t.write("docs/日本語.md", "x")
+        let recorder = Recorder()
+        // アプリの起動を模す: 起動の要求(URL)を受けたら、ソケットのサーバーを立てる
+        let launcher = ServerStartingLauncher { [self] in try server(sock, recorder: recorder) { .success(id: $0.id) } }
+        let output = Output()
+        let code = CLI.run(["docs/日本語.md:5"], output.environment(cwd: t.path, socketPath: sock, launcher: launcher))
+        launcher.stop()
+        #expect(code == 0)
+        // 起動の URL は ping(ファイルを渡さない)。要求は、ソケットで届く
+        let url = try #require(launcher.urls.first)
+        #expect(url.host == "ping" && !url.absoluteString.contains("path="))
+        let request = try #require(recorder.requests.first)
+        #expect(request.op == "open" && request.path == t.path + "/docs/日本語.md" && request.line == 5)
+    }
+
+    @Test func reportsWhenTheLaunchedAppNeverListens() throws {
         let t = try TempDir()
         defer { t.remove() }
-        try t.write("docs/日本語.md", "x")
+        try t.write("a.md", "x")
         let output = Output()
-        let code = CLI.run(["docs/日本語.md:5"], output.environment(cwd: t.path, socketPath: t.path + "/no.sock"))
-        #expect(code == 0)
+        var env = output.environment(cwd: t.path, socketPath: t.path + "/no.sock")
+        env.launchWait = 0.2
+        #expect(CLI.run(["a.md"], env) == 3)
         let url = try #require(output.launched.first)
-        guard case .success(let request) = OpenURL.parse(url) else {
-            Issue.record("起動に渡す URL を解釈できない")
-            return
-        }
-        #expect(request.path == t.path + "/docs/日本語.md" && request.line == 5)
-        #expect(output.err.contains("起動"))
+        #expect(url.host == "ping")
+        #expect(output.err.contains("接続できません"))
     }
 
     @Test func reportsWhenTheAppCannotBeLaunched() throws {

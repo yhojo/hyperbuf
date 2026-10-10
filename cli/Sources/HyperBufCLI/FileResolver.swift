@@ -28,10 +28,20 @@ public enum FileResolver {
                 raw = String(raw[fileRange])
             }
         }
-        let path = absolute(raw, cwd: cwd)
+        var path = absolute(raw, cwd: cwd)
         var isDirectory: ObjCBool = false
-        guard fm.fileExists(atPath: path, isDirectory: &isDirectory), !isDirectory.boolValue else {
+        guard fm.fileExists(atPath: path, isDirectory: &isDirectory) else {
             return .failure(Failure(message: "ファイルがありません: \(argument)"))
+        }
+        if isDirectory.boolValue {
+            // ディレクトリは、その中の index.md、なければ README.md を開く(docs/project-model.md §3.1)
+            guard line == nil,
+                let index = ["index.md", "README.md"].map({ path + "/" + $0 }).first(where: {
+                    var inner: ObjCBool = false
+                    return fm.fileExists(atPath: $0, isDirectory: &inner) && !inner.boolValue
+                })
+            else { return .failure(Failure(message: "ディレクトリに index.md も README.md もありません: \(argument)")) }
+            path = index
         }
         guard path.hasSuffix(".md") else { return .failure(Failure(message: ".md のファイルのみ開けます: \(argument)")) }
         if let line, line <= 0 { return .failure(Failure(message: "行番号が不正です: \(argument)")) }

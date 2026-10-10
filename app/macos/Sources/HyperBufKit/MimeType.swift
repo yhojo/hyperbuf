@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 
 /// 配信するファイルの MIME タイプ。アプリのバンドルと、プロジェクトの画像だけを扱う。

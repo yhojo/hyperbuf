@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 
 /// アプリに同梱した Web コア(`core/dist`)を配る。ルートの内側のファイルだけを返す。

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 
 /// 表示中のファイルの監視(docs/project-model.md §8)。ファイル自体と、その親ディレクトリを

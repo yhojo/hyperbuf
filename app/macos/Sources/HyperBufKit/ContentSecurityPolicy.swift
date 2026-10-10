@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 /// Web コアと、プロジェクトの画像に付ける CSP。local first(外部への通信を許さない)と、
 /// 不信任の入力(Markdown・SVG)の無害化が、ここで守られる。docs/poc-rendering-results.md §6。
 public enum ContentSecurityPolicy {

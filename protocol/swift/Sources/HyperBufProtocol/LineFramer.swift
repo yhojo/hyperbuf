@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 
 /// 受け取ったバイト列を、JSON Lines の 1 行ごとに切り出す。1 行の上限を超えたら、エラーにする。

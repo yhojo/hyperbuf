@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 描画された文書の中のアンカー(見出し・行・脚注)を探す。
 
 /** sanitize が id に付ける接頭辞。アプリの DOM との衝突を防ぐため、外してはならない。 */

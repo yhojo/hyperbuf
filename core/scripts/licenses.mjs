@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 同梱するサードパーティのライセンスの洗い出し(docs/migration-plan.md の M8)。
 //
 // 使い方:

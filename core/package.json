@@ -2,6 +2,7 @@
   "name": "@hyperbuf/core",
   "version": "0.0.0",
   "private": true,
+  "license": "Apache-2.0",
   "description": "HyperBuf の共通 Web コア(OS 非依存)。シェルとの境界は HyperbufHost の契約のみ。",
   "type": "module",
   "scripts": {

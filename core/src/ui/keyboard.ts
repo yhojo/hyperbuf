@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 全体のキー入力。キー列 → コマンドの対応と、コマンドの直列実行。
 
 import { createDispatcher, keyName } from "../keys.ts";

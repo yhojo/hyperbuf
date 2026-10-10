@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import type { HyperbufHost } from "../host.ts";
 import type { BindingsResult } from "../keybindings.ts";
 import type { Model } from "../model.ts";

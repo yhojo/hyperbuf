@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // Web コアのバンドルの設定。build.mjs(ビルド)と scripts/licenses.mjs(同梱するライブラリの洗い出し)が共有する。
 // Mermaid は動的 import で別チャンクにし、図のある文書でだけ読み込む。
 export const buildOptions = {

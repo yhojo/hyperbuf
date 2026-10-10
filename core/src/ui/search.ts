@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 基準のディレクトリ以下の全文検索。結果は仮想 buffer(`*search: …*`)に Markdown として並べ、
 // リンクで該当行(行アンカー)へ飛ぶ。仮想 buffer の考え方: docs/interaction-model.md §5b。
 

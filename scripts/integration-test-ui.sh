@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Yasuo Hojo
 # 統合テスト(UI): 実際の HyperBuf.app(デバッグビルド、WKWebView)で、M3 の操作を検査する。
 #   文書内のインクリメンタル検索(C-s / C-r)、outline 風の見出し移動、スクロールの補完、
 #   キーマップの設定(config.json の keybindings)と describe-bindings(C-h b)。

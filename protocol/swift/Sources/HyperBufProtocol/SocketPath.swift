@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 
 /// ソケットの置き場所。`sun_path` は 104 バイト未満でなければならない。

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createModel, selectedWindow, split, visit, windows } from "../src/model.ts";

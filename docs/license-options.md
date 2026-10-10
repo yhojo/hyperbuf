@@ -1,6 +1,13 @@
 # HyperBuf 自体のライセンスの選択肢
 
-状態: **提案(未決定)**。バイナリを配布する前に決める(`docs/migration-plan.md` の M8)。
+状態: **決定(2026-10-10)**。
+
+- **HyperBuf 本体: Apache-2.0。** 著作権者の表記は `Copyright 2026 Yasuo Hojo`。
+- **`emacs/`: GPL-3.0-or-later**(ディレクトリごとにライセンスを分ける。当面はモノレポのまま。ELPA に載せるときは、履歴を保って切り出せる)。
+- **`elkjs`: バンドルから外した**(下の「推奨」の 3)。
+- 反映: ルートの `LICENSE`(Apache-2.0)と `NOTICE`、`emacs/LICENSE`(GPL-3.0)、各ソースファイルの SPDX 表記(`scripts/check-license-headers.sh` が検査)、`core/package.json`、アプリの `Info.plist` の著作権表記、アプリに同梱する `LICENSE.txt` / `NOTICE.txt` / `THIRD-PARTY-NOTICES.txt`、README。
+
+以下は、決めるまでの検討の記録。
 
 ## 前提(洗い出した事実)
 

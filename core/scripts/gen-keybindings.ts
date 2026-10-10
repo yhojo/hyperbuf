@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // docs/keybindings.md を、コード(標準のキー割り当てと、コマンドの説明)から生成する。
 // 使い方: node scripts/gen-keybindings.ts          生成して、書き込む
 //         node scripts/gen-keybindings.ts --check  最新か、検査する(違えば、終了コード 1)

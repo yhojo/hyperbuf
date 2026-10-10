@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // esbuild の file ローダーで、ファイルの URL(文字列)として取り込まれるもの。
 declare module "*.wasm" {
   const url: string;

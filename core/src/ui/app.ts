@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // アプリの組み立て。状態(model)、部品(エコー・ミニバッファ・描画)、コマンド、キー入力、
 // ホストからのイベントを結びつける。
 

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 
 /// ディレクトリの列挙(入力欄の補完 `C-x C-f`、再帰の一覧 `C-x p f`、全文検索の対象)。

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // ホストからのイベント(外部更新、外部からの「開く」要求、位置の問い合わせ)の受け口。
 
 import type { OpenRequest } from "../host.ts";

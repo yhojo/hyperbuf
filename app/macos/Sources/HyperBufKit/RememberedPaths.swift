@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 
 /// 利用者が承認して記憶した、警告パスの下で読んでよい場所(ディレクトリまたはファイル)。永続化する。

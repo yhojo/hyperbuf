@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 開発用サーバー: dist/ と、1 つのディレクトリ(Markdown の置き場)を HTTP で配る。
 // 使い方: node scripts/dev-server.mjs [ディレクトリ] [ポート]
 //   既定のディレクトリ: ../fixtures/sample-project、既定のポート: 8765

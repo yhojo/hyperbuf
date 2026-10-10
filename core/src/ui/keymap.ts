@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import { createKeymap } from "../keys.ts";
 import type { Keymap } from "../keys.ts";
 import { applyOverrides } from "../keybindings.ts";

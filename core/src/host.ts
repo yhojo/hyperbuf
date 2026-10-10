@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 /**
  * シェル(macOS アプリなど)と Web コアの境界。シェルは `window.hyperbufHost` として注入する。
  * Web コアは、これ以外の方法でシェルの機能を使わない。

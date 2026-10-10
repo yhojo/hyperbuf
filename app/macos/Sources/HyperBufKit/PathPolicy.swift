@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 
 /// ファイルへのアクセスの判定(docs/project-model.md §5): 許可パスと警告パス。

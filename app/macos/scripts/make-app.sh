@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Yasuo Hojo
 # HyperBuf.app を組み立てる(開発用)。Web コア(core/dist)を Contents/Resources/web に同梱する。
 # 署名は ad-hoc(ローカルで動かす用)。Developer ID 署名と公証は M8 で、このスクリプトを拡張して行う。
 # 使い方: app/macos/scripts/make-app.sh [debug|release]   (既定: release)  → app/macos/.build/HyperBuf.app
@@ -15,6 +17,8 @@ mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "app/macos/.build/$config/HyperBuf" "$app/Contents/MacOS/HyperBuf"
 cp -R core/dist "$app/Contents/Resources/web"
 # 同梱したサードパーティのソフトウェアの著作権表示とライセンス(配布の条件)。Web の配信範囲(web/)の外に置く
+cp LICENSE "$app/Contents/Resources/LICENSE.txt"
+cp NOTICE "$app/Contents/Resources/NOTICE.txt"
 (cd core && node scripts/licenses.mjs notices "../$app/Contents/Resources/THIRD-PARTY-NOTICES.txt" >/dev/null)
 
 # Bundle ID は、所有するドメイン(yhojo.com)の逆順(docs/migration-plan.md §8)。
@@ -30,6 +34,7 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>0.0.0</string>
   <key>CFBundleVersion</key><string>0</string>
+  <key>NSHumanReadableCopyright</key><string>Copyright 2026 Yasuo Hojo. Apache License 2.0.</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
   <key>NSHighResolutionCapable</key><true/>

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 分割ツリーと window の描画。window ごとの閲覧位置(スクロール)を保ち、
 // 外部更新・履歴の移動・Mermaid の描画で高さが変わっても、読み手の位置を保つ。
 

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 基準のディレクトリ(Emacs の `default-directory`)と、バッファの名前。docs/project-model.md §2・§9。
 
 import { currentEntry, isVirtualPath, selectedWindow } from "../model.ts";

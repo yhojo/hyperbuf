@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Yasuo Hojo
 # 統合テスト: Web コアをビルドし、HyperBuf.app(デバッグビルド)で、プロジェクトの全文書を開いて検査する。
 # GUI セッションが要る(WebView を起動するため)。CI の macOS ランナーでも動く想定だが、未確認。
 # 使い方: scripts/integration-test.sh [プロジェクトのディレクトリ]   (既定: fixtures/sample-project)

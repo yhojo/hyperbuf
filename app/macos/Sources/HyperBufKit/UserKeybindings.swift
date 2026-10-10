@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 
 /// 設定ファイル(`config.json`)の `keybindings`: キー列 → コマンド名(`null` は、標準の割り当てを外す)。

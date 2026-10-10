@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // elkjs(EPL-2.0)の代わりに、バンドルに入れる空の実装。Mermaid の ELK レイアウト(`layout: elk` / `flowchart-elk`)だけが
 // 使う。ELK を使う図は、レイアウトの呼び出しで失敗し、図の位置にエラーとして表示される(文書全体は止まらない)。
 // Mermaid は、ELK のチャンクを評価するとき(通常の図でも起こる)に、`new ELK()` を呼ぶので、

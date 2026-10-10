@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // セッションの保存(変更のたびに、少し待ってから書く)と、起動時の復元。
 
 import { createModel, killBuffer, removeWindow, windows } from "../model.ts";

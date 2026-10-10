@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 統合テスト(IPC)用のドライバ(WebView の中で実行される)。
 // ミニバッファの「警告パスのファイルを開きますか」に、パスの名前で自動的に答える:
 //   /approve/ または /urlconf/ を含むパス → yes、/deny/ を含むパス → no、/wait/ を含むパス → 答えない(期限切れで閉じることの確認)。

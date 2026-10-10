@@ -1,10 +1,17 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Yasuo Hojo
 # 全体のチェック(型検査・整形・ビルド・テスト)。CI(.github/workflows/ci.yml)と同じ内容。
-# 使い方: scripts/check.sh [core|protocol|app|cli|emacs]   (引数なしですべて)
+# 使い方: scripts/check.sh [license|core|protocol|app|cli|emacs]   (引数なしですべて)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 step() { printf '\n==> %s\n' "$1"; }
+
+check_license() {
+  step "ライセンス表記: SPDX の表記(Apache-2.0 / emacs/ は GPL-3.0-or-later)"
+  scripts/check-license-headers.sh
+}
 
 check_core() {
   step "core: 型検査・整形・テスト"
@@ -35,7 +42,8 @@ case "${1:-all}" in
   cli) check_swift cli ;;
   protocol) check_protocol ;;
   emacs) check_emacs ;;
-  all) check_core; check_protocol; check_swift app/macos; check_swift cli; check_emacs ;;
-  *) echo "usage: scripts/check.sh [core|protocol|app|cli|emacs]" >&2; exit 1 ;;
+  license) check_license ;;
+  all) check_license; check_core; check_protocol; check_swift app/macos; check_swift cli; check_emacs ;;
+  *) echo "usage: scripts/check.sh [license|core|protocol|app|cli|emacs]" >&2; exit 1 ;;
 esac
 printf '\nOK\n'

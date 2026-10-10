@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // JSON Schema が、共有の例(examples/)と食い違っていないかを確かめる。
 // 同じ例を、Swift のサーバー・CLI・Emacs も使う(各自の適合テスト)。
 import assert from "node:assert/strict";

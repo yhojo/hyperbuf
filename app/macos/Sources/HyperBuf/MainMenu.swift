@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import AppKit
 import HyperBufKit
 
@@ -34,7 +37,8 @@ enum MainMenu {
 
     private static func appMenu(model: AppModel) -> NSMenu {
         let menu = NSMenu(title: "HyperBuf")
-        entry(menu, "HyperBuf について", #selector(NSApplication.orderFrontStandardAboutPanel(_:)))
+        entry(menu, "HyperBuf について", #selector(AppModel.menuAbout(_:)), target: model)
+        entry(menu, "サードパーティのライセンスを表示", #selector(AppModel.menuShowNotices(_:)), target: model)
         menu.addItem(.separator())
         entry(menu, "設定ファイルの場所を表示", #selector(AppModel.menuRevealConfig(_:)), target: model)
         menu.addItem(.separator())

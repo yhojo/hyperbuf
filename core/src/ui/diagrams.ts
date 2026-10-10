@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // Mermaid の描画。DOM が要るので、HTML 文字列化の後に行う。重いので、図のある文書でだけ読み込む。
 // 描画に失敗しても文書全体は止めず、その場にエラーとソースを表示する。
 

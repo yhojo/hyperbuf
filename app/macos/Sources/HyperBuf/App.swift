@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import AppKit
 import HyperBufIPC
 import HyperBufKit
@@ -141,6 +144,21 @@ final class AppModel: NSObject, NSWindowDelegate {
     @objc func menuNewFrame(_ sender: Any?) { newFrame() }
     @objc func menuOpenFile(_ sender: Any?) { runCommand("find-file") }
     @objc func menuRevealConfig(_ sender: Any?) { ConfigLocation.reveal() }
+
+    /// About: 名前・版・著作権(Info.plist)に、ライセンスと、サードパーティのライセンスの場所を添える。
+    @objc func menuAbout(_ sender: Any?) {
+        let credits = NSAttributedString(
+            string: "Apache License 2.0\n\nサードパーティのソフトウェアの著作権表示とライセンスは、メニューの「サードパーティのライセンスを表示」で開けます。",
+            attributes: [.font: NSFont.systemFont(ofSize: 11)])
+        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
+    }
+
+    /// 同梱したサードパーティのライセンス(`THIRD-PARTY-NOTICES.txt`)を、既定のアプリで開く。
+    @objc func menuShowNotices(_ sender: Any?) {
+        if let url = Bundle.main.url(forResource: "THIRD-PARTY-NOTICES", withExtension: "txt") {
+            NSWorkspace.shared.open(url)
+        }
+    }
     @objc func menuActivateFrame(_ sender: NSMenuItem) { activate(slot: sender.tag) }
 
     private func updateTitles() {

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // ミニバッファ。検索・候補選択・確認は、ダイアログではなく、画面下部のここで行う。
 // 入力欄にフォーカスがあるあいだは、C-f/C-b/C-a/C-e などは WebView 既定の文字移動に任せる
 // (確定・取消・候補選択のキーだけを扱う。Emacs のミニバッファと同じ振る舞い)。

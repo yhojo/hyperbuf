@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 操作モデル(docs/interaction-model.md)。DOM やシェルに依存しない純粋なロジック。
 
 import { parseVirtualPath } from "./names.ts";

@@ -1,5 +1,8 @@
 ;;; hyperbuf-test.el --- Tests for hyperbuf.el  -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2026 Yasuo Hojo
+;; SPDX-License-Identifier: GPL-3.0-or-later
+
 (require 'ert)
 (require 'cl-lib)
 (require 'json)

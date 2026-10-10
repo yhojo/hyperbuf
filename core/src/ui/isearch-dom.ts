@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 文書内のインクリメンタル検索(C-s / C-r)。画面に表示された文書(DOM)の、文字列を検索する。
 // 検索の判断は、../isearch.ts(純粋な関数)。ここは、文字列の索引・範囲・ハイライト・スクロール。
 //

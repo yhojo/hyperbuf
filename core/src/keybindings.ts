@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 利用者のキー割り当て(設定ファイルの `keybindings`)を、標準の割り当てに重ねる。DOM に依存しない純粋な関数。
 //
 //   "keybindings": { "C-x 2": "split-below", "C-f": null, "M-p": "back" }

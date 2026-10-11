@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 文書を開く・リンクをたどる。buffer の読み込みと、参照履歴への記録をまとめる。
 
 import { currentEntry, openBuffer, resolveLink, selectedWindow, visit } from "../model.ts";

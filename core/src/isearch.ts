@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 文書内のインクリメンタル検索(C-s / C-r)の、検索の部分。DOM に依存しない純粋な関数。
 
 /** 検索語に大文字が含まれるときだけ、大文字小文字を区別する(Emacs の既定の動作)。 */

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // コマンドの定義。キーマップ(keymap.ts)は、キー列 → コマンド名の対応だけを持つ。
 // M-x は、ここの名前をそのまま候補にする。
 

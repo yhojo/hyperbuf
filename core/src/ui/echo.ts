@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 画面下部のエコー領域(メッセージ)とステータス行。ダイアログは使わない。
 
 export interface Echo {

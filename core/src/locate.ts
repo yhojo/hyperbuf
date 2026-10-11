@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // ビューアで指した場所(選択・クリック)を、元の Markdown の位置に対応づける。
 // 「表示を見ている位置」と「編集する位置」が、黙って食い違わないための土台(docs/integration-protocol.md §10)。
 //

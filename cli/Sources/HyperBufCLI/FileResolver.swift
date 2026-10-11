@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 
 /// 引数の `FILE[:LINE[:COL]]` を、絶対パスと行に直す。ファイルの存在と、`.md` であることを確かめる。

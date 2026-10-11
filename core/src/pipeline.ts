@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // Markdown → HTML(unified / remark / rehype)。DOM に依存しない純粋な部分。
 //
 // 方針:

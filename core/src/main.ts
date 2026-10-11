@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // ブラウザ(WebView)でのエントリ。シェルが注入した `window.hyperbufHost` を使う。
 // 無ければ、開発サーバーの HTTP API を使う(開発用)。
 

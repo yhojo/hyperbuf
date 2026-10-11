@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // `describe-bindings`(C-h b)の内容。仮想 buffer に、Markdown として出す。DOM に依存しない純粋な関数。
 
 import { keysByCommand } from "./keybindings.ts";

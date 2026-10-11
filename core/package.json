@@ -2,6 +2,7 @@
   "name": "@hyperbuf/core",
   "version": "0.0.0",
   "private": true,
+  "license": "Apache-2.0",
   "description": "HyperBuf の共通 Web コア(OS 非依存)。シェルとの境界は HyperbufHost の契約のみ。",
   "type": "module",
   "scripts": {
@@ -10,7 +11,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "node build.mjs",
-    "check": "npm run typecheck && npm run format:check && npm test && node scripts/gen-keybindings.ts --check",
+    "check": "npm run typecheck && npm run format:check && npm test && node scripts/gen-keybindings.ts --check && node scripts/licenses.mjs check",
+    "licenses": "node scripts/licenses.mjs summary",
     "dev": "npm run build && node scripts/dev-server.mjs",
     "keybindings": "node scripts/gen-keybindings.ts"
   },

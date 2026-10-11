@@ -1,0 +1,9 @@
+HyperBuf
+Copyright 2026 Yasuo Hojo
+
+This product includes software developed by third parties.
+Their copyright notices and licenses are listed in THIRD-PARTY-NOTICES.txt
+(bundled in HyperBuf.app: Contents/Resources/THIRD-PARTY-NOTICES.txt;
+ a summary is in docs/third-party-licenses.md).
+
+The emacs/ directory is licensed separately (GPL-3.0-or-later). See emacs/LICENSE.

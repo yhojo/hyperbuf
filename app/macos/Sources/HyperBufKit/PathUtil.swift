@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 
 /// パスの正規化と比較。パスの識別・比較に使うものは、必ず `canonicalPath` で正規化する。

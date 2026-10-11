@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 
 /// 「エディタで編集」で、エディタを呼び出すコマンド(利用者の設定)。

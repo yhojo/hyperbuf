@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 開発用ホスト: 開発サーバー(scripts/dev-server.mjs)の HTTP API を使う。
 // 本番では、シェル(macOS アプリなど)が `window.hyperbufHost` を注入するので、使われない。
 

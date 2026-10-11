@@ -1,17 +1,11 @@
-// Web コアを dist/ にバンドルする。Mermaid は動的 import で別チャンクにし、図のある文書でだけ読み込む。
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
+// Web コアを dist/ にバンドルする。設定は build-options.mjs。
 import { copyFile, mkdir } from "node:fs/promises";
 import * as esbuild from "esbuild";
+import { buildOptions } from "./build-options.mjs";
 
-await esbuild.build({
-  entryPoints: ["src/main.ts"],
-  bundle: true,
-  splitting: true,
-  format: "esm",
-  outdir: "dist",
-  target: "safari17", // macOS 14 の Safari 17 に合わせる
-  minify: true,
-  loader: { ".woff2": "file", ".woff": "file", ".ttf": "file", ".wasm": "file" },
-  logLevel: "warning",
-});
+await esbuild.build(buildOptions);
 await mkdir("dist", { recursive: true });
 await copyFile("public/index.html", "dist/index.html");

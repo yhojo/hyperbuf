@@ -78,3 +78,7 @@ scripts/check.sh emacs     # バイトコンパイル(警告をエラー扱い)�
 ```
 
 テストは、`protocol/examples/`(`open-validation.json`、`url.json`)の共有の例を、Swift と同じく検証する。
+
+## ライセンス
+
+この `emacs/` ディレクトリは **GPL-3.0-or-later**(`LICENSE`)。HyperBuf 本体(Apache-2.0)とは、ディレクトリごとにライセンスを分けている(Emacs のパッケージの慣例に合わせた)。

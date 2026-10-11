@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // セッションの保存と復元(DOM やシェルに依存しない純粋なロジック)。
 // 保存するのは、分割の配置、window ごとの参照履歴(文書・アンカー・閲覧位置)、選択中の window、
 // buffer の最近使った順。文書の内容は保存しない(復元時に、ホストから読み直す)。

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // ファイルを開く入力欄。`C-x C-f`(基準のディレクトリから始まるパス補完)と、
 // `C-x p f`(基準のディレクトリ以下の再帰の一覧)。docs/project-model.md §3。
 

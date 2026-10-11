@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 画面の選択・クリックから、指したブロックと選択を求める(DOM の部分)。
 // 元の位置への対応づけ(純粋な部分)は、../locate.ts。
 

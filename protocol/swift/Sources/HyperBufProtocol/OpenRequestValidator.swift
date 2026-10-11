@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 
 /// 構文として正しい `open` 要求。ファイルの存在・プロジェクトの範囲の判定は、アプリ側(ファイルシステムが要る)で行う。

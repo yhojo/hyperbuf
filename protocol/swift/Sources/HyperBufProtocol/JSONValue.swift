@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 
 /// 任意の JSON の値。応答の `result` など、形が操作ごとに違うものに使う。

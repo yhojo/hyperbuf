@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Yasuo Hojo
 # 統合テスト(セッション): 実際の HyperBuf.app(デバッグビルド)で、終了 → 再起動のあとに、作業中の状態が戻ることを検査する。
 #   複数フレーム、window の配置・参照履歴・閲覧位置・選択範囲、restoreSession の設定、壊れた保存データ、なくなった文書。
 # GUI セッションが要る。利用者の実際のセッション・ソケット・設定・信頼するルートは使わない。

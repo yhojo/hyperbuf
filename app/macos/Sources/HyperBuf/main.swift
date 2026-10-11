@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import AppKit
 
 // SwiftUI の `App` は使わず、AppKit で起動する(メニューは MainMenu、ウィンドウは AppModel が作る)。

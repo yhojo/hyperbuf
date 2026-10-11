@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 統合テスト(WebView の中で実行される)。HyperBuf.app(デバッグビルド)が、プロジェクトの全文書を開き、
 // 描画・CSP・検索・画像の読み込みに問題がないかを集計して、JSON で返す。
 // 実行: scripts/integration-test.sh [プロジェクトのディレクトリ]

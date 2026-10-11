@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // キーイベント → "C-x" 形式の名前、およびプレフィックス付きキーマップの状態機械。
 
 export interface KeyEventLike {

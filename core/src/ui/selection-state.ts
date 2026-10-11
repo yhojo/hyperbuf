@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 選択範囲の保存と復元(セッション)。選択は、window の本文の、表示されたテキスト(isearch と同じ索引)の位置で表す。
 
 import { MAX_SELECTION } from "../session.ts";

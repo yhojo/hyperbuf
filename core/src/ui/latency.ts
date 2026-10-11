@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 // 打鍵から描画までの遅延の計測(ステータス行に、中央値・p95・最大を出す)。
 
 export interface LatencySummary {

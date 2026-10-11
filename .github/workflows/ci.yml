@@ -11,6 +11,12 @@ permissions:
   contents: read
 
 jobs:
+  license:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/check.sh license
+
   core:
     runs-on: ubuntu-latest
     steps:

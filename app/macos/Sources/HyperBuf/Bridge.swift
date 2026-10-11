@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 import HyperBufKit
 import HyperBufProtocol
@@ -9,7 +12,7 @@ import WebKit
 @MainActor
 final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
     static let handlerName = "host"
-    private static let logger = Logger(subsystem: "dev.hyperbuf", category: "bridge")
+    private static let logger = Logger(subsystem: "com.yhojo.hyperbuf", category: "bridge")
 
     /// ページの開始時に注入する。契約の関数を、ネイティブへのメッセージとして実装する。
     static func script(home: String) -> String {

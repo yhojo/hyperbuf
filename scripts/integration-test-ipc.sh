@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Yasuo Hojo
 # 統合テスト(IPC・URL スキーム): 実際の HyperBuf.app(デバッグビルド)を起動し、ソケットのクライアントから、
 # ping・open(警告パスの外 / 承認される警告パス / 拒否される警告パス / 期限切れ)・get-location・異常系を試す。
 # さらに、URL スキーム(open -a <app> hyperbuf://…)での「開く」も試す。

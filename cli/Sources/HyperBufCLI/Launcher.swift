@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 
 /// アプリの起動(アプリが起動していないとき)。`hyperbuf://` の URL を、`open` に渡す。

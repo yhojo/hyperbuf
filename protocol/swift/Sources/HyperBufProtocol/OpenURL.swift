@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Yasuo Hojo
+
 import Foundation
 
 /// `hyperbuf://open?v=1&path=…&line=…&anchor=…&project=…&target=…`(docs/integration-protocol.md §4.1)。

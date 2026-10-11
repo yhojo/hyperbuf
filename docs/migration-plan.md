@@ -167,6 +167,11 @@ PoC(Interaction、Rendering、Project navigation、連携プロトコル)で、�
 - **提案:** 現在の macOS は 26。Apple は公式にサポート期間を公表していないが、**慣行として、最新とその前の 2 世代(26、15、14)に、セキュリティ更新が出ている。** そのため、**macOS 14(Sonoma)以上**を最小とする。新しい世代が出たら、更新が止まった世代を外す。
 - 実装上は、14 に無い API を、必要な理由なしに使わない。JavaScript の対象は、macOS 14 の Safari 17(PoC の esbuild の `target: safari17` と同じ)。
 - **要確認:** 検証機材の macOS のバージョン。14 より古い場合は、その機材で動かすことの価値と、下げるための実装・保守の負担を比べて、別に判断する。
+- **判断(2026-10-11): macOS 13 は対象外。最低は macOS 14、配布は Universal(arm64 + x86_64)。**
+  - 検証機材に、Intel の MacBook Pro 2017(macOS 13.7.8。14 以降に更新できない最後のバージョン)がある。最低を 13 に下げられるかを試した。
+  - **試した結果:** Swift 側は、1 行(デバッグ用の `isInspectable` を `#available(macOS 13.3, *)` で守る)で、ビルドでき、テストも通った。Web 側は、esbuild の対象を Safari 16 / 15 に下げても、エラーも警告も 0 件(構文のみの確認)。
+  - **見送った理由:** macOS 13 は、Apple のセキュリティ更新が終わっているとみられ(13.7.8 が最終)、信頼できない Markdown を OS の WebKit で扱う方針と、緊張する。CI で検証できず、検証機材ではビルドもできない(手動のみ)。「Apple が保守を続けている世代まで」の方針を保つ。
+  - **将来、再検討するなら:** 試験の変更は、`Package.swift` 3 つの `.macOS(.v14)` を `.v13` にし、`WebShell.swift` の `isInspectable` を `#available(macOS 13.3, *)` で守り、`LSMinimumSystemVersion` を 13.0 にするだけ。サポートを「14 以降は正式、13 はベストエフォート」と分ける案もあった(Apple の更新のない OS であることを明記する)。
 
 ### CLI の言語(合意済み)
 

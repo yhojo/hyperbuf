@@ -35,7 +35,7 @@ Running the macOS app (needs `core/dist`, so build the core first):
 (cd core && npm run build)
 (cd app/macos && swift run HyperBuf ../../README.md)  # opens a file (a directory opens its index.md / README.md; no argument → restores the last session)
 app/macos/scripts/make-app.sh [debug|release]         # builds app/macos/.build/HyperBuf.app (ad-hoc signed, Web core + CLI + licenses bundled)
-scripts/release.sh [--dry-run]                        # Developer ID sign + notarize + staple + .zip/.dmg + SHA256SUMS into dist/release (see docs/release.md; --dry-run = ad-hoc, no notarization)
+scripts/release.sh [--dry-run]                        # (release builds are Universal arm64+x86_64) Developer ID sign + notarize + staple + .zip/.dmg + SHA256SUMS into dist/release (see docs/release.md; --dry-run = ad-hoc, no notarization)
 scripts/integration-test.sh [dir]                     # needs a GUI session: opens every document under dir in a debug HyperBuf and checks rendering, CSP, search, images
 scripts/integration-test-ui.sh                        # needs a GUI session: C-s / outline navigation / keymap config / describe-bindings / minibuffer / kill-buffer in a real WKWebView (synthetic key events; native key path is checked by hand)
 scripts/integration-test-session.sh                   # needs a GUI session: quit → relaunch restores frames / window layout / history / scroll / selection (session v2, restoreSession setting, broken/missing data, closing frames)

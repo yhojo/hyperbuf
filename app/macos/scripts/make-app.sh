@@ -12,20 +12,29 @@ config="${1:-release}"
 # ビルドしたマシンのソースの絶対パス(個人のパス)が、実行ファイルに残らないよう、置き換える
 root="$(pwd -P)"
 remap=()
-# debug ビルドは、ソースのパス(#filePath)から core/dist を探す(WebRoot.swift)ので、置き換えない
-if [ "$config" = "release" ]; then remap=(-Xswiftc -file-prefix-map -Xswiftc "$root=/hyperbuf"); fi
-(cd app/macos && swift build -c "$config" ${remap[@]+"${remap[@]}"} >/dev/null)
-(cd cli && swift build -c "$config" ${remap[@]+"${remap[@]}"} >/dev/null)
+archs=()
+if [ "$config" = "release" ]; then
+  remap=(-Xswiftc -file-prefix-map -Xswiftc "$root=/hyperbuf")
+  # 配布するビルドは Universal(Apple Silicon と Intel の両方)。Intel の Mac(2018 年の Mac mini など)でも動かすため
+  archs=(--arch arm64 --arch x86_64)
+fi
+# debug ビルドは、ソースのパス(#filePath)から core/dist を探す(WebRoot.swift)ので、パスを置き換えない。開発機のアーキテクチャだけ
+build() { # $1=ディレクトリ → ビルドして、成果物のディレクトリを出力する
+  (cd "$1" && swift build -c "$config" ${archs[@]+"${archs[@]}"} ${remap[@]+"${remap[@]}"} >/dev/null \
+    && swift build -c "$config" ${archs[@]+"${archs[@]}"} --show-bin-path)
+}
+app_bin="$(build app/macos)"
+cli_bin="$(build cli)"
 
 app="app/macos/.build/HyperBuf.app"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-cp "app/macos/.build/$config/HyperBuf" "$app/Contents/MacOS/HyperBuf"
+cp "$app_bin/HyperBuf" "$app/Contents/MacOS/HyperBuf"
 cp -R core/dist "$app/Contents/Resources/web"
 # CLI(hyperbuf)も同梱する。アプリの実行ファイル(HyperBuf)と、大文字小文字を区別しないファイルシステムで衝突しないよう、
 # Contents/MacOS ではなく、Resources/bin に置く。Homebrew cask の binary や、シンボリックリンクで PATH に通す
 mkdir -p "$app/Contents/Resources/bin"
-cp "cli/.build/$config/hyperbuf" "$app/Contents/Resources/bin/hyperbuf"
+cp "$cli_bin/hyperbuf" "$app/Contents/Resources/bin/hyperbuf"
 # 同梱したサードパーティのソフトウェアの著作権表示とライセンス(配布の条件)。Web の配信範囲(web/)の外に置く
 cp LICENSE "$app/Contents/Resources/LICENSE.txt"
 cp NOTICE "$app/Contents/Resources/NOTICE.txt"

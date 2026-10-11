@@ -29,6 +29,15 @@
 5. **配布の前の確認**(下の「まっさらな Mac での確認」)。
 6. **公開**: タグ(`v<版>`)を付け、GitHub Releases に成果物と `SHA256SUMS` をアップロードする(ソースの公開前は、非公開の共有でもよい)。
 
+## 対応するアーキテクチャ
+
+release ビルドは **Universal(arm64 と x86_64)**。Apple Silicon と、Intel の Mac(2018 年の Mac mini など)の両方で動く(`make-app.sh` が `swift build --arch arm64 --arch x86_64` でビルドする)。最低の macOS は 14。
+
+- 2026-10-11: 最初のリリースのビルドは arm64 だけで、Intel の Mac(macOS 15.8.1)で「このOSに対応していない」と表示された。Universal に直した。
+- 開発機が Apple Silicon で Rosetta がないと、x86_64 の部分は実行できない。**Intel の Mac での起動確認は、配布の前に必ず行う**(下の「まっさらな Mac での確認」)。
+- 配布物が Universal かは、`lipo -archs HyperBuf.app/Contents/MacOS/HyperBuf`(`x86_64 arm64`)と、同梱の `Contents/Resources/bin/hyperbuf` で確認できる。
+- macOS 27 以降の SDK は、x86_64 を非推奨とする警告を出す。Apple は Intel の Mac のサポートを終えていくため、いずれ arm64 だけに戻す。
+
 ## 同梱するもの
 
 - `HyperBuf.app/Contents/Resources/bin/hyperbuf`: CLI(`PATH` に通すには、シンボリックリンクを張る。Homebrew cask の `binary` でも張れる)。アプリの実行ファイル(`HyperBuf`)と、大文字小文字を区別しないファイルシステムで衝突しないよう、`MacOS/` ではなく `Resources/bin/` に置く。

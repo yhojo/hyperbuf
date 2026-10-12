@@ -14,6 +14,7 @@
 #   HYPERBUF_NOTARY_PROFILE  公証の認証情報の保存名(`xcrun notarytool store-credentials` で作る)。
 #                            このスクリプトは、Apple ID・パスワード・API キーを受け取らない(キーチェーンのプロファイルだけを使う)
 #   HYPERBUF_RELEASE_DIR     成果物の置き場所(既定: dist/release)
+#   HYPERBUF_ICON            アプリのアイコン(.icns)を差し替える(既定: app/macos/Resources/AppIcon.icns)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

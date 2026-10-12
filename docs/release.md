@@ -39,6 +39,15 @@ release ビルドは **Universal(arm64 と x86_64)**。Apple Silicon と、Intel
 - 配布物が Universal かは、`lipo -archs HyperBuf.app/Contents/MacOS/HyperBuf`(`x86_64 arm64`)と、同梱の `Contents/Resources/bin/hyperbuf` で確認できる。
 - macOS 27 以降の SDK は、x86_64 を非推奨とする警告を出す。Apple は Intel の Mac のサポートを終えていくため、いずれ arm64 だけに戻す。
 
+## アイコン
+
+- **既定のアイコン: 「H」**(`app/macos/Resources/AppIcon.icns`、確認用に `AppIcon-1024.png`)。暗い板の上に、半透明のタイルで「H」を描いたデザイン(Yasuo Hojo の作。HyperBuf の頭文字であり、作者の姓の頭文字でもある)。2026-10-12 に決定した(知り合いへの見せ合いで、「目立つ」「H が分かりやすい」という評価)。
+- **元の画像**: `app/macos/Resources/source/hyperbuf-icon-original.icns`。暗い角丸の板が画像いっぱいに広がっていて、角の外側に地の色が焼き込まれ、透明な余白がない。macOS のアイコンは、透明な余白がないと、Dock や Finder で、他のアプリより大きく、角に四角い地が見える。
+- **既定のアイコンの作り方**: `swift app/macos/scripts/icon-from-image.swift app/macos/Resources/source/hyperbuf-icon-original.icns app/macos/Resources`。元の画像から、角の外側は透明、周囲に約 10% の余白、影つきの、標準のアイコンを作る(デザインは変えない)。結果(`AppIcon.icns`、`AppIcon-1024.png`)は、リポジトリに置く。
+- **代替のデザイン**: `app/macos/Resources/alternatives/split-windows/`(分割した 2 つの window。`swift app/macos/scripts/make-icon.swift` が、コードから生成する)。視認性の評価が分かれたため、既定にしなかった。
+- **別のアイコンに差し替える**(見比べ・別のデザイン): `HYPERBUF_ICON=<.icns のパス>` を指定して、`make-app.sh` または `release.sh` を実行する。成果物の置き場所を分けるなら、`HYPERBUF_RELEASE_DIR` も指定する。
+- アイコンの著作物は、リポジトリのほかの部分と同じく、Apache-2.0 で提供する(`LICENSE`)。ただし、商標(名前・ロゴとしての利用)は許諾しない(Apache-2.0 §6)。
+
 ## 同梱するもの
 
 - `HyperBuf.app/Contents/Resources/bin/hyperbuf`: CLI(`PATH` に通すには、シンボリックリンクを張る。Homebrew cask の `binary` でも張れる)。アプリの実行ファイル(`HyperBuf`)と、大文字小文字を区別しないファイルシステムで衝突しないよう、`MacOS/` ではなく `Resources/bin/` に置く。

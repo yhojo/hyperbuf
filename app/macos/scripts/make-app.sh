@@ -36,6 +36,11 @@ cp -R core/dist "$app/Contents/Resources/web"
 mkdir -p "$app/Contents/Resources/bin"
 cp "$cli_bin/hyperbuf" "$app/Contents/Resources/bin/hyperbuf"
 # 同梱したサードパーティのソフトウェアの著作権表示とライセンス(配布の条件)。Web の配信範囲(web/)の外に置く
+# アイコン(app/macos/scripts/make-icon.swift で生成して、リポジトリに置いてある)
+# 環境変数 HYPERBUF_ICON に .icns のパスを指定すると、別のアイコンに差し替えられる(見比べ用)
+icon="${HYPERBUF_ICON:-app/macos/Resources/AppIcon.icns}"
+[ -f "$icon" ] || { echo "アイコンがありません: $icon" >&2; exit 1; }
+cp "$icon" "$app/Contents/Resources/AppIcon.icns"
 cp LICENSE "$app/Contents/Resources/LICENSE.txt"
 cp NOTICE "$app/Contents/Resources/NOTICE.txt"
 (cd core && node scripts/licenses.mjs notices "../$app/Contents/Resources/THIRD-PARTY-NOTICES.txt" >/dev/null)
@@ -47,6 +52,7 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
 <plist version="1.0">
 <dict>
   <key>CFBundleExecutable</key><string>HyperBuf</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundleIdentifier</key><string>com.yhojo.hyperbuf</string>
   <key>CFBundleName</key><string>HyperBuf</string>
   <key>CFBundleDisplayName</key><string>HyperBuf</string>

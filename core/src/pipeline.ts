@@ -13,7 +13,8 @@
 
 import type { Element, ElementContent, Root as HastRoot } from "hast";
 import type { Root as MdastRoot } from "mdast";
-import { createStarryNight, common } from "@wooorm/starry-night";
+import { createStarryNight } from "@wooorm/starry-night";
+import { EAGER, LAZY, fenceFlags } from "./grammars.ts";
 import GithubSlugger from "github-slugger";
 import { toString } from "hast-util-to-string";
 import rehypeKatex from "rehype-katex";
@@ -61,6 +62,8 @@ export interface RenderSettings {
 export interface Renderer {
   /** 設定を変える(最初の描画の前に呼ぶ)。 */
   configure(settings: Partial<RenderSettings>): void;
+  /** 本文のコードブロックが使う、大きな文法(Emacs Lisp など)を、描画の前に読み込む。 */
+  prepare(text: string): Promise<void>;
   renderMarkdown(text: string, context: RenderContext): RenderResult;
 }
 
@@ -263,9 +266,10 @@ type SchemaWithAttributesBase = NonNullable<SanitizeSchema>;
 export async function createRenderer(options: { onigUrl?: URL } = {}): Promise<Renderer> {
   const { onigUrl } = options;
   const starryNight = await createStarryNight(
-    common,
+    EAGER,
     onigUrl ? { getOnigurumaUrlFetch: () => onigUrl } : undefined,
   );
+  const loaded = new Set<string>();
   const settings: RenderSettings = { mathUnescapeUnderscore: true };
   const processor = unified()
     .use(remarkParse)
@@ -289,6 +293,18 @@ export async function createRenderer(options: { onigUrl?: URL } = {}): Promise<R
   return {
     configure(next) {
       Object.assign(settings, next);
+    },
+    async prepare(text) {
+      const flags = fenceFlags(text);
+      if (flags.size === 0) return;
+      const needed = LAZY.filter((g) => !loaded.has(g.scope) && g.flags.some((f) => flags.has(f)));
+      if (needed.length === 0) return;
+      for (const g of needed) loaded.add(g.scope);
+      try {
+        await starryNight.register(await Promise.all(needed.map((g) => g.load())));
+      } catch {
+        for (const g of needed) loaded.delete(g.scope);
+      }
     },
     renderMarkdown(text, { docPath, resolveResource }) {
       const t0 = performance.now();

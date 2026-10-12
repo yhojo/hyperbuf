@@ -21,15 +21,17 @@
 - **rehype-katex**(MIT): パッケージに license ファイルがない。package.json の license(MIT)と author、README の「MIT © Junyoung Choi」から、MIT の標準の文面を補う(年は、パッケージから分からないので書かない)。
 - **remark-math**(MIT): パッケージに license ファイルがない。package.json の license(MIT)と author、README の「MIT © Junyoung Choi」から、MIT の標準の文面を補う(年は、パッケージから分からないので書かない)。
 
-## starry-night の文法(バンドルに入った 34 件)
+## starry-night の文法(バンドルに入った 89 件)
 
 | ライセンス(SPDX) | 件数 |
 | --- | --- |
-| mit | 16 |
-| permissive | 13 |
-| isc | 2 |
-| apache-2.0 | 2 |
-| bsd-3-clause | 1 |
+| mit | 50 |
+| permissive | 22 |
+| isc | 6 |
+| apache-2.0 | 5 |
+| bsd-3-clause | 3 |
+| bsd-2-clause | 1 |
+| mpl-2.0 | 1 |
 
 文法ごとの出所とライセンス文は、`THIRD-PARTY-NOTICES` に入る(starry-night の `notice` から、バンドルに入ったものだけを取り出す)。コピーレフト(GPL 系)のものは、ない。
 

@@ -11,10 +11,11 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "node build.mjs",
-    "check": "npm run typecheck && npm run format:check && npm test && node scripts/gen-keybindings.ts --check && node scripts/licenses.mjs check",
+    "check": "npm run typecheck && npm run format:check && npm test && node scripts/gen-keybindings.ts --check && node scripts/gen-languages.ts --check && node scripts/licenses.mjs check",
     "licenses": "node scripts/licenses.mjs summary",
     "dev": "npm run build && node scripts/dev-server.mjs",
-    "keybindings": "node scripts/gen-keybindings.ts"
+    "keybindings": "node scripts/gen-keybindings.ts",
+    "languages": "node scripts/gen-languages.ts"
   },
   "engines": {
     "node": ">=22.18"

@@ -153,3 +153,13 @@ test("数式: Marked 2 流に、\\_ を下付き文字として描画する(設�
     renderer.configure({ mathUnescapeUnderscore: true });
   }
 });
+
+test("シンタックスハイライト: Emacs Lisp は prepare のあとで着色され、未知の言語は素通し", async () => {
+  const md = '```elisp\n(defun foo (x) "doc" (+ x 1))\n```\n\n```nosuchlang\n(defun foo)\n```\n';
+  assert.ok(!html(md).includes("pl-k"), "prepare 前は着色されない(遅延読込)");
+  await renderer.prepare(md);
+  const out = html(md);
+  assert.match(out, /<span class="pl-k">defun<\/span>/);
+  assert.ok(!out.includes("nosuchlang</span>"));
+  assert.match(html("```clojure\n(defn f [x] x)\n```"), /pl-/, "小さい文法は常時含める");
+});

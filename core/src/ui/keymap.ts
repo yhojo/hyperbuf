@@ -19,6 +19,7 @@ export const DEFAULT_BINDINGS: Readonly<Record<string, CommandName>> = {
   "C-x k": "kill-buffer",
   "C-x C-f": "find-file",
   "C-x p f": "project-find-file",
+  "C-x x u": "toggle-follow-updates",
   "C-x 5 2": "make-frame",
   "C-x 5 0": "delete-frame",
   "C-x 5 o": "other-frame",

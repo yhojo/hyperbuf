@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
+import AppKit
 import Foundation
 import HyperBufKit
 import HyperBufProtocol
@@ -28,10 +29,21 @@ final class FrameSession: Identifiable {
     /// Web コアの準備前に届いた「開く」要求。準備ができたら、順に渡す。
     private var pendingOpens: [[String: Any]] = []
 
-    init(slot: Int, access: FileAccess, editorConfig: EditorConfig, snapshot: Any?) {
+    /// 文書のリンクをブラウザで開く判定(`trustedUrls`・記憶したサイト)。全フレームで共有する。
+    let urlPolicy: UrlPolicy
+    let rememberedSites: RememberedOrigins
+    /// 確認が要ると答えた URL(アプリが提案したもの)。確認に答えたあとの「開く」「記憶」は、ここにあるものだけ受け付ける。
+    private var urlProposals: Set<String> = []
+
+    init(
+        slot: Int, access: FileAccess, editorConfig: EditorConfig, snapshot: Any?, urlPolicy: UrlPolicy,
+        rememberedSites: RememberedOrigins
+    ) {
         self.slot = slot
         self.access = access
         self.editorConfig = editorConfig
+        self.urlPolicy = urlPolicy
+        self.rememberedSites = rememberedSites
         initialSnapshot = snapshot
         lastSnapshot = snapshot
         watcher = FileWatcher { [weak self] path, state in
@@ -99,6 +111,52 @@ final class FrameSession: Identifiable {
     func acceptProposal(_ remember: String) -> Bool {
         guard proposals.remove(remember) != nil else { return false }
         return access.remembered.add(remember)
+    }
+
+    // MARK: 外部の URL(ブラウザで開く)
+
+    /// 文書のリンクの判定(Web コアの `checkUrl`)。確認が要るものは、提案として覚える。
+    func judgeUrl(_ url: String) -> [String: Any] {
+        switch urlPolicy.decide(url, remembered: rememberedSites) {
+        case .open: return ["action": "open"]
+        case .confirm(let origin):
+            urlProposals.insert(url)
+            var out: [String: Any] = ["action": "confirm"]
+            if let origin { out["origin"] = origin }
+            return out
+        case .deny(let reason): return ["action": "deny", "reason": reason]
+        }
+    }
+
+    /// 既定のブラウザで開く。判定を、ここでもう一度行う(Web コアの判断を信用しない)。
+    func openExternal(_ url: String) -> Bool {
+        switch urlPolicy.decide(url, remembered: rememberedSites) {
+        case .deny: return false
+        case .open: break
+        case .confirm: guard urlProposals.remove(url) != nil else { return false }
+        }
+        guard let target = URL(string: url) else { return false }
+        #if DEBUG
+            // テスト用: 実際には開かず、ログに URL を追記する(統合テストが、ブラウザを開かないように)
+            if let path = ProcessInfo.processInfo.environment["HYPERBUF_TEST_OPEN_LOG"] {
+                let line = url + "\n"
+                if let handle = FileHandle(forWritingAtPath: path) {
+                    handle.seekToEndOfFile()
+                    handle.write(Data(line.utf8))
+                    try? handle.close()
+                } else {
+                    try? line.write(toFile: path, atomically: true, encoding: .utf8)
+                }
+                return true
+            }
+        #endif
+        return NSWorkspace.shared.open(target)
+    }
+
+    /// 「always」: そのサイト(オリジン)を記憶する。確認が要ると答えた URL のオリジンだけ。
+    func rememberSite(_ url: String) -> Bool {
+        guard urlProposals.contains(url), let origin = UrlPolicy.origin(of: url) else { return false }
+        return rememberedSites.add(origin: origin)
     }
 
     // MARK: ファイルの監視

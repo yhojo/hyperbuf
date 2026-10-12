@@ -24,6 +24,16 @@ export function findAnchor(root: HTMLElement, anchor: string): HTMLElement | nul
   );
 }
 
+/** 画面の上端にあるブロックの、元の Markdown の行番号(モードラインの `L40`)。なければ null。 */
+export function topSourceLine(content: HTMLElement): number | null {
+  let line: number | null = null;
+  for (const el of content.querySelectorAll<HTMLElement>("[data-source-line]")) {
+    if (el.offsetTop > content.scrollTop + 1) break;
+    line = Number(el.dataset["sourceLine"]);
+  }
+  return line ?? (content.querySelector<HTMLElement>("[data-source-line]") ? 1 : null);
+}
+
 export interface VisibleAnchor {
   id: string;
   /** 画面の上端が、その要素の上端から何 px 下か。 */

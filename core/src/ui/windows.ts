@@ -4,11 +4,12 @@
 // 分割ツリーと window の描画。window ごとの閲覧位置(スクロール)を保ち、
 // 外部更新・履歴の移動・Mermaid の描画で高さが変わっても、読み手の位置を保つ。
 
+import { firstChangedLine } from "../diff.ts";
 import type { HistoryEntry, LayoutNode, Model, Win } from "../model.ts";
 import { currentEntry, windows } from "../model.ts";
 import type { Renderer } from "../pipeline.ts";
 import { uniquifyNames } from "../names.ts";
-import { findAnchor, visibleAnchor } from "./anchors.ts";
+import { findAnchor, topSourceLine, visibleAnchor } from "./anchors.ts";
 import { hydrateDiagrams } from "./diagrams.ts";
 
 /** 描画の統計(ステータス行に出す)。 */
@@ -35,10 +36,15 @@ export interface ViewsOptions {
 
 interface WinView {
   el: HTMLElement;
-  header: HTMLElement;
+  /** モードライン(window の下)。名前・位置・履歴を、Emacs のモードラインのように出す。 */
+  modeLine: { el: HTMLElement; name: HTMLElement; pos: HTMLElement; hist: HTMLElement };
+  /** スクロールのたびに、モードラインの位置の更新を、1 フレームにまとめる。 */
+  modeLinePending: boolean;
   content: HTMLElement;
   lastEntry: HistoryEntry | null;
   lastKey: string | null;
+  /** 最後に描画した本文。外部更新で、最初に変わった行を求めるのに使う。 */
+  lastText: string | null;
   linkIndex: number;
   /** プログラムで設定したスクロール位置。これと一致するスクロールイベントは、読み手の操作ではない。 */
   expectScroll: number | null;
@@ -49,6 +55,8 @@ interface WinView {
 
 export class Views {
   readonly stats: RenderStats = { ms: 0, diagrams: "" };
+  /** 外部更新のとき、最初に変わった場所へ移る(`toggle-follow-updates`)。 */
+  followUpdates = false;
   private readonly views = new Map<number, WinView>();
   private layoutSig = "";
   /** バッファの識別(絶対パス)→ 表示名(uniquify 済み)。 */
@@ -93,17 +101,37 @@ export class Views {
     return this.selected().content.clientHeight;
   }
 
-  /** 選択中の window のリンクを、順に選ぶ(TAB / S-TAB)。 */
+  /**
+   * 選択中の window のリンクを、順に選ぶ(TAB / S-TAB)。
+   * まだ選んでいない、または、選んでいるリンクが画面の外に出ているときは、**見えている範囲**から始める
+   * (TAB は、見えている最初のリンク。S-TAB は、見えている最後のリンク)。文書の先頭へは戻らない。
+   */
   moveLink(dir: 1 | -1): void {
     const view = this.selected();
     const links = [...view.content.querySelectorAll("a")];
     if (!links.length) return;
-    view.linkIndex =
-      view.linkIndex < 0
-        ? dir > 0
-          ? 0
-          : links.length - 1
-        : (view.linkIndex + dir + links.length) % links.length;
+    const box = view.content.getBoundingClientRect();
+    // 画面に見えているか(リンクの上端が、画面の中にある)
+    const visible = (a: Element): boolean => {
+      const r = a.getBoundingClientRect();
+      return r.top >= box.top - 1 && r.top < box.bottom;
+    };
+    const focused = view.linkIndex >= 0 ? links[view.linkIndex] : undefined;
+    if (!focused || !visible(focused)) {
+      const shown = links.map((a, i) => (visible(a) ? i : -1)).filter((i) => i >= 0);
+      if (shown.length) {
+        view.linkIndex = (dir > 0 ? shown[0] : shown[shown.length - 1]) as number;
+      } else {
+        // 見えているリンクがない: 画面より後ろ(TAB)・前(S-TAB)の、最も近いもの。なければ、端
+        const below = links.findIndex((a) => a.getBoundingClientRect().top >= box.bottom);
+        const above = links
+          .map((a) => a.getBoundingClientRect().bottom <= box.top)
+          .lastIndexOf(true);
+        view.linkIndex = dir > 0 ? (below >= 0 ? below : 0) : above >= 0 ? above : links.length - 1;
+      }
+    } else {
+      view.linkIndex = (view.linkIndex + dir + links.length) % links.length;
+    }
     links.forEach((a, i) => a.classList.toggle("link-focus", i === view.linkIndex));
     links[view.linkIndex]?.scrollIntoView({ block: "nearest" });
   }
@@ -154,16 +182,29 @@ export class Views {
     if (existing) return existing;
     const el = document.createElement("section");
     el.className = "win";
-    const header = document.createElement("div");
-    header.className = "win-header";
+    // モードラインは、Emacs と同じく、window の下。選択中の window は、濃く反転する(CSS)
+    const modeLineEl = document.createElement("div");
+    modeLineEl.className = "mode-line";
+    const modeLine = {
+      el: modeLineEl,
+      name: document.createElement("span"),
+      pos: document.createElement("span"),
+      hist: document.createElement("span"),
+    };
+    modeLine.name.className = "ml-name";
+    modeLine.pos.className = "ml-pos";
+    modeLine.hist.className = "ml-hist";
+    modeLineEl.append(modeLine.name, modeLine.pos, modeLine.hist);
     const content = document.createElement("div");
     content.className = "content";
-    el.append(header, content);
+    el.append(content, modeLineEl);
     const view: WinView = {
       el,
-      header,
+      modeLine,
+      modeLinePending: false,
       content,
       lastEntry: null,
+      lastText: null,
       lastKey: null,
       linkIndex: -1,
       expectScroll: null,
@@ -171,6 +212,7 @@ export class Views {
       computeTop: null,
     };
     content.addEventListener("scroll", () => {
+      this.scheduleModeLine(view);
       if (view.expectScroll !== null && Math.abs(content.scrollTop - view.expectScroll) < 1) return;
       view.expectScroll = null;
       const entry = currentEntry(win);
@@ -193,6 +235,35 @@ export class Views {
     return view;
   }
 
+  /** モードラインの位置(`Top` / `Bot` / `All` / `NN%`)と、画面の上端の行番号(`L40`)を更新する。 */
+  private updateModeLinePosition(view: WinView): void {
+    const { content, modeLine } = view;
+    if (!content.querySelector(".markdown-body")) {
+      modeLine.pos.textContent = "";
+      return;
+    }
+    const max = content.scrollHeight - content.clientHeight;
+    const position =
+      max <= 1
+        ? "All"
+        : content.scrollTop <= 0
+          ? "Top"
+          : content.scrollTop >= max - 1
+            ? "Bot"
+            : `${Math.round((content.scrollTop / max) * 100)}%`;
+    const line = topSourceLine(content);
+    modeLine.pos.textContent = line === null ? position : `${position}  L${line}`;
+  }
+
+  private scheduleModeLine(view: WinView): void {
+    if (view.modeLinePending) return;
+    view.modeLinePending = true;
+    requestAnimationFrame(() => {
+      view.modeLinePending = false;
+      this.updateModeLinePosition(view);
+    });
+  }
+
   private setScroll(view: WinView, top: number): void {
     view.expectScroll = top;
     view.content.scrollTop = top;
@@ -205,7 +276,9 @@ export class Views {
     view.el.classList.toggle("selected", selected);
     if (!entry) {
       // 開いているバッファがない(起動直後など)
-      view.header.textContent = `${selected ? "●" : "○"} (バッファなし)`;
+      view.modeLine.name.textContent = "(バッファなし)";
+      view.modeLine.pos.textContent = "";
+      view.modeLine.hist.textContent = "";
       if (view.lastKey !== "empty") {
         view.content.innerHTML =
           '<div class="empty-state">C-x C-f でファイルを開きます(C-x p f: 基準のディレクトリ以下から探す)</div>';
@@ -219,13 +292,19 @@ export class Views {
     const key = `${entry.path}@${buf.version}`;
     const name = this.names.get(entry.path) ?? entry.path;
     const gone = buf.missing ? "  (削除されました。移動された可能性があります)" : "";
-    view.header.textContent = `${selected ? "●" : "○"} ${name}${entry.anchor ? "#" + entry.anchor : ""}${gone}   [履歴 ${win.index + 1}/${win.history.length}]`;
+    view.modeLine.name.textContent = `${name}${entry.anchor ? "#" + entry.anchor : ""}${gone}`;
+    view.modeLine.hist.textContent = `[履歴 ${win.index + 1}/${win.history.length}]${this.followUpdates ? " [追従]" : ""}`;
 
     if (view.lastKey !== key) {
       // 外部更新(同じ文書の版が変わった)なら、見出し基準で閲覧位置を維持する
       const reload = view.lastEntry === entry;
       const anchor = reload ? visibleAnchor(view.content) : null;
       const ratio = reload ? view.content.scrollTop / Math.max(1, view.content.scrollHeight) : 0;
+      const changedLine =
+        reload && this.followUpdates && !!view.lastText
+          ? firstChangedLine(view.lastText, buf.text)
+          : null;
+      view.lastText = buf.text;
       const { html, ms } = renderer.renderMarkdown(buf.text, {
         docPath: entry.path,
         resolveResource,
@@ -240,6 +319,12 @@ export class Views {
             anchor && view.content.querySelector<HTMLElement>(`#${CSS.escape(anchor.id)}`);
           return target ? target.offsetTop + anchor.delta : view.content.scrollHeight * ratio;
         };
+        if (changedLine !== null) {
+          // 最初に変わった場所を、画面の上寄りに出して、一瞬、目立たせる
+          const at = () => findAnchor(view.content, `line:${changedLine}`);
+          view.computeTop = () => Math.max(0, (at()?.offsetTop ?? 0) - 40);
+          at()?.classList.add("changed-flash");
+        }
         this.setScroll(view, view.computeTop());
         entry.scroll = view.content.scrollTop;
       }
@@ -258,6 +343,7 @@ export class Views {
       view.linkIndex = -1;
       view.lastEntry = entry;
     }
+    this.updateModeLinePosition(view);
   }
 
   private async settleDiagrams(view: WinView, entry: HistoryEntry, token: number): Promise<void> {
@@ -271,6 +357,7 @@ export class Views {
       this.setScroll(view, view.computeTop());
       entry.scroll = view.content.scrollTop;
     }
+    this.updateModeLinePosition(view);
   }
 }
 

@@ -139,3 +139,50 @@ test("details/summary と kbd を通す", () => {
   assert.match(out, /<details/);
   assert.match(out, /<kbd>/);
 });
+
+test("数式: Marked 2 流に、\\_ を下付き文字として描画する(設定で、そのままにもできる)", () => {
+  const md = "$f\\_{2}$ と $$ g\\_{1} = \\text{a\\_b} $$";
+  const on = html(md);
+  assert.match(on, /msupsub/); // 下付き文字になる
+  assert.match(on, /a_b/); // \text の中は、文字としての下線のまま
+  renderer.configure({ mathUnescapeUnderscore: false });
+  try {
+    const off = html("$f\\_{2}$");
+    assert.doesNotMatch(off, /msupsub/); // そのままなら、下線の文字
+  } finally {
+    renderer.configure({ mathUnescapeUnderscore: true });
+  }
+});
+
+test("シンタックスハイライト: Emacs Lisp は prepare のあとで着色され、未知の言語は素通し", async () => {
+  const md = '```elisp\n(defun foo (x) "doc" (+ x 1))\n```\n\n```nosuchlang\n(defun foo)\n```\n';
+  assert.ok(!html(md).includes("pl-k"), "prepare 前は着色されない(遅延読込)");
+  await renderer.prepare(md);
+  const out = html(md);
+  assert.match(out, /<span class="pl-k">defun<\/span>/);
+  assert.ok(!out.includes("nosuchlang</span>"));
+  assert.match(html("```clojure\n(defn f [x] x)\n```"), /pl-/, "小さい文法は常時含める");
+});
+
+test("数式: 描画に使う KaTeX と、同梱する CSS の版が合っている(class 名が食い違うと、添字や分数が崩れる)", () => {
+  const css = readFileSync(
+    new URL("../node_modules/katex/dist/katex.min.css", import.meta.url),
+    "utf8",
+  );
+  const out = html("$x_1^2 + \\frac{1}{2}$");
+  const classes = new Set(
+    [...out.matchAll(/class="([^"]+)"/g)].flatMap((m) => (m[1] as string).split(" ")),
+  );
+  for (const c of ["sizing", "msupsub", "vlist-t", "mfrac", "reset-size6"]) {
+    assert.ok(classes.has(c), `出力に ${c} がない`);
+    assert.ok(css.includes(`.${c}`), `CSS に .${c} がない(katex の版が食い違っている)`);
+  }
+});
+
+test("数式: 1 行の $$ … $$ もブロック数式(中央寄せ)になる。$ … $ はインラインのまま", () => {
+  const single = html("$$ f_1 = \\frac{1}{2} $$");
+  assert.match(single, /katex-display/);
+  const inline = html("文中の $x_1$ です");
+  assert.ok(!inline.includes("katex-display"));
+  assert.ok(html("a $$x$$ b").includes("katex-display"));
+});

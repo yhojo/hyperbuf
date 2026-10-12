@@ -44,6 +44,11 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
                 allow: (remember) => call({ op: "allow", remember }),
                 listRemembered: () => call({ op: "list-remembered" }),
                 forget: (path) => call({ op: "forget", path }),
+                checkUrl: (url) => call({ op: "check-url", url }),
+                openExternal: (url) => call({ op: "open-url", url }),
+                rememberSite: (url) => call({ op: "remember-site", url }),
+                listRememberedSites: () => call({ op: "list-sites" }),
+                forgetSite: (origin) => call({ op: "forget-site", origin }),
                 watch: (paths) => { call({ op: "watch", paths }); },
                 onFileChanged: (cb) => { changeListeners.push(cb); },
                 // 判定はシェルが、読み込みのたびに行う(警告パスの画像は、404 になる)
@@ -88,11 +93,14 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
         switch op {
         case "config":
             // 利用者の設定のうち、Web コアが使うもの(検証は、Web コアが行う)
+            let settings = UserSettings.load()
             replyHandler(
                 [
                     "keybindings": UserKeybindings.load(from: EditorConfig.configURL()),
-                    "restoreSession": SessionSettings.restoreEnabled(),
-                    "problems": access.policy.problems,
+                    "restoreSession": settings.restoreSession,
+                    "mathUnescapeUnderscore": settings.mathUnescapeUnderscore,
+                    "followUpdates": settings.followUpdates,
+                    "problems": access.policy.problems + settings.problems,
                 ], nil)
         case "load-session":
             replyHandler(frame.initialSnapshot ?? NSNull(), nil)
@@ -136,6 +144,19 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
         case "forget":
             guard let path = body["path"] as? String else { return replyHandler(false, nil) }
             replyHandler(access.remembered.remove(path), nil)
+        case "check-url":
+            guard let url = body["url"] as? String else {
+                return replyHandler(["action": "deny", "reason": "bad request"], nil)
+            }
+            replyHandler(frame.judgeUrl(url), nil)
+        case "open-url":
+            replyHandler(frame.openExternal(body["url"] as? String ?? ""), nil)
+        case "remember-site":
+            replyHandler(frame.rememberSite(body["url"] as? String ?? ""), nil)
+        case "list-sites":
+            replyHandler(frame.rememberedSites.all, nil)
+        case "forget-site":
+            replyHandler(frame.rememberedSites.remove(origin: body["origin"] as? String ?? ""), nil)
         case "watch":
             frame.setWatched((body["paths"] as? [String]) ?? [])
             replyHandler(nil, nil)

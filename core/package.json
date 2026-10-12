@@ -1,6 +1,6 @@
 {
   "name": "@hyperbuf/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "license": "Apache-2.0",
   "description": "HyperBuf の共通 Web コア(OS 非依存)。シェルとの境界は HyperbufHost の契約のみ。",
@@ -11,10 +11,11 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build": "node build.mjs",
-    "check": "npm run typecheck && npm run format:check && npm test && node scripts/gen-keybindings.ts --check && node scripts/licenses.mjs check",
+    "check": "npm run typecheck && npm run format:check && npm test && node scripts/gen-keybindings.ts --check && node scripts/gen-languages.ts --check && node scripts/licenses.mjs check",
     "licenses": "node scripts/licenses.mjs summary",
     "dev": "npm run build && node scripts/dev-server.mjs",
-    "keybindings": "node scripts/gen-keybindings.ts"
+    "keybindings": "node scripts/gen-keybindings.ts",
+    "languages": "node scripts/gen-languages.ts"
   },
   "engines": {
     "node": ">=22.18"
@@ -28,7 +29,7 @@
     "github-markdown-css": "^5.9.0",
     "github-slugger": "^2.0.0",
     "hast-util-to-string": "^3.0.1",
-    "katex": "^0.19.0",
+    "katex": "^0.16.47",
     "mermaid": "^12.1.0",
     "prettier": "^3.9.9",
     "rehype-katex": "^7.0.1",

@@ -13,7 +13,9 @@
 
 import type { Element, ElementContent, Root as HastRoot } from "hast";
 import type { Root as MdastRoot } from "mdast";
-import { createStarryNight, common } from "@wooorm/starry-night";
+import { createStarryNight } from "@wooorm/starry-night";
+import type { Grammar } from "@wooorm/starry-night";
+import { EAGER, LAZY, fenceFlags } from "./grammars.ts";
 import GithubSlugger from "github-slugger";
 import { toString } from "hast-util-to-string";
 import rehypeKatex from "rehype-katex";
@@ -29,6 +31,7 @@ import { unified } from "unified";
 import type { Plugin } from "unified";
 import { visit } from "unist-util-visit";
 import type { VFile } from "vfile";
+import { unescapeMathUnderscores } from "./math.ts";
 import { resolveLink } from "./model.ts";
 
 declare module "vfile" {
@@ -51,7 +54,17 @@ export interface RenderResult {
   ms: number;
 }
 
+/** 描画の設定(config.json 由来)。 */
+export interface RenderSettings {
+  /** 数式の中の `\_` を `_` に戻す(Marked 2 などと同じ。既定は true)。src/math.ts */
+  mathUnescapeUnderscore: boolean;
+}
+
 export interface Renderer {
+  /** 設定を変える(最初の描画の前に呼ぶ)。 */
+  configure(settings: Partial<RenderSettings>): void;
+  /** 本文のコードブロックが使う、大きな文法(Emacs Lisp など)を、描画の前に読み込む。 */
+  prepare(text: string): Promise<void>;
   renderMarkdown(text: string, context: RenderContext): RenderResult;
 }
 
@@ -70,6 +83,47 @@ const remarkMathGithubCompat: Plugin<[], MdastRoot> = () => (tree, file) => {
     if (/\d/.test(src[end] ?? "") || /^\s|\s$/.test(inner)) {
       parent.children[index] = { type: "text", value: src.slice(start, end) };
     }
+  });
+};
+
+/**
+ * 数式の中の `\_` を `_` に戻す(`$f\_{2}$` を、下付き文字にする)。Marked 2 などとの互換。
+ * mdast の math / inlineMath は、描画用の hast の中身(`data.hChildren`)を別に持つので、両方を直す。
+ */
+const remarkMathUnescape =
+  (settings: RenderSettings): Plugin<[], MdastRoot> =>
+  () =>
+  (tree) => {
+    if (!settings.mathUnescapeUnderscore) return;
+    const fix = (node: { value: string; data?: Record<string, unknown> }): void => {
+      node.value = unescapeMathUnderscores(node.value);
+      const children = node.data?.["hChildren"];
+      if (Array.isArray(children)) {
+        for (const child of children as { type: string; value?: string }[]) {
+          if (child.type === "text" && typeof child.value === "string") {
+            child.value = unescapeMathUnderscores(child.value);
+          }
+        }
+      }
+    };
+    visit(tree, (node) => {
+      if (node.type === "math" || node.type === "inlineMath") {
+        fix(node as unknown as { value: string; data?: Record<string, unknown> });
+      }
+    });
+  };
+
+/**
+ * `$$ … $$` を 1 行に書いた式(前後に改行がない)は、remark-math ではインライン数式になり、左に詰まって出る。
+ * `$$` で囲んだ式は、書き手の意図どおり、ブロック数式(中央寄せ)として描画する(Marked 2 と同じ)。
+ */
+const remarkMathDoubleDollar: Plugin<[], MdastRoot> = () => (tree, file) => {
+  const src = String(file.value);
+  visit(tree, "inlineMath", (node) => {
+    const start = node.position?.start.offset;
+    if (start === undefined || !src.startsWith("$$", start)) return;
+    const data = (node.data ??= {});
+    data.hProperties = { ...data.hProperties, className: ["language-math", "math-display"] };
   });
 };
 
@@ -170,7 +224,8 @@ const rehypeImages: Plugin<[], HastRoot> = () => (tree, file: VFile) => {
 };
 
 /** コードブロック: Mermaid は印を付けて後で描画し、それ以外は starry-night(GitHub と同じ文法)で着色する。 */
-const rehypeCodeBlocks: Plugin<[StarryNight], HastRoot> = (starryNight) => (tree) => {
+const rehypeCodeBlocks: Plugin<[() => StarryNight], HastRoot> = (current) => (tree) => {
+  const starryNight = current();
   visit(tree, "element", (node, _index, parent) => {
     if (
       node.tagName !== "code" ||
@@ -193,8 +248,12 @@ const rehypeCodeBlocks: Plugin<[StarryNight], HastRoot> = (starryNight) => (tree
       return;
     }
     const scope = starryNight.flagToScope(lang);
-    if (scope)
+    if (!scope) return;
+    try {
       node.children = starryNight.highlight(toString(node), scope).children as ElementContent[];
+    } catch {
+      // 文法がまだ読み込まれていない(prepare を通らない経路)。着色せず、そのまま表示する
+    }
   });
 };
 
@@ -226,15 +285,21 @@ type SchemaWithAttributesBase = NonNullable<SanitizeSchema>;
  */
 export async function createRenderer(options: { onigUrl?: URL } = {}): Promise<Renderer> {
   const { onigUrl } = options;
-  const starryNight = await createStarryNight(
-    common,
-    onigUrl ? { getOnigurumaUrlFetch: () => onigUrl } : undefined,
-  );
+  const starryOptions = onigUrl ? { getOnigurumaUrlFetch: () => onigUrl } : undefined;
+  let starryNight = await createStarryNight(EAGER, starryOptions);
+  // 大きな文法は、必要になったときに足す。starry-night の register() は WASM を外部 CDN から取り直すので使わず、
+  // 同梱の WASM を指す新しい starry-night を作って差し替える(local first)
+  const requested = new Set<string>();
+  const active: Grammar[] = [];
+  let chain: Promise<void> = Promise.resolve();
+  const settings: RenderSettings = { mathUnescapeUnderscore: true };
   const processor = unified()
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkMath)
     .use(remarkMathGithubCompat)
+    .use(remarkMathDoubleDollar)
+    .use(remarkMathUnescape(settings))
     // 脚注の id は sanitize が接頭辞を付ける。ここでも付けると二重になりリンクが切れる
     .use(remarkRehype, { allowDangerousHtml: true, clobberPrefix: "" })
     .use(rehypeRaw)
@@ -245,10 +310,31 @@ export async function createRenderer(options: { onigUrl?: URL } = {}): Promise<R
     .use(rehypeImages)
     // 不正な式は、rehype-katex が文書全体を止めずに、その場にエラー(errorColor)を表示する
     .use(rehypeKatex, { errorColor: "#cf222e", strict: "ignore", trust: false })
-    .use(rehypeCodeBlocks, starryNight)
+    .use(rehypeCodeBlocks, () => starryNight)
     .use(rehypeStringify);
 
   return {
+    configure(next) {
+      Object.assign(settings, next);
+    },
+    async prepare(text) {
+      const flags = fenceFlags(text);
+      const needed = LAZY.filter(
+        (g) => !requested.has(g.scope) && g.flags.some((f) => flags.has(f)),
+      );
+      for (const g of needed) requested.add(g.scope);
+      if (needed.length > 0) {
+        chain = chain.then(async () => {
+          try {
+            active.push(...(await Promise.all(needed.map((g) => g.load()))));
+            starryNight = await createStarryNight([...EAGER, ...active], starryOptions);
+          } catch {
+            for (const g of needed) requested.delete(g.scope);
+          }
+        });
+      }
+      await chain; // 読み込み中の文法があれば、終わるまで待つ(描画の前に、そろえる)
+    },
     renderMarkdown(text, { docPath, resolveResource }) {
       const t0 = performance.now();
       const file = processor.processSync({ value: text, data: { docPath, resolveResource } });

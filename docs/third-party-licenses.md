@@ -5,11 +5,11 @@
 
 対象は、Web コア(`core/dist`)のバンドルに実際に入るもの。Swift 側(アプリ・CLI・プロトコル)は、サードパーティの依存を持たない。
 
-## 集計(npm のパッケージ 151 件)
+## 集計(npm のパッケージ 149 件)
 
 | ライセンス | 件数 |
 | --- | --- |
-| MIT | 118 |
+| MIT | 116 |
 | ISC | 22 |
 | Apache-2.0 | 5 |
 | BSD-3-Clause | 5 |
@@ -21,15 +21,17 @@
 - **rehype-katex**(MIT): パッケージに license ファイルがない。package.json の license(MIT)と author、README の「MIT © Junyoung Choi」から、MIT の標準の文面を補う(年は、パッケージから分からないので書かない)。
 - **remark-math**(MIT): パッケージに license ファイルがない。package.json の license(MIT)と author、README の「MIT © Junyoung Choi」から、MIT の標準の文面を補う(年は、パッケージから分からないので書かない)。
 
-## starry-night の文法(バンドルに入った 34 件)
+## starry-night の文法(バンドルに入った 89 件)
 
 | ライセンス(SPDX) | 件数 |
 | --- | --- |
-| mit | 16 |
-| permissive | 13 |
-| isc | 2 |
-| apache-2.0 | 2 |
-| bsd-3-clause | 1 |
+| mit | 50 |
+| permissive | 22 |
+| isc | 6 |
+| apache-2.0 | 5 |
+| bsd-3-clause | 3 |
+| bsd-2-clause | 1 |
+| mpl-2.0 | 1 |
 
 文法ごとの出所とライセンス文は、`THIRD-PARTY-NOTICES` に入る(starry-night の `notice` から、バンドルに入ったものだけを取り出す)。コピーレフト(GPL 系)のものは、ない。
 
@@ -111,8 +113,6 @@
 | internmap | 2.0.3 | ISC |
 | is-plain-obj | 4.1.0 | MIT |
 | katex | 0.16.47 | MIT |
-| katex | 0.16.47 | MIT |
-| katex | 0.19.0 | MIT |
 | khroma | 2.1.0 | MIT |
 | layout-base | 2.0.1 | MIT |
 | layout-base | 1.0.2 | MIT |

@@ -27,7 +27,18 @@ declare global {
 const host = window.hyperbufHost ?? (await createDevHost());
 // starry-night は既定で外部 CDN から WASM を取得するため、同梱したファイルを指す(local first)
 const renderer = await createRenderer({ onigUrl: new URL(onigWasm, import.meta.url) });
-window.__hyperbuf = await startApp({ host, renderer }).catch((err: unknown) => {
+window.__hyperbuf = await startApp({
+  // 文書を読んだら、描画の前に、そのコードブロックが使う大きな文法を用意する
+  host: {
+    ...host,
+    readFile: async (path: string) => {
+      const text = await host.readFile(path);
+      await renderer.prepare(text);
+      return text;
+    },
+  },
+  renderer,
+}).catch((err: unknown) => {
   const el = document.getElementById("echo");
   if (el) el.textContent = `起動に失敗: ${err instanceof Error ? err.message : String(err)}`;
   throw err;

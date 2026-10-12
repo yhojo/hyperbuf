@@ -5,7 +5,7 @@ import Foundation
 import HyperBufIPC
 import HyperBufProtocol
 
-public let cliVersion = "0.0.0"
+public let cliVersion = "0.1.0"
 
 /// `hyperbuf` コマンドの本体。入出力・環境・アプリへの依頼を注入できるようにして、テストする。
 public struct CLI: Sendable {

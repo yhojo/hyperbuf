@@ -30,7 +30,8 @@ cat > "$tmp/config.json" <<'JSON'
     "C-x 9": "no-such-command",
     "Ctrl-y": "back",
     "C-g": "forward"
-  }
+  },
+  "trustedUrls": ["https://trusted.example/*"]
 }
 JSON
 
@@ -39,6 +40,8 @@ open -a "$app" \
   --env "HYPERBUF_SOCKET_PATH=$tmp/sock/hb.sock" \
   --env "HYPERBUF_TRUSTED_ROOTS=$tmp/trusted.json" \
   --env "HYPERBUF_SESSION_DIR=$tmp/sessions" \
+  --env "HYPERBUF_TEST_OPEN_LOG=$tmp/open.log" \
+  --env "HYPERBUF_TRUSTED_SITES=$tmp/sites.json" \
   --env "HYPERBUF_CONFIG=$tmp/config.json" \
   --env "HYPERBUF_TEST_COMMANDS=$tmp/cmd" \
   --args "$project"
@@ -212,7 +215,7 @@ check("大文字を含む検索語だけ、大文字小文字を区別する", r
 print("outline 風の見出し移動・スクロール")
 r = run("""
 await hb.open(P + '/long.md'); await sleep(300);
-const hist = document.querySelector('.win-header').textContent;
+const hist = document.querySelector('.mode-line .ml-hist').textContent;
 const seq = [];
 await press(...C('n','KeyN')); seq.push(heading());
 await press(...C('n','KeyN')); seq.push(heading());
@@ -222,7 +225,7 @@ await press(...C('f','KeyF')); seq.push(heading());
 await press(...C('b','KeyB')); seq.push(heading());
 await press(...C('u','KeyU')); seq.push(heading());
 await press(...C('u','KeyU')); const none = document.getElementById('echo').textContent;
-const sameHistory = document.querySelector('.win-header').textContent === hist;
+const sameHistory = document.querySelector('.mode-line .ml-hist').textContent === hist;
 await press(['>','Period',{altKey:true,shiftKey:true}]);
 const end = Math.abs(content().scrollTop + content().clientHeight - content().scrollHeight) < 4;
 await press(['<','Comma',{altKey:true,shiftKey:true}]);
@@ -237,19 +240,109 @@ check("見出し移動は、参照履歴に積まれない", r["sameHistory"])
 check("M-> / M-<(Option+Shift+. / ,)", r["end"] and r["top"] == 0, r)
 check("SPC で 1 画面下、DEL で戻る", r["down"] > r["page"] * 0.8 and r["up"] == 0, r)
 
+print("リンクの選択(TAB / S-TAB): 見えている範囲から始める")
+links_path = os.path.join(tmp, "links.md")
+open(links_path, "w", encoding="utf-8").write(
+    "# リンクの選択\n\n先頭の [top](top.md) です。\n\n"
+    + "".join(f"段落 {i}\n\n" for i in range(60))
+    + "中ほどの [middle](middle.md) です。\n\n"
+    + "".join(f"段落 {i}\n\n" for i in range(60, 120))
+    + "末尾の [bottom](bottom.md) です。\n\n"
+)
+r = run("""
+const f = %s;
+await hb.open(f); await sleep(400);
+const c = content();
+const focus = () => document.querySelector('.win.selected .content a.link-focus')?.getAttribute('href') ?? null;
+const link = (h) => c.querySelector('a[href="' + h + '"]');
+// 中ほどのリンクが見える位置までスクロールして、TAB: 先頭ではなく、見えている最初のリンク
+link('middle.md').scrollIntoView({ block: 'center' }); await sleep(200);
+await press(['Tab','Tab']); const first = focus();
+await press(['Tab','Tab']); const second = focus();   // 次は、末尾
+// フォーカスしたリンクが、見えなくなったら、見えている範囲から選び直す
+c.scrollTop = 0; await sleep(200);
+await press(['Tab','Tab']); const afterScrollUp = focus();
+// S-TAB は、見えている最後のリンクから
+link('middle.md').scrollIntoView({ block: 'center' }); await sleep(200);
+await press(['Tab','Tab',{ shiftKey: true }]); const back = focus();
+return JSON.stringify({ first, second, afterScrollUp, back });
+""" % json.dumps(links_path))
+check("TAB: 中ほどを見ているときは、先頭ではなく、見えている最初のリンクを選ぶ", r["first"] == "middle.md", r)
+check("TAB を続けると、次のリンクへ進む", r["second"] == "bottom.md", r)
+check("選んだリンクが画面の外に出たら、見えている範囲から選び直す(文書の先頭のリンク)", r["afterScrollUp"] == "top.md", r)
+check("S-TAB: 見えている範囲の最後のリンクから", r["back"] == "middle.md", r)
+
+print("更新への追従(C-x x u): 外部で更新されたら、最初に変わった場所へ移る")
+follow_path = os.path.join(os.path.realpath(tmp), "follow.md")
+follow_lines = ["# 追従\n\n"] + [f"行 {i}\n\n" for i in range(150)]
+open(follow_path, "w", encoding="utf-8").write("".join(follow_lines))
+r = run("""
+await hb.open(%s, null); await sleep(400);
+const c = content(); c.scrollTop = 0; await sleep(100);
+const before = document.querySelector('.mode-line .ml-hist').textContent;
+await fire('x','KeyX',{ctrlKey:true}); await fire('x','KeyX'); await fire('u','KeyU');
+return JSON.stringify({ before, after: document.querySelector('.mode-line .ml-hist').textContent, echo: document.getElementById('echo').textContent });
+""" % json.dumps(follow_path))
+check("C-x x u で追従がオンになり、モードラインに [追従] が出る", "[追従]" in r["after"] and "[追従]" not in r["before"] and "オン" in r["echo"], r)
+follow_lines[101] = "行 100 (変更)\n\n"
+open(follow_path + ".tmp", "w", encoding="utf-8").write("".join(follow_lines))
+os.replace(follow_path + ".tmp", follow_path)  # エディタの保存と同じく、置き換える
+time.sleep(2)
+r = run("""
+const c = content();
+const flash = c.querySelector('.changed-flash');
+return JSON.stringify({ top: c.scrollTop, flash: flash ? flash.textContent : null });
+""")
+check("外部更新で、最初に変わった場所までスクロールする", r["top"] > 500, r)
+check("変わった場所が、一瞬、強調される", r["flash"] is not None and "行 100" in r["flash"], r)
+
+print("外部リンク(ブラウザで開く): 確認 → trustedUrls → always")
+ext_path = os.path.join(tmp, "ext.md")
+open(ext_path, "w", encoding="utf-8").write(
+    "# 外部リンク\n\n"
+    "[信頼する](https://trusted.example/page)\n\n"
+    "[その他](https://other.example/x)\n\n"
+    "[認証情報つき](https://user:pw@evil.example/)\n\n"
+    "[メール](mailto:someone@example.com)\n"
+)
+r = run("""
+const f = %s;
+await hb.open(f); await sleep(400);
+const c = content();
+const click = async (h) => { c.querySelector('a[href="' + h + '"]').click(); await sleep(350); };
+const prompt = () => ({ hidden: mini().hidden, label: mini().label });
+const answer = async (text) => { typeIn(text); pressIn('Enter','Enter'); await sleep(350); };
+const out = {};
+await click('https://trusted.example/page'); out.trusted = prompt();
+await click('https://other.example/x'); out.confirm = prompt(); await answer('no');
+await click('https://other.example/x'); out.again = prompt(); await answer('yes');
+await click('https://other.example/x'); out.third = prompt(); await answer('always');
+await click('https://other.example/x'); out.remembered = prompt();
+await click('https://user:pw@evil.example/'); out.denied = { ...prompt(), echo: document.getElementById('echo').textContent };
+await click('mailto:someone@example.com'); out.mailto = prompt(); await answer('no');
+return JSON.stringify(out);
+""" % json.dumps(ext_path))
+opened = open(os.path.join(tmp, "open.log"), encoding="utf-8").read().split() if os.path.exists(os.path.join(tmp, "open.log")) else []
+check("trustedUrls に合う URL は、確認なしで、ブラウザで開く", r["trusted"]["hidden"] and "https://trusted.example/page" in opened, (r["trusted"], opened))
+check("それ以外は、URL 全体を見せて、確認する", (not r["confirm"]["hidden"]) and "https://other.example/x" in r["confirm"]["label"] and "always" in r["confirm"]["label"], r["confirm"])
+check("no と答えると、開かない。yes なら、開く(毎回、確認する)", opened.count("https://other.example/x") == 3 and not r["again"]["hidden"] and not r["third"]["hidden"], (r["again"], opened))
+check("always で、そのサイトを記憶し、次からは確認しない", r["remembered"]["hidden"] and json.load(open(os.path.join(tmp, "sites.json")))["origins"] == ["https://other.example"], (r["remembered"], opened))
+check("ユーザー名・パスワードを含む URL は、確認もせず、開かない", r["denied"]["hidden"] and "evil.example" not in " ".join(opened) and "開きません" in r["denied"]["echo"], (r["denied"], opened))
+check("mailto は、毎回、確認する(always は出ない)", (not r["mailto"]["hidden"]) and "always" not in r["mailto"]["label"] and "mailto:someone@example.com" not in opened, r["mailto"])
+
 print("キーマップの設定と describe-bindings")
 r = run("""
 await hb.open(P + '/long.md'); await sleep(300);
 await hb.open(P + '/index.md'); await sleep(200);
-const before = document.querySelector('.win-header').textContent;
+const before = document.querySelector('.mode-line').textContent;
 await press(['p','KeyP',{altKey:true}]);               // M-p(利用者が back に割り当てた)
-const afterMp = document.querySelector('.win-header').textContent;
+const afterMp = document.querySelector('.mode-line').textContent;
 await press(['f','KeyF',{ctrlKey:true}]);              // C-f(利用者が外した → 何も起きない)
-const afterCf = document.querySelector('.win-header').textContent;
+const afterCf = document.querySelector('.mode-line').textContent;
 await press(['b','KeyB',{ctrlKey:true}]);              // C-b(標準のまま back)
-const afterCb = document.querySelector('.win-header').textContent;
+const afterCb = document.querySelector('.mode-line').textContent;
 await press(['h','KeyH',{ctrlKey:true}], ['b','KeyB']); // C-h b
-const header = document.querySelector('.win-header').textContent;
+const header = document.querySelector('.mode-line').textContent;
 const text = content().textContent;
 const rows = [...content().querySelectorAll('tr')].map((tr) => tr.textContent);
 return JSON.stringify({ before, afterMp, afterCf, afterCb, header, text, rows });
@@ -278,7 +371,7 @@ const empty = { texts: cands().slice(0, 6).map((li) => li.textContent), count: d
 typeIn(initial + 'arch'); await sleep(200);
 const typed = { first: cands()[0]?.textContent, marked: [...(cands()[0]?.querySelectorAll('b') ?? [])].map((b) => b.textContent), on: cands()[0]?.className };
 pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(250);
-const opened = document.querySelector('.win-header').textContent;
+const opened = document.querySelector('.mode-line').textContent;
 // ディレクトリは、RET で確定せず、その中に入る
 await fire('x','KeyX',{ctrlKey:true}); await fire('f','KeyF',{ctrlKey:true}); await sleep(200);
 const initial2 = input().value;
@@ -311,7 +404,7 @@ const listed = cands().map((li) => li.textContent);
 typeIn('rend'); await sleep(250);
 const filtered = cands().map((li) => li.textContent);
 pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(300);
-const header = document.querySelector('.win-header').textContent;
+const header = document.querySelector('.mode-line').textContent;
 // 基準を ../ に切り替えて、基準の外のファイルに届く
 await fire('x','KeyX',{ctrlKey:true}); await fire('p','KeyP'); await fire('f','KeyF'); await sleep(300);
 typeIn('../../sample'); await sleep(500);
@@ -328,9 +421,9 @@ r = run("""
 const ROOT = P.slice(0, P.lastIndexOf('/fixtures/'));
 await hb.open(ROOT + '/README.md'); await sleep(200);
 await hb.open(ROOT + '/emacs/README.md'); await sleep(200);
-const headerBoth = document.querySelector('.win-header').textContent;
+const headerBoth = document.querySelector('.mode-line').textContent;
 await hb.search('Mermaid'); await sleep(500);
-const searchHeader = document.querySelector('.win-header').textContent;
+const searchHeader = document.querySelector('.mode-line').textContent;
 return JSON.stringify({ headerBoth, searchHeader });
 """)
 check("同じ名前が複数あるときだけ、親ディレクトリを足す(README.md<emacs>)", "README.md<emacs>" in r["headerBoth"], r["headerBoth"])
@@ -345,7 +438,7 @@ const label = document.getElementById('prompt-label').textContent;
 pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(200);
 const win = hb.ctx.model.root.win ?? null;
 const histories = (function walk(n) { return n.type === 'leaf' ? [n.win.history.map((e) => e.path)] : n.children.flatMap(walk); })(model.root);
-return JSON.stringify({ hasBefore, label, hasAfter: model.buffers.has(P + '/interaction.md'), mru: model.mru.slice(0, 3), histories, header: document.querySelector('.win-header').textContent, echo: document.getElementById('echo').textContent });
+return JSON.stringify({ hasBefore, label, hasAfter: model.buffers.has(P + '/interaction.md'), mru: model.mru.slice(0, 3), histories, header: document.querySelector('.mode-line').textContent, echo: document.getElementById('echo').textContent });
 """)
 check("C-x k: 既定は、いまの buffer", "interaction.md" in r["label"], r["label"])
 check("buffer が閉じて、履歴からも参照がなくなる", r["hasBefore"] and not r["hasAfter"] and all(not p.endswith("interaction.md") for h in r["histories"] for p in h), r)

@@ -19,6 +19,9 @@ final class AppModel: NSObject, NSWindowDelegate {
     let remembered: RememberedPaths
     let sessionStore: SessionStore
     let editorConfig: EditorConfig
+    /// 文書のリンクをブラウザで開く判定。全フレームで共有する。
+    let urlPolicy: UrlPolicy
+    let rememberedSites: RememberedOrigins
     let openFlow = OpenFlow()
     private let socketPath: String
     private var server: SocketServer?
@@ -41,12 +44,16 @@ final class AppModel: NSObject, NSWindowDelegate {
             let env = ProcessInfo.processInfo.environment
             remembered = RememberedPaths(
                 url: env["HYPERBUF_TRUSTED_ROOTS"].map { URL(fileURLWithPath: $0) } ?? RememberedPaths.standardURL())
+            rememberedSites = RememberedOrigins(
+                url: env["HYPERBUF_TRUSTED_SITES"].map { URL(fileURLWithPath: $0) } ?? RememberedOrigins.standardURL())
             socketPath = env["HYPERBUF_SOCKET_PATH"] ?? SocketPath.standard()
         #else
             remembered = RememberedPaths()
+            rememberedSites = RememberedOrigins()
             socketPath = SocketPath.standard()
         #endif
         policy = PathPolicy.load(from: EditorConfig.configURL(), home: home)
+        urlPolicy = UrlPolicy(trusted: UserSettings.load().trustedUrls)
         sessionStore = SessionStore()
         editorConfig = EditorConfig.load()
         restoreEnabled = SessionSettings.restoreEnabled()
@@ -85,7 +92,9 @@ final class AppModel: NSObject, NSWindowDelegate {
     func makeFrame(slot: Int, snapshot: Any?, rect: [String: Double]?) -> FrameSession? {
         guard let web, (1...SessionStore.maxFrames).contains(slot), frames[slot] == nil else { return nil }
         let access = FileAccess(policy: policy, remembered: remembered)
-        let frame = FrameSession(slot: slot, access: access, editorConfig: editorConfig, snapshot: snapshot)
+        let frame = FrameSession(
+            slot: slot, access: access, editorConfig: editorConfig, snapshot: snapshot, urlPolicy: urlPolicy,
+            rememberedSites: rememberedSites)
         let window = NSWindow(
             contentRect: Geometry.fit(rect, cascadeIndex: frames.count),
             styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)

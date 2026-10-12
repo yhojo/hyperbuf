@@ -23,6 +23,10 @@ export interface HostConfig {
   keybindings?: Record<string, string | null>;
   /** 前回の状態(window の配置・履歴・閲覧位置)を復元し、保存するか(既定は true)。 */
   restoreSession?: boolean;
+  /** 数式の中の `\_` を `_` に戻す(Marked 2 などとの互換。既定は true)。 */
+  mathUnescapeUnderscore?: boolean;
+  /** ファイルが外部で更新されたとき、変更箇所の先頭へスクロールする(既定は false。`toggle-follow-updates` で切り替える)。 */
+  followUpdates?: boolean;
   /** シェルが見つけた設定の問題(許可パス / 警告パスなど)。`C-h b` の「設定の問題」に出す。 */
   problems?: string[];
 }
@@ -59,6 +63,15 @@ export interface TreeListing {
  */
 export type Access = { access: "allow" } | { access: "confirm"; remember: string };
 
+/**
+ * 文書のリンク(外部の URL)の判定(docs/configuration.md の `trustedUrls`)。
+ *  - open: そのまま、ブラウザで開いてよい(`trustedUrls` に合う、または、記憶したサイト)
+ *  - confirm: 利用者に確認する。`origin` は、「always」で記憶する単位(mailto では、ない)
+ *  - deny: 開かない(`http` / `https` / `mailto` 以外、ユーザー名・パスワードを含む URL など)
+ */
+export type UrlDecision =
+  { action: "open" } | { action: "confirm"; origin?: string } | { action: "deny"; reason: string };
+
 export interface HyperbufHost {
   /** 利用者のホストディレクトリ(絶対パス)。`~` の展開と、表示の短縮に使う。 */
   readonly home: string;
@@ -89,6 +102,14 @@ export interface HyperbufHost {
   /** 記憶したパスの一覧と、取り消し(`forget-remembered-path`)。 */
   listRemembered?(): Promise<string[]>;
   forget?(path: string): Promise<boolean>;
+  /** 外部の URL の判定と、既定のブラウザで開く(判定は、開くときに、シェルがもう一度行う)。 */
+  checkUrl?(url: string): Promise<UrlDecision>;
+  openExternal?(url: string): Promise<boolean>;
+  /** 「always」: そのサイトを記憶する(確認が要ると答えた URL のオリジンだけ)。 */
+  rememberSite?(url: string): Promise<boolean>;
+  /** 記憶したサイトの一覧と、取り消し(`forget-remembered-site`)。 */
+  listRememberedSites?(): Promise<string[]>;
+  forgetSite?(origin: string): Promise<boolean>;
   /** フレーム(macOS のウィンドウ)の操作(`C-x 5 …`)。 */
   frame?(action: "make" | "delete" | "other" | "delete-others"): Promise<void>;
   /** 表示中のファイル(絶対パス)の一覧。シェルは、これだけを監視する。 */

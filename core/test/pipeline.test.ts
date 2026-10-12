@@ -178,3 +178,11 @@ test("数式: 描画に使う KaTeX と、同梱する CSS の版が合ってい
     assert.ok(css.includes(`.${c}`), `CSS に .${c} がない(katex の版が食い違っている)`);
   }
 });
+
+test("数式: 1 行の $$ … $$ もブロック数式(中央寄せ)になる。$ … $ はインラインのまま", () => {
+  const single = html("$$ f_1 = \\frac{1}{2} $$");
+  assert.match(single, /katex-display/);
+  const inline = html("文中の $x_1$ です");
+  assert.ok(!inline.includes("katex-display"));
+  assert.ok(html("a $$x$$ b").includes("katex-display"));
+});

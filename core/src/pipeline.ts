@@ -113,6 +113,20 @@ const remarkMathUnescape =
     });
   };
 
+/**
+ * `$$ … $$` を 1 行に書いた式(前後に改行がない)は、remark-math ではインライン数式になり、左に詰まって出る。
+ * `$$` で囲んだ式は、書き手の意図どおり、ブロック数式(中央寄せ)として描画する(Marked 2 と同じ)。
+ */
+const remarkMathDoubleDollar: Plugin<[], MdastRoot> = () => (tree, file) => {
+  const src = String(file.value);
+  visit(tree, "inlineMath", (node) => {
+    const start = node.position?.start.offset;
+    if (start === undefined || !src.startsWith("$$", start)) return;
+    const data = (node.data ??= {});
+    data.hProperties = { ...data.hProperties, className: ["language-math", "math-display"] };
+  });
+};
+
 /** GitHub と同じ方式(github-slugger)で見出しに id を付ける。重複には連番が付く。 */
 const rehypeHeadingIds: Plugin<[], HastRoot> = () => (tree) => {
   const slugger = new GithubSlugger();
@@ -284,6 +298,7 @@ export async function createRenderer(options: { onigUrl?: URL } = {}): Promise<R
     .use(remarkGfm)
     .use(remarkMath)
     .use(remarkMathGithubCompat)
+    .use(remarkMathDoubleDollar)
     .use(remarkMathUnescape(settings))
     // 脚注の id は sanitize が接頭辞を付ける。ここでも付けると二重になりリンクが切れる
     .use(remarkRehype, { allowDangerousHtml: true, clobberPrefix: "" })

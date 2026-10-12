@@ -63,28 +63,28 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 
 ## Initial interaction sketch
 
-| Operation | Candidate binding | Intent |
-| --- | --- | --- |
-| Split below | `C-x 2` | 現在のwindowを上下に分割 |
-| Split right | `C-x 3` | 現在のwindowを左右に分割 |
-| Close window | `C-x 0` | 現在のwindowを閉じる |
-| Only window | `C-x 1` | 現在のwindowだけを残す |
-| Other window | `C-x o` | 操作対象のwindowを移動 |
-| Switch buffer | `C-x b` | 表示するbufferを切り替える |
-| Find file | `C-x C-f` | ファイルを開く（基準のディレクトリから始まるパス補完。ディレクトリは `RET` で中へ） |
-| Find file (tree) | `C-x p f` | 基準のディレクトリ以下の文書を再帰で一覧にして絞り込む（`../`・`~/` で基準を変えられる） |
-| Frames | `Cmd-1`…`Cmd-9` / `C-x 5 2` `0` `o` `1` | フレーム（macOSのウィンドウ）の切り替え・作成・削除。各フレームは独立した作業場 |
-| Command palette | `M-x` | 名前からコマンドを実行 |
-| Search in document | `C-s` / `C-r` | 文書内のインクリメンタル検索（入力のたびに一致を数えてハイライト、`RET` で確定、`C-g` で取消） |
-| Search in project | `M-s g` | プロジェクト全体の全文検索（結果は仮想bufferに出る） |
-| Back / Forward | `C-b` / `C-f`（別名 `Cmd+[` / `Cmd+]`） | 各windowの参照履歴を前後移動 |
-| Outline | `C-c C-n` / `C-p` / `C-f` / `C-b` / `C-u` | 次・前・同じレベルの次・同じレベルの前・上のレベルの見出しへ移動 |
-| Kill buffer | `C-x k` | bufferを閉じる |
-| Follow updates | `C-x x u` | 外部で更新されたとき、最初に変わった場所へ移る／移らないの切替（既定はオフ） |
-| Edit in editor | `C-c e` / 右クリック | 指した場所を、エディタで編集するために記録 |
-| Describe bindings | `C-h b` | キー割り当ての一覧（設定は `config.json` の `keybindings`） |
+| Operation          | Candidate binding                         | Intent                                                                                         |
+| ------------------ | ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Split below        | `C-x 2`                                   | 現在のwindowを上下に分割                                                                       |
+| Split right        | `C-x 3`                                   | 現在のwindowを左右に分割                                                                       |
+| Close window       | `C-x 0`                                   | 現在のwindowを閉じる                                                                           |
+| Only window        | `C-x 1`                                   | 現在のwindowだけを残す                                                                         |
+| Other window       | `C-x o`                                   | 操作対象のwindowを移動                                                                         |
+| Switch buffer      | `C-x b`                                   | 表示するbufferを切り替える                                                                     |
+| Find file          | `C-x C-f`                                 | ファイルを開く（基準のディレクトリから始まるパス補完。ディレクトリは `RET` で中へ）            |
+| Find file (tree)   | `C-x p f`                                 | 基準のディレクトリ以下の文書を再帰で一覧にして絞り込む（`../`・`~/` で基準を変えられる）       |
+| Frames             | `Cmd-1`…`Cmd-9` / `C-x 5 2` `0` `o` `1`   | フレーム（macOSのウィンドウ）の切り替え・作成・削除。各フレームは独立した作業場                |
+| Command palette    | `M-x`                                     | 名前からコマンドを実行                                                                         |
+| Search in document | `C-s` / `C-r`                             | 文書内のインクリメンタル検索（入力のたびに一致を数えてハイライト、`RET` で確定、`C-g` で取消） |
+| Search in project  | `M-s g`                                   | プロジェクト全体の全文検索（結果は仮想bufferに出る）                                           |
+| Back / Forward     | `C-b` / `C-f`（別名 `Cmd+[` / `Cmd+]`）   | 各windowの参照履歴を前後移動                                                                   |
+| Outline            | `C-c C-n` / `C-p` / `C-f` / `C-b` / `C-u` | 次・前・同じレベルの次・同じレベルの前・上のレベルの見出しへ移動                               |
+| Kill buffer        | `C-x k`                                   | bufferを閉じる                                                                                 |
+| Follow updates     | `C-x x u`                                 | 外部で更新されたとき、最初に変わった場所へ移る／移らないの切替（既定はオフ）                   |
+| Edit in editor     | `C-c e` / 右クリック                      | 指した場所を、エディタで編集するために記録                                                     |
+| Describe bindings  | `C-h b`                                   | キー割り当ての一覧（設定は `config.json` の `keybindings`）                                    |
 
-*キー割り当ての全体は [docs/keybindings.md](docs/keybindings.md)（コードから自動生成）、設定の方法は [docs/configuration.md](docs/configuration.md)。*
+_キー割り当ての全体は [docs/keybindings.md](docs/keybindings.md)（コードから自動生成）、設定の方法は [docs/configuration.md](docs/configuration.md)。_
 
 ## Non-goals (initially)
 
@@ -98,18 +98,18 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 
 設計とライブラリは開発プロジェクト内で再検討します。以下は**調査・比較・PoCのための候補**であり、採用を決定したものではありません。
 
-| Concern | Candidates to evaluate |
-| --- | --- |
-| macOS application shell | **SwiftUI + WKWebView（決定、`docs/poc-interaction-results.md`）**。比較対象: Tauri 2 / Rust、Electron |
-| UI implementation | React + TypeScript、ネイティブUIとの分担 |
-| Markdown pipeline | **unified / remark / rehype（決定、`docs/poc-rendering-results.md`）**。raw HTML は rehype-sanitize で無害化 |
-| GFM / appearance | **remark-gfm、github-markdown-css（決定）**。GitHub との差は小さな変換で吸収する（例: 通貨表記の `$`） |
-| Mathematics | **KaTeX（決定）**。Marked 2 との差は、描画ではなくエスケープの解釈（`\_`）だったため互換処理で解消。MathJax は必要になるまで採用しない |
-| Diagrams | **Mermaid（決定、遅延ロード・strictモード）**。Graphviz、PlantUML、WaveDrom、D2 は未評価（外部コマンドが絡むものは権限境界を先に決める） |
-| Syntax highlighting | **starry-night（決定）**。Shiki と比較し、速度・出力サイズ・GitHub互換で優位。対応言語の一覧は `docs/syntax-highlighting.md` |
-| Project search | **Swift 自前実装から開始（決定、`docs/poc-navigation-results.md`）**。`host.search` の契約でエンジンを差し替え可能にし、正規表現や除外規則が必要になった時点で ripgrep を再評価。インデックス方式は規模に応じて検討 |
-| File monitoring | **FSEvents（決定）**。ポーリングは削除を検知できず、ファイル数に比例して重いため採用しない |
-| State / layout management | 明示的なbuffer・windowモデル、分割ツリーなど |
+| Concern                   | Candidates to evaluate                                                                                                                                                                                              |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| macOS application shell   | **SwiftUI + WKWebView（決定、`docs/poc-interaction-results.md`）**。比較対象: Tauri 2 / Rust、Electron                                                                                                              |
+| UI implementation         | React + TypeScript、ネイティブUIとの分担                                                                                                                                                                            |
+| Markdown pipeline         | **unified / remark / rehype（決定、`docs/poc-rendering-results.md`）**。raw HTML は rehype-sanitize で無害化                                                                                                        |
+| GFM / appearance          | **remark-gfm、github-markdown-css（決定）**。GitHub との差は小さな変換で吸収する（例: 通貨表記の `$`）                                                                                                              |
+| Mathematics               | **KaTeX（決定）**。Marked 2 との差は、描画ではなくエスケープの解釈（`\_`）だったため互換処理で解消。MathJax は必要になるまで採用しない                                                                              |
+| Diagrams                  | **Mermaid（決定、遅延ロード・strictモード）**。Graphviz、PlantUML、WaveDrom、D2 は未評価（外部コマンドが絡むものは権限境界を先に決める）                                                                            |
+| Syntax highlighting       | **starry-night（決定）**。Shiki と比較し、速度・出力サイズ・GitHub互換で優位。対応言語の一覧は `docs/syntax-highlighting.md`                                                                                        |
+| Project search            | **Swift 自前実装から開始（決定、`docs/poc-navigation-results.md`）**。`host.search` の契約でエンジンを差し替え可能にし、正規表現や除外規則が必要になった時点で ripgrep を再評価。インデックス方式は規模に応じて検討 |
+| File monitoring           | **FSEvents（決定）**。ポーリングは削除を検知できず、ファイル数に比例して重いため採用しない                                                                                                                          |
+| State / layout management | 明示的なbuffer・windowモデル、分割ツリーなど                                                                                                                                                                        |
 
 評価軸には、**表示互換性、操作遅延、メモリ、拡張性、セキュリティ、macOS統合、保守性、配布容易性**を含めます。レンダリングエンジンと閲覧・ナビゲーションのコアは、可能な限り疎結合に保ちます。
 
@@ -150,4 +150,4 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 
 ---
 
-**HyperBuf** — *Read like a hacker.*
+**HyperBuf** — _Read like a hacker._

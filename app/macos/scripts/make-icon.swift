@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
-// アプリのアイコン(app/macos/Resources/AppIcon.icns)を、CoreGraphics で描いて生成する。
-// 使い方: swift app/macos/scripts/make-icon.swift [出力のディレクトリ]   (既定: app/macos/Resources)
+// 代替のアイコン「分割した 2 つの window」(app/macos/Resources/alternatives/split-windows/)を、CoreGraphics で描いて生成する。
+// 既定のアイコンは、icon-from-image.swift が、元の画像(Resources/source/)から作る(docs/release.md)。
+// 使い方: swift app/macos/scripts/make-icon.swift [出力のディレクトリ]   (既定: app/macos/Resources/alternatives/split-windows)
 //   → AppIcon.iconset/(各サイズの PNG)と AppIcon.icns を出力する。`iconutil` を使う(macOS 標準)。
 // 意匠: 暗い角丸の板の上に、分割した 2 つの window(buffer)。左は文書(見出しと本文、選択した一節とカーソル)、
 //       右は別の buffer(コードの断片)。各 window の下に、Emacs のようなモードライン。タブはない。
 import AppKit
 import CoreGraphics
 
-let outDir = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "app/macos/Resources"
+let outDir = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "app/macos/Resources/alternatives/split-windows"
 
 // MARK: 色
 func rgb(_ hex: UInt32, _ alpha: CGFloat = 1) -> CGColor {

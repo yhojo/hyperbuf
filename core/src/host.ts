@@ -63,6 +63,15 @@ export interface TreeListing {
  */
 export type Access = { access: "allow" } | { access: "confirm"; remember: string };
 
+/**
+ * 文書のリンク(外部の URL)の判定(docs/configuration.md の `trustedUrls`)。
+ *  - open: そのまま、ブラウザで開いてよい(`trustedUrls` に合う、または、記憶したサイト)
+ *  - confirm: 利用者に確認する。`origin` は、「always」で記憶する単位(mailto では、ない)
+ *  - deny: 開かない(`http` / `https` / `mailto` 以外、ユーザー名・パスワードを含む URL など)
+ */
+export type UrlDecision =
+  { action: "open" } | { action: "confirm"; origin?: string } | { action: "deny"; reason: string };
+
 export interface HyperbufHost {
   /** 利用者のホストディレクトリ(絶対パス)。`~` の展開と、表示の短縮に使う。 */
   readonly home: string;
@@ -93,6 +102,14 @@ export interface HyperbufHost {
   /** 記憶したパスの一覧と、取り消し(`forget-remembered-path`)。 */
   listRemembered?(): Promise<string[]>;
   forget?(path: string): Promise<boolean>;
+  /** 外部の URL の判定と、既定のブラウザで開く(判定は、開くときに、シェルがもう一度行う)。 */
+  checkUrl?(url: string): Promise<UrlDecision>;
+  openExternal?(url: string): Promise<boolean>;
+  /** 「always」: そのサイトを記憶する(確認が要ると答えた URL のオリジンだけ)。 */
+  rememberSite?(url: string): Promise<boolean>;
+  /** 記憶したサイトの一覧と、取り消し(`forget-remembered-site`)。 */
+  listRememberedSites?(): Promise<string[]>;
+  forgetSite?(origin: string): Promise<boolean>;
   /** フレーム(macOS のウィンドウ)の操作(`C-x 5 …`)。 */
   frame?(action: "make" | "delete" | "other" | "delete-others"): Promise<void>;
   /** 表示中のファイル(絶対パス)の一覧。シェルは、これだけを監視する。 */

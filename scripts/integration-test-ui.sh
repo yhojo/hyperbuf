@@ -30,7 +30,8 @@ cat > "$tmp/config.json" <<'JSON'
     "C-x 9": "no-such-command",
     "Ctrl-y": "back",
     "C-g": "forward"
-  }
+  },
+  "trustedUrls": ["https://trusted.example/*"]
 }
 JSON
 
@@ -39,6 +40,8 @@ open -a "$app" \
   --env "HYPERBUF_SOCKET_PATH=$tmp/sock/hb.sock" \
   --env "HYPERBUF_TRUSTED_ROOTS=$tmp/trusted.json" \
   --env "HYPERBUF_SESSION_DIR=$tmp/sessions" \
+  --env "HYPERBUF_TEST_OPEN_LOG=$tmp/open.log" \
+  --env "HYPERBUF_TRUSTED_SITES=$tmp/sites.json" \
   --env "HYPERBUF_CONFIG=$tmp/config.json" \
   --env "HYPERBUF_TEST_COMMANDS=$tmp/cmd" \
   --args "$project"
@@ -268,6 +271,40 @@ check("TAB: 中ほどを見ているときは、先頭ではなく、見えて�
 check("TAB を続けると、次のリンクへ進む", r["second"] == "bottom.md", r)
 check("選んだリンクが画面の外に出たら、見えている範囲から選び直す(文書の先頭のリンク)", r["afterScrollUp"] == "top.md", r)
 check("S-TAB: 見えている範囲の最後のリンクから", r["back"] == "middle.md", r)
+
+print("外部リンク(ブラウザで開く): 確認 → trustedUrls → always")
+ext_path = os.path.join(tmp, "ext.md")
+open(ext_path, "w", encoding="utf-8").write(
+    "# 外部リンク\n\n"
+    "[信頼する](https://trusted.example/page)\n\n"
+    "[その他](https://other.example/x)\n\n"
+    "[認証情報つき](https://user:pw@evil.example/)\n\n"
+    "[メール](mailto:someone@example.com)\n"
+)
+r = run("""
+const f = %s;
+await hb.open(f); await sleep(400);
+const c = content();
+const click = async (h) => { c.querySelector('a[href="' + h + '"]').click(); await sleep(350); };
+const prompt = () => ({ hidden: mini().hidden, label: mini().label });
+const answer = async (text) => { typeIn(text); pressIn('Enter','Enter'); await sleep(350); };
+const out = {};
+await click('https://trusted.example/page'); out.trusted = prompt();
+await click('https://other.example/x'); out.confirm = prompt(); await answer('no');
+await click('https://other.example/x'); out.again = prompt(); await answer('yes');
+await click('https://other.example/x'); out.third = prompt(); await answer('always');
+await click('https://other.example/x'); out.remembered = prompt();
+await click('https://user:pw@evil.example/'); out.denied = { ...prompt(), echo: document.getElementById('echo').textContent };
+await click('mailto:someone@example.com'); out.mailto = prompt(); await answer('no');
+return JSON.stringify(out);
+""" % json.dumps(ext_path))
+opened = open(os.path.join(tmp, "open.log"), encoding="utf-8").read().split() if os.path.exists(os.path.join(tmp, "open.log")) else []
+check("trustedUrls に合う URL は、確認なしで、ブラウザで開く", r["trusted"]["hidden"] and "https://trusted.example/page" in opened, (r["trusted"], opened))
+check("それ以外は、URL 全体を見せて、確認する", (not r["confirm"]["hidden"]) and "https://other.example/x" in r["confirm"]["label"] and "always" in r["confirm"]["label"], r["confirm"])
+check("no と答えると、開かない。yes なら、開く(毎回、確認する)", opened.count("https://other.example/x") == 3 and not r["again"]["hidden"] and not r["third"]["hidden"], (r["again"], opened))
+check("always で、そのサイトを記憶し、次からは確認しない", r["remembered"]["hidden"] and json.load(open(os.path.join(tmp, "sites.json")))["origins"] == ["https://other.example"], (r["remembered"], opened))
+check("ユーザー名・パスワードを含む URL は、確認もせず、開かない", r["denied"]["hidden"] and "evil.example" not in " ".join(opened) and "開きません" in r["denied"]["echo"], (r["denied"], opened))
+check("mailto は、毎回、確認する(always は出ない)", (not r["mailto"]["hidden"]) and "always" not in r["mailto"]["label"] and "mailto:someone@example.com" not in opened, r["mailto"])
 
 print("キーマップの設定と describe-bindings")
 r = run("""

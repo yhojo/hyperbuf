@@ -63,6 +63,7 @@ export const COMMAND_NAMES = [
   "find-file",
   "project-find-file",
   "forget-remembered-path",
+  "forget-remembered-site",
   "make-frame",
   "delete-frame",
   "other-frame",
@@ -111,6 +112,8 @@ export const COMMAND_DOCS: Readonly<Record<CommandName, string>> = {
     "基準のディレクトリ以下の Markdown を、再帰で一覧にして絞り込み、開く(../・~/・絶対パスで基準を変えられる)",
   "forget-remembered-path":
     "警告パスの下で、承認して記憶した場所を、選んで取り消す(次から、また確認される)",
+  "forget-remembered-site":
+    "「always」で記憶した、ブラウザで開いてよいサイトを、選んで取り消す(次から、また確認される)",
   "make-frame": "新しいフレーム(macOS のウィンドウ)を作る。空いている最小の番号(Cmd-1〜)になる",
   "delete-frame": "このフレームを閉じる(最後の 1 つなら、アプリを終了する)",
   "other-frame": "次のフレームへ移る",
@@ -250,6 +253,16 @@ export function createCommands(ctx: AppContext): Commands {
       const path = picked === null ? undefined : shown.get(picked);
       if (path === undefined) return;
       const ok = await host.forget?.(path);
+      echo.message(ok ? `取り消しました: ${picked}` : "取り消せませんでした");
+    },
+    "forget-remembered-site": async () => {
+      const sites = (await host.listRememberedSites?.()) ?? [];
+      if (!sites.length) return void echo.message("記憶したサイトはありません");
+      const picked = await minibuffer.prompt("Forget remembered site: ", sites, {
+        allowFree: false,
+      });
+      if (picked === null) return;
+      const ok = await host.forgetSite?.(picked);
       echo.message(ok ? `取り消しました: ${picked}` : "取り消せませんでした");
     },
     "make-frame": () => host.frame?.("make"),

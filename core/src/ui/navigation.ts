@@ -43,13 +43,53 @@ export async function confirmAccess(ctx: AppContext, path: string): Promise<bool
   return (await host.allow?.(decision.remember)) ?? false;
 }
 
-/** リンクをたどる。外部 URL は開かない(local first)。警告パスのファイルは、確認する。 */
+/**
+ * 外部の URL(`https://…` など)を、既定のブラウザで開く。文書の中身はアプリの中で開かない(local first)ので、
+ * ブラウザに渡す。確認の方針は、シェルが判定する(`trustedUrls` → 記憶したサイト → 確認)。
+ */
+export async function openExternalLink(ctx: AppContext, href: string): Promise<void> {
+  const { host, echo, minibuffer } = ctx;
+  if (!host.checkUrl || !host.openExternal) {
+    echo.message(`外部リンクは開きません: ${href}`);
+    return;
+  }
+  const decision = await host.checkUrl(href);
+  if (decision.action === "deny") {
+    echo.message(`開きません: ${decision.reason}: ${shorten(href)}`);
+    return;
+  }
+  if (decision.action === "confirm") {
+    // URL 全体を見せる(ホストの偽装に気づけるよう、オリジンも添える)
+    const answer = await minibuffer.prompt(
+      `ブラウザで開きますか? ${shorten(href, 160)}${decision.origin ? ` [${decision.origin}] (always: このサイトを常に許可)` : ""} `,
+      decision.origin ? ["yes", "no", "always"] : ["yes", "no"],
+      { allowFree: false },
+    );
+    if (answer !== "yes" && answer !== "always") {
+      echo.message(`開きませんでした: ${shorten(href)}`);
+      return;
+    }
+    if (answer === "always" && !(await host.rememberSite?.(href))) {
+      echo.message("このサイトを記憶できませんでした(今回は開きます)");
+    }
+  }
+  const opened = await host.openExternal(href);
+  echo.message(
+    opened ? `ブラウザで開きました: ${shorten(href)}` : `開けませんでした: ${shorten(href)}`,
+  );
+}
+
+function shorten(text: string, max = 100): string {
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+/** リンクをたどる。外部 URL は、ブラウザで開く(確認の方針はシェル)。警告パスのファイルは、確認する。 */
 export async function follow(ctx: AppContext, win: Win, href: string): Promise<void> {
   const entry = currentEntry(win);
   if (!entry) return;
   const target = resolveLink(entry.path, href);
   if (!target) {
-    ctx.echo.message(`外部リンクは開きません: ${href}`);
+    await openExternalLink(ctx, href);
     return;
   }
   if (!ctx.model.buffers.has(target.path) && !(await confirmAccess(ctx, target.path))) {

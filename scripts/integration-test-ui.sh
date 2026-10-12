@@ -272,6 +272,30 @@ check("TAB を続けると、次のリンクへ進む", r["second"] == "bottom.m
 check("選んだリンクが画面の外に出たら、見えている範囲から選び直す(文書の先頭のリンク)", r["afterScrollUp"] == "top.md", r)
 check("S-TAB: 見えている範囲の最後のリンクから", r["back"] == "middle.md", r)
 
+print("更新への追従(C-x x u): 外部で更新されたら、最初に変わった場所へ移る")
+follow_path = os.path.join(os.path.realpath(tmp), "follow.md")
+follow_lines = ["# 追従\n\n"] + [f"行 {i}\n\n" for i in range(150)]
+open(follow_path, "w", encoding="utf-8").write("".join(follow_lines))
+r = run("""
+await hb.open(%s, null); await sleep(400);
+const c = content(); c.scrollTop = 0; await sleep(100);
+const before = document.querySelector('.mode-line .ml-hist').textContent;
+await fire('x','KeyX',{ctrlKey:true}); await fire('x','KeyX'); await fire('u','KeyU');
+return JSON.stringify({ before, after: document.querySelector('.mode-line .ml-hist').textContent, echo: document.getElementById('echo').textContent });
+""" % json.dumps(follow_path))
+check("C-x x u で追従がオンになり、モードラインに [追従] が出る", "[追従]" in r["after"] and "[追従]" not in r["before"] and "オン" in r["echo"], r)
+follow_lines[101] = "行 100 (変更)\n\n"
+open(follow_path + ".tmp", "w", encoding="utf-8").write("".join(follow_lines))
+os.replace(follow_path + ".tmp", follow_path)  # エディタの保存と同じく、置き換える
+time.sleep(2)
+r = run("""
+const c = content();
+const flash = c.querySelector('.changed-flash');
+return JSON.stringify({ top: c.scrollTop, flash: flash ? flash.textContent : null });
+""")
+check("外部更新で、最初に変わった場所までスクロールする", r["top"] > 500, r)
+check("変わった場所が、一瞬、強調される", r["flash"] is not None and "行 100" in r["flash"], r)
+
 print("外部リンク(ブラウザで開く): 確認 → trustedUrls → always")
 ext_path = os.path.join(tmp, "ext.md")
 open(ext_path, "w", encoding="utf-8").write(

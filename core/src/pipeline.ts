@@ -14,6 +14,7 @@
 import type { Element, ElementContent, Root as HastRoot } from "hast";
 import type { Root as MdastRoot } from "mdast";
 import { createStarryNight } from "@wooorm/starry-night";
+import type { Grammar } from "@wooorm/starry-night";
 import { EAGER, LAZY, fenceFlags } from "./grammars.ts";
 import GithubSlugger from "github-slugger";
 import { toString } from "hast-util-to-string";
@@ -209,7 +210,8 @@ const rehypeImages: Plugin<[], HastRoot> = () => (tree, file: VFile) => {
 };
 
 /** コードブロック: Mermaid は印を付けて後で描画し、それ以外は starry-night(GitHub と同じ文法)で着色する。 */
-const rehypeCodeBlocks: Plugin<[StarryNight], HastRoot> = (starryNight) => (tree) => {
+const rehypeCodeBlocks: Plugin<[() => StarryNight], HastRoot> = (current) => (tree) => {
+  const starryNight = current();
   visit(tree, "element", (node, _index, parent) => {
     if (
       node.tagName !== "code" ||
@@ -232,8 +234,12 @@ const rehypeCodeBlocks: Plugin<[StarryNight], HastRoot> = (starryNight) => (tree
       return;
     }
     const scope = starryNight.flagToScope(lang);
-    if (scope)
+    if (!scope) return;
+    try {
       node.children = starryNight.highlight(toString(node), scope).children as ElementContent[];
+    } catch {
+      // 文法がまだ読み込まれていない(prepare を通らない経路)。着色せず、そのまま表示する
+    }
   });
 };
 
@@ -265,11 +271,13 @@ type SchemaWithAttributesBase = NonNullable<SanitizeSchema>;
  */
 export async function createRenderer(options: { onigUrl?: URL } = {}): Promise<Renderer> {
   const { onigUrl } = options;
-  const starryNight = await createStarryNight(
-    EAGER,
-    onigUrl ? { getOnigurumaUrlFetch: () => onigUrl } : undefined,
-  );
-  const loaded = new Set<string>();
+  const starryOptions = onigUrl ? { getOnigurumaUrlFetch: () => onigUrl } : undefined;
+  let starryNight = await createStarryNight(EAGER, starryOptions);
+  // 大きな文法は、必要になったときに足す。starry-night の register() は WASM を外部 CDN から取り直すので使わず、
+  // 同梱の WASM を指す新しい starry-night を作って差し替える(local first)
+  const requested = new Set<string>();
+  const active: Grammar[] = [];
+  let chain: Promise<void> = Promise.resolve();
   const settings: RenderSettings = { mathUnescapeUnderscore: true };
   const processor = unified()
     .use(remarkParse)
@@ -287,7 +295,7 @@ export async function createRenderer(options: { onigUrl?: URL } = {}): Promise<R
     .use(rehypeImages)
     // 不正な式は、rehype-katex が文書全体を止めずに、その場にエラー(errorColor)を表示する
     .use(rehypeKatex, { errorColor: "#cf222e", strict: "ignore", trust: false })
-    .use(rehypeCodeBlocks, starryNight)
+    .use(rehypeCodeBlocks, () => starryNight)
     .use(rehypeStringify);
 
   return {
@@ -296,15 +304,21 @@ export async function createRenderer(options: { onigUrl?: URL } = {}): Promise<R
     },
     async prepare(text) {
       const flags = fenceFlags(text);
-      if (flags.size === 0) return;
-      const needed = LAZY.filter((g) => !loaded.has(g.scope) && g.flags.some((f) => flags.has(f)));
-      if (needed.length === 0) return;
-      for (const g of needed) loaded.add(g.scope);
-      try {
-        await starryNight.register(await Promise.all(needed.map((g) => g.load())));
-      } catch {
-        for (const g of needed) loaded.delete(g.scope);
+      const needed = LAZY.filter(
+        (g) => !requested.has(g.scope) && g.flags.some((f) => flags.has(f)),
+      );
+      for (const g of needed) requested.add(g.scope);
+      if (needed.length > 0) {
+        chain = chain.then(async () => {
+          try {
+            active.push(...(await Promise.all(needed.map((g) => g.load()))));
+            starryNight = await createStarryNight([...EAGER, ...active], starryOptions);
+          } catch {
+            for (const g of needed) requested.delete(g.scope);
+          }
+        });
       }
+      await chain; // 読み込み中の文法があれば、終わるまで待つ(描画の前に、そろえる)
     },
     renderMarkdown(text, { docPath, resolveResource }) {
       const t0 = performance.now();

@@ -210,3 +210,16 @@ body {
   padding: 2rem;
   color: #888;
 }
+
+/* 外部更新への追従: 最初に変わった場所を、一瞬、目立たせる */
+.changed-flash {
+  animation: changed-flash 1.6s ease-out;
+}
+@keyframes changed-flash {
+  from {
+    background-color: rgba(255, 213, 0, 0.35);
+  }
+  to {
+    background-color: transparent;
+  }
+}

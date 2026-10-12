@@ -4,6 +4,7 @@
 // 分割ツリーと window の描画。window ごとの閲覧位置(スクロール)を保ち、
 // 外部更新・履歴の移動・Mermaid の描画で高さが変わっても、読み手の位置を保つ。
 
+import { firstChangedLine } from "../diff.ts";
 import type { HistoryEntry, LayoutNode, Model, Win } from "../model.ts";
 import { currentEntry, windows } from "../model.ts";
 import type { Renderer } from "../pipeline.ts";
@@ -42,6 +43,8 @@ interface WinView {
   content: HTMLElement;
   lastEntry: HistoryEntry | null;
   lastKey: string | null;
+  /** 最後に描画した本文。外部更新で、最初に変わった行を求めるのに使う。 */
+  lastText: string | null;
   linkIndex: number;
   /** プログラムで設定したスクロール位置。これと一致するスクロールイベントは、読み手の操作ではない。 */
   expectScroll: number | null;
@@ -52,6 +55,8 @@ interface WinView {
 
 export class Views {
   readonly stats: RenderStats = { ms: 0, diagrams: "" };
+  /** 外部更新のとき、最初に変わった場所へ移る(`toggle-follow-updates`)。 */
+  followUpdates = false;
   private readonly views = new Map<number, WinView>();
   private layoutSig = "";
   /** バッファの識別(絶対パス)→ 表示名(uniquify 済み)。 */
@@ -199,6 +204,7 @@ export class Views {
       modeLinePending: false,
       content,
       lastEntry: null,
+      lastText: null,
       lastKey: null,
       linkIndex: -1,
       expectScroll: null,
@@ -287,13 +293,18 @@ export class Views {
     const name = this.names.get(entry.path) ?? entry.path;
     const gone = buf.missing ? "  (削除されました。移動された可能性があります)" : "";
     view.modeLine.name.textContent = `${name}${entry.anchor ? "#" + entry.anchor : ""}${gone}`;
-    view.modeLine.hist.textContent = `[履歴 ${win.index + 1}/${win.history.length}]`;
+    view.modeLine.hist.textContent = `[履歴 ${win.index + 1}/${win.history.length}]${this.followUpdates ? " [追従]" : ""}`;
 
     if (view.lastKey !== key) {
       // 外部更新(同じ文書の版が変わった)なら、見出し基準で閲覧位置を維持する
       const reload = view.lastEntry === entry;
       const anchor = reload ? visibleAnchor(view.content) : null;
       const ratio = reload ? view.content.scrollTop / Math.max(1, view.content.scrollHeight) : 0;
+      const changedLine =
+        reload && this.followUpdates && !!view.lastText
+          ? firstChangedLine(view.lastText, buf.text)
+          : null;
+      view.lastText = buf.text;
       const { html, ms } = renderer.renderMarkdown(buf.text, {
         docPath: entry.path,
         resolveResource,
@@ -308,6 +319,12 @@ export class Views {
             anchor && view.content.querySelector<HTMLElement>(`#${CSS.escape(anchor.id)}`);
           return target ? target.offsetTop + anchor.delta : view.content.scrollHeight * ratio;
         };
+        if (changedLine !== null) {
+          // 最初に変わった場所を、画面の上寄りに出して、一瞬、目立たせる
+          const at = () => findAnchor(view.content, `line:${changedLine}`);
+          view.computeTop = () => Math.max(0, (at()?.offsetTop ?? 0) - 40);
+          at()?.classList.add("changed-flash");
+        }
         this.setScroll(view, view.computeTop());
         entry.scroll = view.content.scrollTop;
       }

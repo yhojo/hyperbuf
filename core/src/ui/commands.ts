@@ -64,6 +64,7 @@ export const COMMAND_NAMES = [
   "project-find-file",
   "forget-remembered-path",
   "forget-remembered-site",
+  "toggle-follow-updates",
   "make-frame",
   "delete-frame",
   "other-frame",
@@ -114,6 +115,8 @@ export const COMMAND_DOCS: Readonly<Record<CommandName, string>> = {
     "警告パスの下で、承認して記憶した場所を、選んで取り消す(次から、また確認される)",
   "forget-remembered-site":
     "「always」で記憶した、ブラウザで開いてよいサイトを、選んで取り消す(次から、また確認される)",
+  "toggle-follow-updates":
+    "外部でファイルが更新されたとき、最初に変わった場所へ移る/移らない(既定は移らない。モードラインに [追従])",
   "make-frame": "新しいフレーム(macOS のウィンドウ)を作る。空いている最小の番号(Cmd-1〜)になる",
   "delete-frame": "このフレームを閉じる(最後の 1 つなら、アプリを終了する)",
   "other-frame": "次のフレームへ移る",
@@ -264,6 +267,15 @@ export function createCommands(ctx: AppContext): Commands {
       if (picked === null) return;
       const ok = await host.forgetSite?.(picked);
       echo.message(ok ? `取り消しました: ${picked}` : "取り消せませんでした");
+    },
+    "toggle-follow-updates": () => {
+      views.followUpdates = !views.followUpdates;
+      views.refresh();
+      echo.message(
+        views.followUpdates
+          ? "更新への追従: オン(外部で更新されたら、最初に変わった場所へ移ります)"
+          : "更新への追従: オフ(閲覧位置を保ちます)",
+      );
     },
     "make-frame": () => host.frame?.("make"),
     "delete-frame": () => host.frame?.("delete"),

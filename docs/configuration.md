@@ -23,6 +23,9 @@
     "(hyperbuf-edit-here)"
   ],
   "restoreSession": true,
+  "mathUnescapeUnderscore": true,
+  "followUpdates": false,
+  "trustedUrls": ["https://github.com/yhojo/*", "https://*.wikipedia.org/*"],
   "warnPaths": ["/usr", "/opt", "/tmp", "~/.ssh"],
   "allowPaths": ["~/work", "/usr/share/doc"],
   "keybindings": {
@@ -42,6 +45,29 @@
 
 - 復元の範囲・保存先・壊れたデータの扱いは、[session-restore.md](session-restore.md)(複数フレームは [project-model.md](project-model.md) §10)。
 - `false` のあいだは、復元もしないし、保存もしない(それまでの保存は、そのまま残る)。
+
+## 文書の表示(`mathUnescapeUnderscore`・`followUpdates`)
+
+| キー                     | 型     | 意味                                                                                           |
+| ------------------------ | ------ | ---------------------------------------------------------------------------------------------- |
+| `mathUnescapeUnderscore` | 真偽値 | 数式の中の `\_` を `_` に戻して描画するか。**既定は `true`**                                   |
+| `followUpdates`          | 真偽値 | 外部でファイルが更新されたとき、最初に変わった場所へ移るか。**既定は `false`**(閲覧位置を保つ) |
+
+- `mathUnescapeUnderscore`: Marked 2 などは、Markdown のバックスラッシュのエスケープを外してから数式を描画するので、`$x\_1$` は添字の `x_1` になります。TeX では `\_` は「文字としての下線」ですが、この互換があると、Markdown の都合で `_` を `\_` と書いた数式が、そのまま読めます。`\text{…}`・`\mathrm{…}` などの引数の中の `\_` は、文字の下線のまま残します。`false` にすると、TeX の規則どおりにします。
+- `followUpdates`: `C-x x u`(`toggle-follow-updates`)で、その場で切り替えられます(切り替えは、アプリの終了まで。設定は変わりません)。オンのあいだ、モードラインに `[追従]` と出ます。移った先は、一瞬、強調されます。
+
+## 外部リンク(`trustedUrls`)
+
+文書の中の `http` / `https` のリンクを選ぶと(クリック、`RET`)、既定のブラウザで開きます。**毎回、確認します**(`yes` / `no` / `always`)。
+
+| キー          | 型           | 意味                                                                                    |
+| ------------- | ------------ | --------------------------------------------------------------------------------------- |
+| `trustedUrls` | 文字列の配列 | 確認なしで開く URL のパターン。`*` は任意の文字列。`http://` または `https://` で始める |
+
+- `always` と答えたサイト(`scheme://host[:port]`)は、`~/Library/Application Support/HyperBuf/trusted-sites.json` に記憶します。`M-x forget-remembered-site` で取り消せます。
+- `mailto:` は、毎回、確認します(`always` はありません)。それ以外のスキーム(`file:`・`javascript:` など)は、開きません。
+- ユーザー名・パスワードを含む URL(`https://example.com@evil.example/`)、制御文字を含む URL、2048 文字を超える URL は、確認もせず、開きません。
+- ブラウザを開く判断は、アプリ(Swift)が、もう一度、確かめます(Web 側の判断は信用しません)。
 
 ## エディタの連携(`editorName`・`editorCommand`)
 

@@ -94,6 +94,7 @@ export async function startApp(options: {
   };
   // 利用者のキー割り当て(config.json の keybindings)を、標準に重ねる。問題のある設定は、無視して、知らせる
   const config: HostConfig | undefined = await host.getConfig?.().catch(() => undefined);
+  renderer.configure({ mathUnescapeUnderscore: config?.mathUnescapeUnderscore !== false });
   const bindings = resolveBindings(config?.keybindings);
   const ctx: AppContext = {
     host,

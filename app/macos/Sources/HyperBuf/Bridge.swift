@@ -88,11 +88,14 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
         switch op {
         case "config":
             // 利用者の設定のうち、Web コアが使うもの(検証は、Web コアが行う)
+            let settings = UserSettings.load()
             replyHandler(
                 [
                     "keybindings": UserKeybindings.load(from: EditorConfig.configURL()),
-                    "restoreSession": SessionSettings.restoreEnabled(),
-                    "problems": access.policy.problems,
+                    "restoreSession": settings.restoreSession,
+                    "mathUnescapeUnderscore": settings.mathUnescapeUnderscore,
+                    "followUpdates": settings.followUpdates,
+                    "problems": access.policy.problems + settings.problems,
                 ], nil)
         case "load-session":
             replyHandler(frame.initialSnapshot ?? NSNull(), nil)

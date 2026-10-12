@@ -23,6 +23,10 @@ export interface HostConfig {
   keybindings?: Record<string, string | null>;
   /** 前回の状態(window の配置・履歴・閲覧位置)を復元し、保存するか(既定は true)。 */
   restoreSession?: boolean;
+  /** 数式の中の `\_` を `_` に戻す(Marked 2 などとの互換。既定は true)。 */
+  mathUnescapeUnderscore?: boolean;
+  /** ファイルが外部で更新されたとき、変更箇所の先頭へスクロールする(既定は false。`toggle-follow-updates` で切り替える)。 */
+  followUpdates?: boolean;
   /** シェルが見つけた設定の問題(許可パス / 警告パスなど)。`C-h b` の「設定の問題」に出す。 */
   problems?: string[];
 }

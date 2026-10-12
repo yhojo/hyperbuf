@@ -139,3 +139,17 @@ test("details/summary と kbd を通す", () => {
   assert.match(out, /<details/);
   assert.match(out, /<kbd>/);
 });
+
+test("数式: Marked 2 流に、\\_ を下付き文字として描画する(設定で、そのままにもできる)", () => {
+  const md = "$f\\_{2}$ と $$ g\\_{1} = \\text{a\\_b} $$";
+  const on = html(md);
+  assert.match(on, /msupsub/); // 下付き文字になる
+  assert.match(on, /a_b/); // \text の中は、文字としての下線のまま
+  renderer.configure({ mathUnescapeUnderscore: false });
+  try {
+    const off = html("$f\\_{2}$");
+    assert.doesNotMatch(off, /msupsub/); // そのままなら、下線の文字
+  } finally {
+    renderer.configure({ mathUnescapeUnderscore: true });
+  }
+});

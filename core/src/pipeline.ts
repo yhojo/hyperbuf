@@ -29,6 +29,7 @@ import { unified } from "unified";
 import type { Plugin } from "unified";
 import { visit } from "unist-util-visit";
 import type { VFile } from "vfile";
+import { unescapeMathUnderscores } from "./math.ts";
 import { resolveLink } from "./model.ts";
 
 declare module "vfile" {
@@ -51,7 +52,15 @@ export interface RenderResult {
   ms: number;
 }
 
+/** 描画の設定(config.json 由来)。 */
+export interface RenderSettings {
+  /** 数式の中の `\_` を `_` に戻す(Marked 2 などと同じ。既定は true)。src/math.ts */
+  mathUnescapeUnderscore: boolean;
+}
+
 export interface Renderer {
+  /** 設定を変える(最初の描画の前に呼ぶ)。 */
+  configure(settings: Partial<RenderSettings>): void;
   renderMarkdown(text: string, context: RenderContext): RenderResult;
 }
 
@@ -72,6 +81,33 @@ const remarkMathGithubCompat: Plugin<[], MdastRoot> = () => (tree, file) => {
     }
   });
 };
+
+/**
+ * 数式の中の `\_` を `_` に戻す(`$f\_{2}$` を、下付き文字にする)。Marked 2 などとの互換。
+ * mdast の math / inlineMath は、描画用の hast の中身(`data.hChildren`)を別に持つので、両方を直す。
+ */
+const remarkMathUnescape =
+  (settings: RenderSettings): Plugin<[], MdastRoot> =>
+  () =>
+  (tree) => {
+    if (!settings.mathUnescapeUnderscore) return;
+    const fix = (node: { value: string; data?: Record<string, unknown> }): void => {
+      node.value = unescapeMathUnderscores(node.value);
+      const children = node.data?.["hChildren"];
+      if (Array.isArray(children)) {
+        for (const child of children as { type: string; value?: string }[]) {
+          if (child.type === "text" && typeof child.value === "string") {
+            child.value = unescapeMathUnderscores(child.value);
+          }
+        }
+      }
+    };
+    visit(tree, (node) => {
+      if (node.type === "math" || node.type === "inlineMath") {
+        fix(node as unknown as { value: string; data?: Record<string, unknown> });
+      }
+    });
+  };
 
 /** GitHub と同じ方式(github-slugger)で見出しに id を付ける。重複には連番が付く。 */
 const rehypeHeadingIds: Plugin<[], HastRoot> = () => (tree) => {
@@ -230,11 +266,13 @@ export async function createRenderer(options: { onigUrl?: URL } = {}): Promise<R
     common,
     onigUrl ? { getOnigurumaUrlFetch: () => onigUrl } : undefined,
   );
+  const settings: RenderSettings = { mathUnescapeUnderscore: true };
   const processor = unified()
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkMath)
     .use(remarkMathGithubCompat)
+    .use(remarkMathUnescape(settings))
     // 脚注の id は sanitize が接頭辞を付ける。ここでも付けると二重になりリンクが切れる
     .use(remarkRehype, { allowDangerousHtml: true, clobberPrefix: "" })
     .use(rehypeRaw)
@@ -249,6 +287,9 @@ export async function createRenderer(options: { onigUrl?: URL } = {}): Promise<R
     .use(rehypeStringify);
 
   return {
+    configure(next) {
+      Object.assign(settings, next);
+    },
     renderMarkdown(text, { docPath, resolveResource }) {
       const t0 = performance.now();
       const file = processor.processSync({ value: text, data: { docPath, resolveResource } });

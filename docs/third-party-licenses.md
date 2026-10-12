@@ -5,11 +5,11 @@
 
 対象は、Web コア(`core/dist`)のバンドルに実際に入るもの。Swift 側(アプリ・CLI・プロトコル)は、サードパーティの依存を持たない。
 
-## 集計(npm のパッケージ 151 件)
+## 集計(npm のパッケージ 149 件)
 
 | ライセンス | 件数 |
 | --- | --- |
-| MIT | 118 |
+| MIT | 116 |
 | ISC | 22 |
 | Apache-2.0 | 5 |
 | BSD-3-Clause | 5 |
@@ -113,8 +113,6 @@
 | internmap | 2.0.3 | ISC |
 | is-plain-obj | 4.1.0 | MIT |
 | katex | 0.16.47 | MIT |
-| katex | 0.16.47 | MIT |
-| katex | 0.19.0 | MIT |
 | khroma | 2.1.0 | MIT |
 | layout-base | 2.0.1 | MIT |
 | layout-base | 1.0.2 | MIT |

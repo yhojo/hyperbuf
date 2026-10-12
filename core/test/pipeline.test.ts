@@ -163,3 +163,18 @@ test("シンタックスハイライト: Emacs Lisp は prepare のあとで着�
   assert.ok(!out.includes("nosuchlang</span>"));
   assert.match(html("```clojure\n(defn f [x] x)\n```"), /pl-/, "小さい文法は常時含める");
 });
+
+test("数式: 描画に使う KaTeX と、同梱する CSS の版が合っている(class 名が食い違うと、添字や分数が崩れる)", () => {
+  const css = readFileSync(
+    new URL("../node_modules/katex/dist/katex.min.css", import.meta.url),
+    "utf8",
+  );
+  const out = html("$x_1^2 + \\frac{1}{2}$");
+  const classes = new Set(
+    [...out.matchAll(/class="([^"]+)"/g)].flatMap((m) => (m[1] as string).split(" ")),
+  );
+  for (const c of ["sizing", "msupsub", "vlist-t", "mfrac", "reset-size6"]) {
+    assert.ok(classes.has(c), `出力に ${c} がない`);
+    assert.ok(css.includes(`.${c}`), `CSS に .${c} がない(katex の版が食い違っている)`);
+  }
+});

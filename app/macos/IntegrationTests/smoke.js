@@ -58,7 +58,7 @@ if (files.length) {
   await app.open(first); // 基準のディレクトリ(検索の起点)を、この文書のものにする
   await app.search(word);
   await sleep(200);
-  const header = document.querySelector(".win.selected .win-header")?.textContent ?? "";
+  const header = document.querySelector(".win.selected .mode-line")?.textContent ?? "";
   out.search = { word, header, items: document.querySelectorAll(".win.selected .content li").length };
 }
 

@@ -212,7 +212,7 @@ check("大文字を含む検索語だけ、大文字小文字を区別する", r
 print("outline 風の見出し移動・スクロール")
 r = run("""
 await hb.open(P + '/long.md'); await sleep(300);
-const hist = document.querySelector('.win-header').textContent;
+const hist = document.querySelector('.mode-line .ml-hist').textContent;
 const seq = [];
 await press(...C('n','KeyN')); seq.push(heading());
 await press(...C('n','KeyN')); seq.push(heading());
@@ -222,7 +222,7 @@ await press(...C('f','KeyF')); seq.push(heading());
 await press(...C('b','KeyB')); seq.push(heading());
 await press(...C('u','KeyU')); seq.push(heading());
 await press(...C('u','KeyU')); const none = document.getElementById('echo').textContent;
-const sameHistory = document.querySelector('.win-header').textContent === hist;
+const sameHistory = document.querySelector('.mode-line .ml-hist').textContent === hist;
 await press(['>','Period',{altKey:true,shiftKey:true}]);
 const end = Math.abs(content().scrollTop + content().clientHeight - content().scrollHeight) < 4;
 await press(['<','Comma',{altKey:true,shiftKey:true}]);
@@ -237,19 +237,51 @@ check("見出し移動は、参照履歴に積まれない", r["sameHistory"])
 check("M-> / M-<(Option+Shift+. / ,)", r["end"] and r["top"] == 0, r)
 check("SPC で 1 画面下、DEL で戻る", r["down"] > r["page"] * 0.8 and r["up"] == 0, r)
 
+print("リンクの選択(TAB / S-TAB): 見えている範囲から始める")
+links_path = os.path.join(tmp, "links.md")
+open(links_path, "w", encoding="utf-8").write(
+    "# リンクの選択\n\n先頭の [top](top.md) です。\n\n"
+    + "".join(f"段落 {i}\n\n" for i in range(60))
+    + "中ほどの [middle](middle.md) です。\n\n"
+    + "".join(f"段落 {i}\n\n" for i in range(60, 120))
+    + "末尾の [bottom](bottom.md) です。\n\n"
+)
+r = run("""
+const f = %s;
+await hb.open(f); await sleep(400);
+const c = content();
+const focus = () => document.querySelector('.win.selected .content a.link-focus')?.getAttribute('href') ?? null;
+const link = (h) => c.querySelector('a[href="' + h + '"]');
+// 中ほどのリンクが見える位置までスクロールして、TAB: 先頭ではなく、見えている最初のリンク
+link('middle.md').scrollIntoView({ block: 'center' }); await sleep(200);
+await press(['Tab','Tab']); const first = focus();
+await press(['Tab','Tab']); const second = focus();   // 次は、末尾
+// フォーカスしたリンクが、見えなくなったら、見えている範囲から選び直す
+c.scrollTop = 0; await sleep(200);
+await press(['Tab','Tab']); const afterScrollUp = focus();
+// S-TAB は、見えている最後のリンクから
+link('middle.md').scrollIntoView({ block: 'center' }); await sleep(200);
+await press(['Tab','Tab',{ shiftKey: true }]); const back = focus();
+return JSON.stringify({ first, second, afterScrollUp, back });
+""" % json.dumps(links_path))
+check("TAB: 中ほどを見ているときは、先頭ではなく、見えている最初のリンクを選ぶ", r["first"] == "middle.md", r)
+check("TAB を続けると、次のリンクへ進む", r["second"] == "bottom.md", r)
+check("選んだリンクが画面の外に出たら、見えている範囲から選び直す(文書の先頭のリンク)", r["afterScrollUp"] == "top.md", r)
+check("S-TAB: 見えている範囲の最後のリンクから", r["back"] == "middle.md", r)
+
 print("キーマップの設定と describe-bindings")
 r = run("""
 await hb.open(P + '/long.md'); await sleep(300);
 await hb.open(P + '/index.md'); await sleep(200);
-const before = document.querySelector('.win-header').textContent;
+const before = document.querySelector('.mode-line').textContent;
 await press(['p','KeyP',{altKey:true}]);               // M-p(利用者が back に割り当てた)
-const afterMp = document.querySelector('.win-header').textContent;
+const afterMp = document.querySelector('.mode-line').textContent;
 await press(['f','KeyF',{ctrlKey:true}]);              // C-f(利用者が外した → 何も起きない)
-const afterCf = document.querySelector('.win-header').textContent;
+const afterCf = document.querySelector('.mode-line').textContent;
 await press(['b','KeyB',{ctrlKey:true}]);              // C-b(標準のまま back)
-const afterCb = document.querySelector('.win-header').textContent;
+const afterCb = document.querySelector('.mode-line').textContent;
 await press(['h','KeyH',{ctrlKey:true}], ['b','KeyB']); // C-h b
-const header = document.querySelector('.win-header').textContent;
+const header = document.querySelector('.mode-line').textContent;
 const text = content().textContent;
 const rows = [...content().querySelectorAll('tr')].map((tr) => tr.textContent);
 return JSON.stringify({ before, afterMp, afterCf, afterCb, header, text, rows });
@@ -278,7 +310,7 @@ const empty = { texts: cands().slice(0, 6).map((li) => li.textContent), count: d
 typeIn(initial + 'arch'); await sleep(200);
 const typed = { first: cands()[0]?.textContent, marked: [...(cands()[0]?.querySelectorAll('b') ?? [])].map((b) => b.textContent), on: cands()[0]?.className };
 pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(250);
-const opened = document.querySelector('.win-header').textContent;
+const opened = document.querySelector('.mode-line').textContent;
 // ディレクトリは、RET で確定せず、その中に入る
 await fire('x','KeyX',{ctrlKey:true}); await fire('f','KeyF',{ctrlKey:true}); await sleep(200);
 const initial2 = input().value;
@@ -311,7 +343,7 @@ const listed = cands().map((li) => li.textContent);
 typeIn('rend'); await sleep(250);
 const filtered = cands().map((li) => li.textContent);
 pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(300);
-const header = document.querySelector('.win-header').textContent;
+const header = document.querySelector('.mode-line').textContent;
 // 基準を ../ に切り替えて、基準の外のファイルに届く
 await fire('x','KeyX',{ctrlKey:true}); await fire('p','KeyP'); await fire('f','KeyF'); await sleep(300);
 typeIn('../../sample'); await sleep(500);
@@ -328,9 +360,9 @@ r = run("""
 const ROOT = P.slice(0, P.lastIndexOf('/fixtures/'));
 await hb.open(ROOT + '/README.md'); await sleep(200);
 await hb.open(ROOT + '/emacs/README.md'); await sleep(200);
-const headerBoth = document.querySelector('.win-header').textContent;
+const headerBoth = document.querySelector('.mode-line').textContent;
 await hb.search('Mermaid'); await sleep(500);
-const searchHeader = document.querySelector('.win-header').textContent;
+const searchHeader = document.querySelector('.mode-line').textContent;
 return JSON.stringify({ headerBoth, searchHeader });
 """)
 check("同じ名前が複数あるときだけ、親ディレクトリを足す(README.md<emacs>)", "README.md<emacs>" in r["headerBoth"], r["headerBoth"])
@@ -345,7 +377,7 @@ const label = document.getElementById('prompt-label').textContent;
 pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(200);
 const win = hb.ctx.model.root.win ?? null;
 const histories = (function walk(n) { return n.type === 'leaf' ? [n.win.history.map((e) => e.path)] : n.children.flatMap(walk); })(model.root);
-return JSON.stringify({ hasBefore, label, hasAfter: model.buffers.has(P + '/interaction.md'), mru: model.mru.slice(0, 3), histories, header: document.querySelector('.win-header').textContent, echo: document.getElementById('echo').textContent });
+return JSON.stringify({ hasBefore, label, hasAfter: model.buffers.has(P + '/interaction.md'), mru: model.mru.slice(0, 3), histories, header: document.querySelector('.mode-line').textContent, echo: document.getElementById('echo').textContent });
 """)
 check("C-x k: 既定は、いまの buffer", "interaction.md" in r["label"], r["label"])
 check("buffer が閉じて、履歴からも参照がなくなる", r["hasBefore"] and not r["hasAfter"] and all(not p.endswith("interaction.md") for h in r["histories"] for p in h), r)

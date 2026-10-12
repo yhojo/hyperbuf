@@ -9,6 +9,11 @@
   --accent: #0969da;
   --sel: #ddf4ff;
   --code: #f6f8fa;
+  --ml-bg: #d9dce0;
+  --ml-fg: #4b5057;
+  --ml-line: #c3c7cc;
+  --ml-sel-bg: #3b3f45;
+  --ml-sel-fg: #f1f3f5;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -20,6 +25,11 @@
     --accent: #4493f8;
     --sel: #121d2f;
     --code: #161b22;
+    --ml-bg: #1c2128;
+    --ml-fg: #768390;
+    --ml-line: #30363d;
+    --ml-sel-bg: #3d4450;
+    --ml-sel-fg: #e6edf3;
   }
 }
 * {
@@ -65,22 +75,36 @@ body {
   flex-direction: column;
   border: 1px solid var(--line);
 }
-.win.selected {
-  border-color: var(--accent);
-}
-.win-header {
+/* モードライン: Emacs と同じく、各 window の下。選択中の window は、濃いグレーに反転し、それ以外は薄いグレー。
+   選択中の window を示す囲みは、使わない(window が 1 つのときも、出さない) */
+.mode-line {
+  display: flex;
+  gap: 1.6em;
   padding: 2px 10px;
   font:
-    12px ui-monospace,
+    12px/1.6 ui-monospace,
     Menlo,
     monospace;
-  color: var(--muted);
-  background: var(--code);
-  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  overflow: hidden;
+  background: var(--ml-bg);
+  color: var(--ml-fg);
+  border-top: 1px solid var(--ml-line);
 }
-.win.selected .win-header {
-  color: var(--fg);
-  background: var(--sel);
+.mode-line .ml-name {
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mode-line .ml-pos,
+.mode-line .ml-hist {
+  flex: none;
+}
+.win.selected .mode-line {
+  background: var(--ml-sel-bg);
+  color: var(--ml-sel-fg);
+  border-top-color: var(--ml-sel-bg);
 }
 .content {
   flex: 1;

@@ -4,11 +4,11 @@
 // ホストからのイベント(外部更新、外部からの「開く」要求、位置の問い合わせ)の受け口。
 
 import type { OpenRequest } from "../host.ts";
-import { currentEntry, openBuffer, selectedWindow } from "../model.ts";
+import { currentEntry, jump, openBuffer, selectedWindow } from "../model.ts";
 import type { Commands } from "./commands.ts";
 import type { AppContext } from "./context.ts";
 import { abbreviateHome } from "../paths.ts";
-import { errorMessage, openAt } from "./navigation.ts";
+import { ensureBuffer, errorMessage } from "./navigation.ts";
 
 export function wireHostEvents(ctx: AppContext, commands: Commands): void {
   const { host, model, views, echo, minibuffer } = ctx;
@@ -75,7 +75,8 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
     }
     const anchor = req.anchor ?? (req.line ? `line:${req.line}` : null);
     try {
-      await openAt(ctx, req.path, anchor);
+      await ensureBuffer(ctx, req.path);
+      jump(model, selectedWindow(model), req.path, anchor);
       views.refresh();
       echo.message(
         `連携で開きました: ${abbreviateHome(req.path, host.home)}${anchor ? "#" + anchor : ""}`,

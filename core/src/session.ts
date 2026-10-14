@@ -6,7 +6,7 @@
 // buffer の最近使った順。文書の内容は保存しない(復元時に、ホストから読み直す)。
 // 保存されたデータは、信頼しない入力として、厳密に検証する(壊れていたら、使わない)。
 
-import { currentEntry, isVirtualPath, windows } from "./model.ts";
+import { currentEntry, isVirtualPath, MAX_RATIO, MIN_RATIO, windows } from "./model.ts";
 import type { HistoryEntry, LayoutNode, Model, Win } from "./model.ts";
 
 export const SESSION_VERSION = 1;
@@ -22,7 +22,12 @@ export const MAX_SELECTION = 4096;
 
 export type SessionNode =
   | { type: "leaf"; id: number; index: number; history: HistoryEntry[] }
-  | { type: "split"; dir: "row" | "col"; children: [SessionNode, SessionNode] };
+  | {
+      type: "split";
+      dir: "row" | "col";
+      children: [SessionNode, SessionNode];
+      ratio?: number;
+    };
 
 /**
  * 選択範囲(文書内で選択していたテキスト)。表示されたテキスト(描画後の文字列)の中の位置で表し、
@@ -71,7 +76,11 @@ function snapshotWindow(win: Win): SessionNode | null {
 function snapshotNode(node: LayoutNode): SessionNode | null {
   if (node.type === "leaf") return snapshotWindow(node.win);
   const [a, b] = node.children.map(snapshotNode);
-  if (a && b) return { type: "split", dir: node.dir, children: [a, b] };
+  if (a && b) {
+    const out: SessionNode = { type: "split", dir: node.dir, children: [a, b] };
+    if (node.ratio !== undefined) out.ratio = node.ratio;
+    return out;
+  }
   return a ?? b ?? null; // 片方に保存できるものがなければ、分割をたたむ
 }
 
@@ -133,7 +142,12 @@ function parseNode(v: unknown, depth: number, budget: { windows: number }): Sess
     if (!Array.isArray(children) || children.length !== 2) return null;
     const a = parseNode(children[0], depth + 1, budget);
     const b = parseNode(children[1], depth + 1, budget);
-    return a && b ? { type: "split", dir, children: [a, b] } : null;
+    if (!a || !b) return null;
+    const ratio = v["ratio"];
+    const valid = typeof ratio === "number" && ratio >= MIN_RATIO && ratio <= MAX_RATIO;
+    return valid
+      ? { type: "split", dir, children: [a, b], ratio }
+      : { type: "split", dir, children: [a, b] };
   }
   return null;
 }
@@ -208,7 +222,11 @@ function restoreNode(node: SessionNode, available: Available): LayoutNode | null
     return win ? { type: "leaf", win } : null;
   }
   const [a, b] = node.children.map((c) => restoreNode(c, available));
-  if (a && b) return { type: "split", dir: node.dir, children: [a, b] };
+  if (a && b) {
+    const out: LayoutNode = { type: "split", dir: node.dir, children: [a, b] };
+    if (node.ratio !== undefined) out.ratio = node.ratio;
+    return out;
+  }
   return a ?? b ?? null;
 }
 

@@ -42,6 +42,10 @@ export const COMMAND_NAMES = [
   "delete-window",
   "delete-other-windows",
   "other-window",
+  "enlarge-window",
+  "shrink-window-if-larger-than-buffer",
+  "enlarge-window-horizontally",
+  "shrink-window-horizontally",
   "back",
   "forward",
   "scroll-line-down",
@@ -89,6 +93,11 @@ export const COMMAND_DOCS: Readonly<Record<CommandName, string>> = {
   "delete-window": "選択中の window を閉じる",
   "delete-other-windows": "選択中の window だけを残す",
   "other-window": "次の window を選択する",
+  "enlarge-window": "選択中の window を、縦に広げる(隣は縮む)",
+  "shrink-window-if-larger-than-buffer":
+    "選択中の window が文書より大きければ、文書がちょうど収まる高さまで縮める",
+  "enlarge-window-horizontally": "選択中の window を、横に広げる(隣は縮む)",
+  "shrink-window-horizontally": "選択中の window を、横に狭める(隣は広がる)",
   back: "参照履歴を戻る",
   forward: "参照履歴を進む",
   "scroll-line-down": "1 行分、下へスクロールする",
@@ -136,6 +145,10 @@ export type Command = () => unknown;
 export type Commands = Record<CommandName, Command>;
 
 const LINE_PX = 48;
+/** window の大きさを変える 1 回分(`enlarge-window` など。Emacs の 1 行・1 桁に当たる、ピクセル数)。 */
+const RESIZE_V_PX = 48;
+const RESIZE_H_PX = 80;
+const NO_SPLIT = (axis: string): string => `${axis}に分割された window がありません`;
 
 export function createCommands(ctx: AppContext): Commands {
   const { model, views, echo, minibuffer, host } = ctx;
@@ -185,6 +198,17 @@ export function createCommands(ctx: AppContext): Commands {
     "delete-window": () => deleteWindow(model) || echo.message("これが唯一の window です"),
     "delete-other-windows": () => deleteOthers(model),
     "other-window": () => otherWindow(model),
+    "enlarge-window": () =>
+      views.resizeSelected("col", RESIZE_V_PX) || echo.message(NO_SPLIT("上下")),
+    "shrink-window-if-larger-than-buffer": () => {
+      const result = views.shrinkToFit();
+      if (result === "sole") echo.message("これが唯一の window です");
+      else if (result === "fits") echo.message("window は、文書より大きくありません");
+    },
+    "enlarge-window-horizontally": () =>
+      views.resizeSelected("row", RESIZE_H_PX) || echo.message(NO_SPLIT("左右")),
+    "shrink-window-horizontally": () =>
+      views.resizeSelected("row", -RESIZE_H_PX) || echo.message(NO_SPLIT("左右")),
     back: () => back(model, sel()) || echo.message("これより前の履歴はありません"),
     forward: () => forward(model, sel()) || echo.message("これより先の履歴はありません"),
     "scroll-line-down": () => views.scrollBy(LINE_PX),

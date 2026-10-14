@@ -27,6 +27,8 @@ final class AppModel: NSObject, NSWindowDelegate {
     private var server: SocketServer?
     private(set) var frames: [Int: FrameSession] = [:]
     private(set) var activeSlot = 1
+    /// Window メニュー。開いているフレームの項目(`Cmd-<slot>`)を、ここに並べる。
+    weak var windowMenu: NSMenu?
     private let restoreEnabled: Bool
     /// 「エディタで編集」で記録した位置(どのフレームのものか)。エディタが `get-location` で取りに来る。
     private var marked: (slot: Int, payload: LocationPayload)?
@@ -103,6 +105,8 @@ final class AppModel: NSObject, NSWindowDelegate {
         window.delegate = self
         window.isReleasedWhenClosed = false
         window.isRestorable = false  // macOS のウィンドウの復元は使わない(復元は、セッションが行う)
+        // Window メニューには、AppKit の自動の一覧ではなく、`Cmd-<slot>` つきの自前の項目を並べる(二重にしない)
+        window.isExcludedFromWindowsMenu = true
         frame.window = window
         frames[slot] = frame
         activeSlot = slot
@@ -121,13 +125,9 @@ final class AppModel: NSObject, NSWindowDelegate {
         makeFrame(slot: slot, snapshot: nil, rect: nil)
     }
 
-    /// `Cmd-<slot>`: そのフレームを前面に出す。なければ、その番号で新しいフレームを作る。
+    /// `Cmd-<slot>`: そのフレームを前面に出す。開いていないスロットは、何もしない(新しいフレームは、`newFrame` で作る)。
     func activate(slot: Int) {
-        if let frame = frames[slot] {
-            frame.window?.makeKeyAndOrderFront(nil)
-        } else {
-            makeFrame(slot: slot, snapshot: nil, rect: nil)
-        }
+        frames[slot]?.window?.makeKeyAndOrderFront(nil)
     }
 
     /// Web コアの `C-x 5 …`(`host.frame`)。
@@ -175,6 +175,26 @@ final class AppModel: NSObject, NSWindowDelegate {
         for frame in frames.values {
             frame.window?.title = frames.count > 1 ? "HyperBuf [\(frame.slot)]" : "HyperBuf"
         }
+        refreshWindowMenu()
+    }
+
+    /// Window メニューの、フレームの項目を作り直す(開いているフレームだけ。`Cmd-<slot>`、前面のものに印)。
+    /// 標準の項目(しまう・拡大/縮小・フルスクリーン)は、そのまま。
+    func refreshWindowMenu() {
+        guard let menu = windowMenu else { return }
+        for item in menu.items where item.tag > 0 { menu.removeItem(item) }
+        let slots = frames.keys.sorted()
+        guard !slots.isEmpty else { return }
+        let separator = NSMenuItem.separator()
+        separator.tag = slots[0]
+        menu.addItem(separator)
+        for slot in slots {
+            let item = menu.addItem(
+                withTitle: "HyperBuf [\(slot)]", action: #selector(menuActivateFrame(_:)), keyEquivalent: "\(slot)")
+            item.target = self
+            item.tag = slot
+            item.state = slot == activeSlot ? .on : .off
+        }
     }
 
     // MARK: NSWindowDelegate
@@ -184,6 +204,7 @@ final class AppModel: NSObject, NSWindowDelegate {
             let frame = frames.values.first(where: { $0.window === window })
         else { return }
         activeSlot = frame.slot
+        refreshWindowMenu()
         schedulePersist()
     }
 

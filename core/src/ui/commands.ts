@@ -29,6 +29,8 @@ import type { AppContext } from "./context.ts";
 import { renderBindingsHelp } from "../help.ts";
 import { openBuffer } from "../model.ts";
 import { startIsearch } from "./isearch-dom.ts";
+import { countText, formatCounts } from "../count.ts";
+import { displayedText } from "./count-dom.ts";
 import { locateFromDom } from "./locate-dom.ts";
 import { ensureBuffer, errorMessage, follow, openAt } from "./navigation.ts";
 import { abbreviateHome } from "../paths.ts";
@@ -75,6 +77,7 @@ export const COMMAND_NAMES = [
   "delete-other-frames",
   "goto-heading",
   "goto-line",
+  "count-words",
   "isearch-forward",
   "isearch-backward",
   "search-project",
@@ -134,6 +137,8 @@ export const COMMAND_DOCS: Readonly<Record<CommandName, string>> = {
   "delete-other-frames": "Delete all other frames",
   "goto-heading": "Go to a heading chosen from a list",
   "goto-line": "Go to a line number of the source Markdown",
+  "count-words":
+    "Count the lines, words and characters of the selected text (or of the whole document) as displayed",
   "isearch-forward":
     "Search the document incrementally (C-s next, C-r previous, RET accept, C-g cancel)",
   "isearch-backward": "Search the document incrementally, backward",
@@ -312,6 +317,11 @@ export function createCommands(ctx: AppContext): Commands {
       const picked = await minibuffer.prompt("Heading: ", items, { allowFree: false });
       const heading = picked === null ? undefined : headings[items.indexOf(picked)];
       if (heading) visit(model, sel(), entry.path, heading.id);
+    },
+    "count-words": () => {
+      const shown = displayedText(views.selected().content);
+      if (!shown) return echo.message("No document");
+      echo.message(formatCounts(shown.scope, countText(shown.text)));
     },
     "goto-line": async () => {
       const entry = currentEntry(sel());

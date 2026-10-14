@@ -75,6 +75,7 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 | Close window | `C-x 0` | 現在のwindowを閉じる |
 | Only window | `C-x 1` | 現在のwindowだけを残す |
 | Other window | `C-x o` | 操作対象のwindowを移動 |
+| Count words | `M-=` | 選択範囲（なければ文書全体）の行・単語・文字の数を、表示されているテキストで数える |
 | Resize window | `C-x ^` / `C-x }` / `C-x {` / `C-x -` | 縦に広げる・横に広げる・横に狭める・文書がちょうど収まる高さに縮める（モードラインのドラッグでも変更できる） |
 | Switch buffer | `C-x b` | 表示するbufferを切り替える |
 | Find file | `C-x C-f` | ファイルを開く（基準のディレクトリから始まるパス補完。ディレクトリは `RET` で中へ） |

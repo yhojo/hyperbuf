@@ -68,6 +68,13 @@ final class AppModel: NSObject, NSWindowDelegate {
     /// 起動: 前回のフレームを復元し(なければ、スロット 1 を 1 つ)、起動の引数のファイル(ディレクトリは
     /// `index.md`、なければ `README.md`)を開く。
     func start(arguments: [String]) {
+        let settings = UserSettings.load()
+        applyAppearance(settings.appearance)
+        alpha = settings.alpha
+        // 「透明度を下げる」(アクセシビリティ)が切り替わったら、つけ直す
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in MainActor.assumeIsolated { self?.updateAlpha() } }
         var restored = false
         if restoreEnabled, let stored = sessionStore.load(), let list = stored["frames"] as? [[String: Any]],
             !list.isEmpty
@@ -111,9 +118,32 @@ final class AppModel: NSObject, NSWindowDelegate {
         frames[slot] = frame
         activeSlot = slot
         updateTitles()
+        updateAlpha()
         window.makeKeyAndOrderFront(nil)
         schedulePersist()
         return frame
+    }
+
+    /// フレームの透明度(`alpha`)。前面のフレームとそれ以外で、値が違う。
+    private var alpha = WindowAlpha.opaque
+
+    /// 全フレームの透明度を、いまの状態(前面かどうか)に合わせる。
+    func updateAlpha() {
+        let reduce = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+        for frame in frames.values {
+            guard let window = frame.window else { continue }
+            window.alphaValue = alpha.value(isKey: window.isKeyWindow, reduceTransparency: reduce)
+        }
+    }
+
+    /// 外観(`appearance`)を、アプリ全体に適用する。ウィンドウ・メニュー・WebView の `prefers-color-scheme` が、これに従う。
+    /// `system` なら、固定を外して OS に従う。
+    func applyAppearance(_ appearance: Appearance) {
+        switch appearance {
+        case .system: NSApp.appearance = nil
+        case .light: NSApp.appearance = NSAppearance(named: .aqua)
+        case .dark: NSApp.appearance = NSAppearance(named: .darkAqua)
+        }
     }
 
     /// 空いている最小のスロットで、新しいフレームを作る。
@@ -205,8 +235,11 @@ final class AppModel: NSObject, NSWindowDelegate {
         else { return }
         activeSlot = frame.slot
         refreshWindowMenu()
+        updateAlpha()
         schedulePersist()
     }
+
+    func windowDidResignKey(_ notification: Notification) { updateAlpha() }
 
     func windowDidMove(_ notification: Notification) { schedulePersist() }
     func windowDidResize(_ notification: Notification) { schedulePersist() }

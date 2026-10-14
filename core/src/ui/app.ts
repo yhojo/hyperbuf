@@ -24,6 +24,7 @@ import { searchProject } from "./search.ts";
 import { applySelection } from "./selection-state.ts";
 import { createSessionSaver, restoreSession } from "./session.ts";
 import type { SessionSaver } from "./session.ts";
+import { refreshMermaidTheme } from "./diagrams.ts";
 import { Views } from "./windows.ts";
 
 export interface AppHandle {
@@ -119,6 +120,11 @@ export async function startApp(options: {
   } else {
     echo.message("Type C-x C-f to open a file");
   }
+  // アプリの動作中に OS の外観(ライト / ダーク)が切り替わったら、描画時に色が決まる図(Mermaid)を、描き直す。
+  // 文書・コード・数式・UI は、CSS(`prefers-color-scheme`)が、そのまま追従する
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    void refreshMermaidTheme().then(() => views.redrawDiagrams());
+  });
   // アプリがアクティブになったときに、表示中のファイルを照合する(監視で拾えない場合の保険)
   window.addEventListener("focus", () => {
     for (const path of watched) void revalidate(path);

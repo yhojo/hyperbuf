@@ -170,6 +170,8 @@ export class Views {
       const live = new Set(windows(model).map((w) => w.id));
       for (const id of this.views.keys()) if (!live.has(id)) this.views.delete(id);
     }
+    // 根の要素は、比率を持たない(分割が解消されて、子が根に上がったとき、前の比率が残らないように消す)
+    if (frame.firstElementChild instanceof HTMLElement) frame.firstElementChild.style.flexGrow = "";
     this.applyRatios(model.root, frame.firstElementChild);
     for (const win of windows(model)) {
       const view = this.viewOf(win);

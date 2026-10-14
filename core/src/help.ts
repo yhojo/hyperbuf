@@ -21,23 +21,29 @@ export function renderBindingsHelp({ docs, bindings, problems }: HelpInput): str
   const bound = commands.filter((c) => keys.has(c));
   const unbound = commands.filter((c) => !keys.has(c));
   const lines = [
-    "# キー割り当て",
+    "# Key bindings",
     "",
-    "`C-h b` で、この一覧を出す。割り当ては、`config.json` の `keybindings` で変えられる(`null` で、標準の割り当てを外す)。",
-    "コマンドは、`M-x` から、名前で実行できる。",
+    "`C-h b` shows this list. Bindings can be changed with `keybindings` in `config.json` (`null` removes a default binding).",
+    "Commands can be run by name with `M-x`.",
     "",
   ];
   if (problems.length) {
-    lines.push("## 設定の問題", "", "次の設定は、無視した。", "");
+    lines.push("## Configuration problems", "", "The following settings were ignored.", "");
     for (const p of problems) lines.push(`- ${p.replace(/\n/g, " ")}`);
     lines.push("");
   }
-  lines.push("## 割り当て済み", "", "| キー | コマンド | 説明 |", "| --- | --- | --- |");
+  lines.push("## Bound commands", "", "| Key | Command | Description |", "| --- | --- | --- |");
   for (const command of bound) {
-    const shown = (keys.get(command) ?? []).map((k) => `\`${k}\``).join("、 ");
+    const shown = (keys.get(command) ?? []).map((k) => `\`${k}\``).join(", ");
     lines.push(`| ${shown} | \`${command}\` | ${cell(docs[command] ?? "")} |`);
   }
-  lines.push("", "## キーなし(`M-x` で実行)", "", "| コマンド | 説明 |", "| --- | --- |");
+  lines.push(
+    "",
+    "## Unbound commands (run with `M-x`)",
+    "",
+    "| Command | Description |",
+    "| --- | --- |",
+  );
   for (const command of unbound) lines.push(`| \`${command}\` | ${cell(docs[command] ?? "")} |`);
   lines.push("");
   return lines.join("\n");

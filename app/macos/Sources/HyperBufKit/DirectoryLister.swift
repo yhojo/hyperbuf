@@ -42,7 +42,7 @@ public enum DirectoryLister {
         guard
             let urls = try? FileManager.default.contentsOfDirectory(
                 at: URL(fileURLWithPath: dir, isDirectory: true), includingPropertiesForKeys: keys, options: [])
-        else { return Listing(error: "読めません: \(dir)") }
+        else { return Listing(error: "Cannot read: \(dir)") }
         var result = Listing()
         for url in urls {
             let name = url.lastPathComponent
@@ -65,8 +65,8 @@ public enum DirectoryLister {
     /// 再帰の一覧の起点にしてよいか。`~` と `/` は拒否する(理由を返す)。
     public static func refusalReason(for dir: String, home: String) -> String? {
         let real = PathUtil.canonicalPath(dir) ?? dir
-        if real == "/" { return "ルート(/)は、再帰の起点にしません" }
-        if real == (PathUtil.canonicalPath(home) ?? home) { return "ホスト(~)は、再帰の起点にしません" }
+        if real == "/" { return "The root (/) cannot be a recursion root" }
+        if real == (PathUtil.canonicalPath(home) ?? home) { return "The home directory (~) cannot be a recursion root" }
         return nil
     }
 
@@ -75,7 +75,7 @@ public enum DirectoryLister {
         _ dir: String, home: String, maxFiles: Int = maxTreeFiles, maxSeconds: Double = maxTreeSeconds
     ) -> Tree {
         if let reason = refusalReason(for: dir, home: home) { return Tree(refused: reason) }
-        guard let root = PathUtil.canonicalPath(dir) else { return Tree(error: "読めません: \(dir)") }
+        guard let root = PathUtil.canonicalPath(dir) else { return Tree(error: "Cannot read: \(dir)") }
         let deadline = Date().addingTimeInterval(maxSeconds)
         var result = Tree()
         collect(

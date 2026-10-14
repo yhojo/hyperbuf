@@ -26,14 +26,14 @@ extension Result where Success == Void {
         let c = try config(
             t, #"{"editorName": "Emacs", "editorCommand": ["/usr/bin/true", "-n", "-e", "(hyperbuf-edit-here)"]}"#)
         #expect(c.command == ["/usr/bin/true", "-n", "-e", "(hyperbuf-edit-here)"])
-        #expect(c.menuTitle == "Emacs で編集")
+        #expect(c.menuTitle == "Edit in Emacs")
     }
 
     @Test func withoutACommandItOnlyRecords() throws {
         let t = try TempProject()
         defer { t.remove() }
         #expect(EditorConfig.load(from: t.url.appendingPathComponent("none.json")).command == nil)
-        #expect(try config(t, "{}").menuTitle == "エディタ用に位置を記録")
+        #expect(try config(t, "{}").menuTitle == "Record Location for Editor")
         #expect(try config(t, "{broken").command == nil)
     }
 

@@ -16,17 +16,19 @@ public enum OpenRequestValidator {
         path: String?, line: Int?, anchor: String?, version: Int?
     ) -> Result<ValidatedOpen, ProtocolError> {
         if let version, version != HyperBufProtocol.version {
-            return .failure(ProtocolError(.unsupportedVersion, "未対応のバージョンです(v=\(version))"))
+            return .failure(ProtocolError(.unsupportedVersion, "Unsupported version (v=\(version))"))
         }
         guard let path, path.hasPrefix("/"), !path.contains("\0"),
             !path.unicodeScalars.contains(where: { $0.value < 0x20 || $0.value == 0x7f }),
             !path.split(separator: "/").contains("..")
-        else { return .failure(ProtocolError(.badRequest, "path が不正です(絶対パスのみ)")) }
-        guard path.hasSuffix(".md") else { return .failure(ProtocolError(.notMarkdown, ".md のみ開けます")) }
-        if let line, line <= 0 { return .failure(ProtocolError(.badRequest, "line が不正です")) }
+        else { return .failure(ProtocolError(.badRequest, "Invalid path (absolute paths only)")) }
+        guard path.hasSuffix(".md") else {
+            return .failure(ProtocolError(.notMarkdown, "Only .md files can be opened"))
+        }
+        if let line, line <= 0 { return .failure(ProtocolError(.badRequest, "Invalid line")) }
         // 長さは Unicode のコードポイントで数える(JSON Schema の maxLength と同じ。書記素の数ではない)
         if let anchor, anchor.unicodeScalars.count > HyperBufProtocol.maxAnchorLength {
-            return .failure(ProtocolError(.badRequest, "anchor が長すぎます"))
+            return .failure(ProtocolError(.badRequest, "anchor is too long"))
         }
         return .success(ValidatedOpen(path: path, line: line, anchor: (anchor?.isEmpty ?? true) ? nil : anchor))
     }

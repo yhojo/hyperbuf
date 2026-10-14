@@ -175,7 +175,9 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
             guard let object = body["location"],
                 let data = try? JSONSerialization.data(withJSONObject: object),
                 let web = try? JSONDecoder().decode(WebLocation.self, from: data)
-            else { return replyHandler(["ok": false, "triggered": false, "message": "位置を解釈できません"], nil) }
+            else {
+                return replyHandler(["ok": false, "triggered": false, "message": "Cannot interpret the location"], nil)
+            }
             Task { replyHandler(await model.markLocation(web, from: frame), nil) }
         case "respond":
             if let id = body["id"] as? String, let payload = body["result"] as? [String: Any] {

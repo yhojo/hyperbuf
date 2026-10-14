@@ -35,27 +35,27 @@ public struct UrlPolicy: Sendable {
     }
 
     public func decide(_ raw: String, remembered: RememberedOrigins) -> Decision {
-        guard raw.count <= Self.maxLength else { return .deny(reason: "URL が長すぎます") }
+        guard raw.count <= Self.maxLength else { return .deny(reason: "URL is too long") }
         guard !raw.unicodeScalars.contains(where: { $0.value < 0x20 || $0.value == 0x7F }) else {
-            return .deny(reason: "URL に制御文字が含まれています")
+            return .deny(reason: "URL contains control characters")
         }
         guard let components = URLComponents(string: raw), let scheme = components.scheme?.lowercased() else {
-            return .deny(reason: "URL を解釈できません")
+            return .deny(reason: "Cannot parse the URL")
         }
         switch scheme {
         case "mailto":
             // メールクライアントを開く。毎回確認する(記憶しない)
             return .confirm(origin: nil)
         case "http", "https":
-            guard let host = components.host, !host.isEmpty else { return .deny(reason: "ホストがありません") }
+            guard let host = components.host, !host.isEmpty else { return .deny(reason: "No host") }
             if components.user != nil || components.password != nil {
-                return .deny(reason: "ユーザー名・パスワードを含む URL は開きません(フィッシングに使われる形です)")
+                return .deny(reason: "URLs with a user name or password are not opened (a form used for phishing)")
             }
             if trusted.contains(where: { Self.glob($0, matches: raw) }) { return .open }
-            guard let origin = Self.origin(of: raw) else { return .deny(reason: "URL を解釈できません") }
+            guard let origin = Self.origin(of: raw) else { return .deny(reason: "Cannot parse the URL") }
             return remembered.contains(origin: origin) ? .open : .confirm(origin: origin)
         default:
-            return .deny(reason: "\(scheme): のリンクは開きません(http / https / mailto だけ)")
+            return .deny(reason: "Links with the \(scheme): scheme are not opened (only http / https / mailto)")
         }
     }
 

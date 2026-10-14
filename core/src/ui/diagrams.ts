@@ -52,7 +52,7 @@ export async function hydrateDiagrams(root: HTMLElement): Promise<DiagramStats> 
       document.getElementById(`d${id}`)?.remove(); // 失敗時に body へ残る一時要素
       box.className = "render-error";
       const title = document.createElement("strong");
-      title.textContent = "Mermaid の描画に失敗しました";
+      title.textContent = "Mermaid rendering failed";
       const msg = document.createElement("pre");
       const text = err instanceof Error ? err.message : String(err);
       msg.textContent = text.split("\n").slice(0, 4).join("\n");

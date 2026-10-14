@@ -157,7 +157,8 @@ final class AppModel: NSObject, NSWindowDelegate {
     /// About: 名前・版・著作権(Info.plist)に、ライセンスと、サードパーティのライセンスの場所を添える。
     @objc func menuAbout(_ sender: Any?) {
         let credits = NSAttributedString(
-            string: "Apache License 2.0\n\nサードパーティのソフトウェアの著作権表示とライセンスは、メニューの「サードパーティのライセンスを表示」で開けます。",
+            string:
+                "Apache License 2.0\n\nCopyright notices and licenses of third-party software are available from the menu: Show Third-Party Licenses.",
             attributes: [.font: NSFont.systemFont(ofSize: 11)])
         NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
     }
@@ -264,16 +265,16 @@ final class AppModel: NSObject, NSWindowDelegate {
             guard editorConfig.command != nil else {
                 return [
                     "ok": true, "triggered": false,
-                    "message": "位置を記録しました(エディタで M-x hyperbuf-visit-location)",
+                    "message": "Location recorded (run M-x hyperbuf-visit-location in the editor)",
                 ]
             }
             switch await EditorCommand.run(editorConfig) {
             case .success:
-                return ["ok": true, "triggered": true, "message": "\(editorConfig.name) を呼び出しました"]
+                return ["ok": true, "triggered": true, "message": "Invoked \(editorConfig.name)"]
             case .failure(let failure):
                 return [
                     "ok": true, "triggered": false,
-                    "message": "位置は記録しましたが、エディタを呼び出せませんでした(\(failure))",
+                    "message": "Location recorded, but the editor could not be invoked (\(failure))",
                 ]
             }
         }
@@ -290,10 +291,10 @@ final class AppModel: NSObject, NSWindowDelegate {
             try server.start()
             self.server = server
         } catch SocketServer.StartError.alreadyRunning {
-            NSLog("HyperBuf: すでに起動しています(\(server.path))。終了します")
+            NSLog("HyperBuf: already running (\(server.path)); exiting")
             NSApp.terminate(nil)
         } catch {
-            NSLog("HyperBuf: ソケットを起動できません: \(error)")
+            NSLog("HyperBuf: cannot start socket: \(error)")
         }
     }
 

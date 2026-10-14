@@ -80,7 +80,7 @@ export class Views {
   /** 選択中の window の view。 */
   selected(): WinView {
     const view = this.views.get(this.opts.model.selected);
-    if (!view) throw new Error("選択中の window に view がありません");
+    if (!view) throw new Error("Selected window has no view");
     return view;
   }
 
@@ -404,12 +404,12 @@ export class Views {
     view.el.classList.toggle("selected", selected);
     if (!entry) {
       // 開いているバッファがない(起動直後など)
-      view.modeLine.name.textContent = "(バッファなし)";
+      view.modeLine.name.textContent = "(no buffer)";
       view.modeLine.pos.textContent = "";
       view.modeLine.hist.textContent = "";
       if (view.lastKey !== "empty") {
         view.content.innerHTML =
-          '<div class="empty-state">C-x C-f でファイルを開きます(C-x p f: 基準のディレクトリ以下から探す)</div>';
+          '<div class="empty-state">Type C-x C-f to open a file (C-x p f: search under the base directory)</div>';
         view.lastKey = "empty";
         view.lastEntry = null;
       }
@@ -419,9 +419,9 @@ export class Views {
     if (!buf) return;
     const key = `${entry.path}@${buf.version}`;
     const name = this.names.get(entry.path) ?? entry.path;
-    const gone = buf.missing ? "  (削除されました。移動された可能性があります)" : "";
+    const gone = buf.missing ? "  (deleted; it may have been moved)" : "";
     view.modeLine.name.textContent = `${name}${gone}`;
-    view.modeLine.hist.textContent = `[履歴 ${win.index + 1}/${win.history.length}]${this.followUpdates ? " [追従]" : ""}`;
+    view.modeLine.hist.textContent = `[History ${win.index + 1}/${win.history.length}]${this.followUpdates ? " [Follow]" : ""}`;
 
     if (view.lastKey !== key) {
       // 外部更新(同じ文書の版が変わった)なら、見出し基準で閲覧位置を維持する
@@ -479,7 +479,7 @@ export class Views {
     const info = await hydrateDiagrams(view.content);
     if (token !== view.renderToken) return;
     this.stats.diagrams = info.count
-      ? `図 ${info.count}件(${info.ms.toFixed(0)}ms${info.errors ? `, 失敗${info.errors}` : ""})`
+      ? `Diagrams ${info.count} (${info.ms.toFixed(0)}ms${info.errors ? `, ${info.errors} failed` : ""})`
       : "";
     if (view.content.scrollTop === before && view.computeTop) {
       this.setScroll(view, view.computeTop());

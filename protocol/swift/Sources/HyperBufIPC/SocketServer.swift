@@ -197,7 +197,7 @@ public final class SocketServer: @unchecked Sendable {
                 lines = try framer.append(Data(chunk[0..<n]))
             } catch {
                 conn.begin()
-                conn.write(.failure(id: nil, ProtocolError(.badRequest, "1 行が大きすぎます")))
+                conn.write(.failure(id: nil, ProtocolError(.badRequest, "Line too large")))
                 return conn.markEOF()
             }
             for line in lines { dispatch(line, conn) }
@@ -207,15 +207,15 @@ public final class SocketServer: @unchecked Sendable {
     private func dispatch(_ line: Data, _ conn: Connection) {
         conn.begin()
         guard let request = try? JSONDecoder().decode(Request.self, from: line) else {
-            return conn.write(.failure(id: nil, ProtocolError(.badRequest, "JSON として解釈できません")))
+            return conn.write(.failure(id: nil, ProtocolError(.badRequest, "Cannot parse as JSON")))
         }
         if let v = request.v, v != HyperBufProtocol.version {
             return conn.write(
-                .failure(id: request.id, ProtocolError(.unsupportedVersion, "未対応のバージョンです(v=\(v))")))
+                .failure(id: request.id, ProtocolError(.unsupportedVersion, "Unsupported version (v=\(v))")))
         }
         guard let operation = RequestOperation(rawValue: request.op) else {
             return conn.write(
-                .failure(id: request.id, ProtocolError(.unknownOp, "未対応の操作です: \(request.op)")))
+                .failure(id: request.id, ProtocolError(.unknownOp, "Unsupported operation: \(request.op)")))
         }
         let once = OnceFlag()
         handler(request, operation) { response in

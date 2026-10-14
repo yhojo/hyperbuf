@@ -92,7 +92,7 @@ public struct CLI: Sendable {
                 remaining = remaining.dropFirst()
             } catch SocketClient.ClientError.notRunning {
                 if launched {
-                    env.stderr("hyperbuf: 起動したアプリに接続できません")
+                    env.stderr("hyperbuf: cannot connect to the launched app")
                     return .cannotLaunch
                 }
                 // アプリが起動していない: `hyperbuf://ping`(起動だけ)で起動し、ソケットが現れるのを待って、
@@ -105,20 +105,22 @@ public struct CLI: Sendable {
                     env.stderr("hyperbuf: \(error.message)")
                     return .cannotLaunch
                 } catch {
-                    env.stderr("hyperbuf: アプリを起動できません: \(error)")
+                    env.stderr("hyperbuf: cannot launch the app: \(error)")
                     return .cannotLaunch
                 }
                 launched = true
                 if !waitForSocket(env) {
-                    env.stderr("hyperbuf: 起動したアプリに接続できません")
+                    env.stderr("hyperbuf: cannot connect to the launched app")
                     return .cannotLaunch
                 }
                 // 同じ要求を、ソケットで送り直す(`remaining` は、そのまま)
             } catch SocketClient.ClientError.timeout {
-                env.stderr("hyperbuf: アプリの応答がありません(アプリ内で確認を待っているかもしれません。--wait で、長く待てます)")
+                env.stderr(
+                    "hyperbuf: no response from the app (it may be waiting for confirmation; use --wait to wait longer)"
+                )
                 return .refused
             } catch {
-                env.stderr("hyperbuf: アプリとの通信に失敗しました: \(error)")
+                env.stderr("hyperbuf: communication with the app failed: \(error)")
                 return .failure
             }
         }

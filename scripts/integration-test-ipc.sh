@@ -270,7 +270,7 @@ call({"v": 1, "op": "open", "path": edit_file})
 check("指した位置は、まだない", call({"v": 1, "op": "get-location"})["result"]["location"] is None)
 
 echo = select_and_edit("uniqueword")
-check("選択して「エディタで編集」→ 呼び出された", "呼び出しました" in echo, echo)
+check("選択して「エディタで編集」→ 呼び出された", "Invoked" in echo, echo)
 loc = call({"v": 1, "op": "get-location"})["result"]["location"]
 raw = open(edit_file, "rb").read()
 check("正確(exact)な位置", loc and loc["precision"] == "exact" and loc["expect"] == "uniqueword", loc)
@@ -302,7 +302,7 @@ if shutil.which("emacs"):
 
 before = call({"v": 1, "op": "get-location"})["result"]["location"]
 echo = page("await window.__hyperbuf.search('uniqueword'); await window.__hyperbuf.commands['edit-in-editor'](); return document.getElementById('echo').textContent;")
-check("検索結果(仮想 buffer)は、エディタで編集できない", "ファイルに対応しない" in echo, echo)
+check("検索結果(仮想 buffer)は、エディタで編集できない", "without a file" in echo, echo)
 check("このとき、指した位置は変わらない", call({"v": 1, "op": "get-location"})["result"]["location"] == before)
 
 call({"v": 1, "op": "open", "path": edit_file})

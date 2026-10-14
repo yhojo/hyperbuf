@@ -30,7 +30,7 @@ public struct UserSettings: Sendable, Equatable {
             guard let raw = object[key] else { return current }
             // JSON の数値(1 / 0)を、真偽値として受け取らない(`as? Bool` は、NSNumber の 1 を true にしてしまう)
             if let number = raw as? NSNumber, CFGetTypeID(number) == CFBooleanGetTypeID() { return number.boolValue }
-            settings.problems.append("\(key) は true / false にしてください(無視します)")
+            settings.problems.append("\(key) must be true or false (ignored)")
             return current
         }
         settings.restoreSession = flag("restoreSession", settings.restoreSession)
@@ -43,13 +43,14 @@ public struct UserSettings: Sendable, Equatable {
                         let scheme = pattern.split(separator: ":", maxSplits: 1).first,
                         ["http", "https"].contains(scheme.lowercased())
                     else {
-                        settings.problems.append("trustedUrls に不正な項目があります(http:// または https:// で始めてください。無視します)")
+                        settings.problems.append(
+                            "trustedUrls has an invalid entry (must start with http:// or https://; ignored)")
                         continue
                     }
                     settings.trustedUrls.append(pattern)
                 }
             } else {
-                settings.problems.append("trustedUrls は文字列の配列(\(maxTrustedUrls) 件まで)にしてください(無視します)")
+                settings.problems.append("trustedUrls must be an array of strings (up to \(maxTrustedUrls); ignored)")
             }
         }
         return settings

@@ -1,64 +1,64 @@
 <!-- 自動生成: core/scripts/gen-keybindings.ts。直接編集しない(コードの変更に合わせて、再生成する) -->
 
-# キー割り当て
+# Key bindings
 
-`C-h b` で、この一覧を出す。割り当ては、`config.json` の `keybindings` で変えられる(`null` で、標準の割り当てを外す)。
-コマンドは、`M-x` から、名前で実行できる。
+`C-h b` shows this list. Bindings can be changed with `keybindings` in `config.json` (`null` removes a default binding).
+Commands can be run by name with `M-x`.
 
-## 割り当て済み
+## Bound commands
 
-| キー | コマンド | 説明 |
+| Key | Command | Description |
 | --- | --- | --- |
-| `C-b`、 `left`、 `s-[` | `back` | 参照履歴を戻る |
-| `C-c C-b` | `backward-same-level` | 同じレベルの、前の見出しへ(親をまたがない) |
-| `M-<` | `beginning-of-document` | 文書の先頭へ |
-| `C-x 5 0` | `delete-frame` | このフレームを閉じる(最後の 1 つなら、アプリを終了する) |
-| `C-x 5 1` | `delete-other-frames` | このフレームだけを残して、ほかのフレームを閉じる |
-| `C-x 1` | `delete-other-windows` | 選択中の window だけを残す |
-| `C-x 0` | `delete-window` | 選択中の window を閉じる |
-| `C-h b` | `describe-bindings` | キー割り当ての一覧を出す(設定の問題も) |
-| `C-c e` | `edit-in-editor` | 指した場所(選択・右クリック・画面の上端)を、エディタで編集するために記録する |
-| `M->` | `end-of-document` | 文書の末尾へ |
-| `C-x ^` | `enlarge-window` | 選択中の window を、縦に広げる(隣は縮む) |
-| `C-x }` | `enlarge-window-horizontally` | 選択中の window を、横に広げる(隣は縮む) |
-| `M-x` | `execute-command` | コマンドを、名前を選んで実行する |
-| `C-x C-f` | `find-file` | ファイルを開く(基準のディレクトリから始まるパス補完。ディレクトリは RET で入る。~/・../・絶対パスも可) |
-| `RET` | `follow-link` | 選んでいるリンクをたどる |
-| `C-f`、 `right`、 `s-]` | `forward` | 参照履歴を進む |
-| `C-c C-f` | `forward-same-level` | 同じレベルの、次の見出しへ(親をまたがない) |
-| `C-c j` | `goto-heading` | 見出しを選んで、そこへ移動する |
-| `M-g g` | `goto-line` | 元の Markdown の行番号を指定して、そこへ移動する |
-| `C-r` | `isearch-backward` | 文書内を、後ろ向きにインクリメンタル検索する |
-| `C-s` | `isearch-forward` | 文書内を、インクリメンタルに検索する(C-s で次、C-r で前、RET で確定、C-g で取消) |
-| `C-g` | `keyboard-quit` | 入力途中のキーを取り消す |
-| `C-x k` | `kill-buffer` | buffer を閉じる(どの window の履歴からも、その参照を取り除く) |
-| `C-x 5 2` | `make-frame` | 新しいフレーム(macOS のウィンドウ)を作る。空いている最小の番号(Cmd-1〜)になる |
-| `C-c C-n` | `next-heading` | 次の見出しへ(参照履歴には積まない) |
-| `TAB` | `next-link` | 次のリンクを選ぶ |
-| `C-x 5 o` | `other-frame` | 次のフレームへ移る |
-| `C-x o` | `other-window` | 次の window を選択する |
-| `S-TAB` | `prev-link` | 前のリンクを選ぶ |
-| `C-c C-p` | `previous-heading` | 前の見出しへ(節の途中なら、その節の見出しへ) |
-| `C-x p f` | `project-find-file` | 基準のディレクトリ以下の Markdown を、再帰で一覧にして絞り込み、開く(../・~/・絶対パスで基準を変えられる) |
-| `C-n` | `scroll-line-down` | 1 行分、下へスクロールする |
-| `C-p` | `scroll-line-up` | 1 行分、上へスクロールする |
-| `C-v`、 `SPC` | `scroll-page-down` | 1 画面分、下へスクロールする |
-| `DEL`、 `M-v`、 `S-SPC` | `scroll-page-up` | 1 画面分、上へスクロールする |
-| `M-s g` | `search-project` | 基準のディレクトリ以下を全文検索して、結果を仮想 buffer に出す |
-| `C-x {` | `shrink-window-horizontally` | 選択中の window を、横に狭める(隣は広がる) |
-| `C-x -` | `shrink-window-if-larger-than-buffer` | 選択中の window が文書より大きければ、文書がちょうど収まる高さまで縮める |
-| `C-x 2` | `split-below` | window を、上下に分割する(履歴は、複製される) |
-| `C-x 3` | `split-right` | window を、左右に分割する(履歴は、複製される) |
-| `C-x b` | `switch-buffer` | 開いている buffer を、最近使った順の候補から選んで表示する |
-| `C-x x u` | `toggle-follow-updates` | 外部でファイルが更新されたとき、最初に変わった場所へ移る/移らない(既定は移らない。モードラインに [追従]) |
-| `C-c C-u` | `up-heading` | 上のレベルの見出しへ |
+| `C-b`, `left`, `s-[` | `back` | Go back in reference history |
+| `C-c C-b` | `backward-same-level` | Go to the previous heading at the same level (does not cross parents) |
+| `M-<` | `beginning-of-document` | Go to the beginning of the document |
+| `C-x 5 0` | `delete-frame` | Delete this frame (quits the app if it is the last one) |
+| `C-x 5 1` | `delete-other-frames` | Delete all other frames |
+| `C-x 1` | `delete-other-windows` | Make the selected window fill the frame |
+| `C-x 0` | `delete-window` | Delete the selected window |
+| `C-h b` | `describe-bindings` | Show the list of key bindings (and configuration problems) |
+| `C-c e` | `edit-in-editor` | Record the location at point (selection, right-click or top of the screen) for editing in the editor |
+| `M->` | `end-of-document` | Go to the end of the document |
+| `C-x ^` | `enlarge-window` | Make the selected window taller (its neighbour shrinks) |
+| `C-x }` | `enlarge-window-horizontally` | Make the selected window wider (its neighbour shrinks) |
+| `M-x` | `execute-command` | Execute a command chosen by name |
+| `C-x C-f` | `find-file` | Visit a file (path completion starting at the base directory; RET enters a directory; ~/, ../ and absolute paths also work) |
+| `RET` | `follow-link` | Follow the selected link |
+| `C-f`, `right`, `s-]` | `forward` | Go forward in reference history |
+| `C-c C-f` | `forward-same-level` | Go to the next heading at the same level (does not cross parents) |
+| `C-c j` | `goto-heading` | Go to a heading chosen from a list |
+| `M-g g` | `goto-line` | Go to a line number of the source Markdown |
+| `C-r` | `isearch-backward` | Search the document incrementally, backward |
+| `C-s` | `isearch-forward` | Search the document incrementally (C-s next, C-r previous, RET accept, C-g cancel) |
+| `C-g` | `keyboard-quit` | Cancel the key sequence in progress |
+| `C-x k` | `kill-buffer` | Kill a buffer (its references are removed from every window's history) |
+| `C-x 5 2` | `make-frame` | Make a new frame (a macOS window), numbered with the smallest free number (Cmd-1...) |
+| `C-c C-n` | `next-heading` | Go to the next heading (not pushed onto reference history) |
+| `TAB` | `next-link` | Select the next link |
+| `C-x 5 o` | `other-frame` | Select the next frame |
+| `C-x o` | `other-window` | Select the next window |
+| `S-TAB` | `prev-link` | Select the previous link |
+| `C-c C-p` | `previous-heading` | Go to the previous heading (the current section's heading if in the middle of one) |
+| `C-x p f` | `project-find-file` | Visit a Markdown file from a recursive list under the base directory (../, ~/ and absolute paths change the base) |
+| `C-n` | `scroll-line-down` | Scroll down one line |
+| `C-p` | `scroll-line-up` | Scroll up one line |
+| `C-v`, `SPC` | `scroll-page-down` | Scroll down one screen |
+| `DEL`, `M-v`, `S-SPC` | `scroll-page-up` | Scroll up one screen |
+| `M-s g` | `search-project` | Search all files under the base directory and show the results in a virtual buffer |
+| `C-x {` | `shrink-window-horizontally` | Make the selected window narrower (its neighbour grows) |
+| `C-x -` | `shrink-window-if-larger-than-buffer` | Shrink the selected window to fit its document if it is taller than the document |
+| `C-x 2` | `split-below` | Split the window above and below (history is copied) |
+| `C-x 3` | `split-right` | Split the window side by side (history is copied) |
+| `C-x b` | `switch-buffer` | Switch to a buffer chosen from the open buffers (most recently used first) |
+| `C-x x u` | `toggle-follow-updates` | Toggle jumping to the first changed place when a file is updated externally (off by default; [Follow] in the mode line) |
+| `C-c C-u` | `up-heading` | Go up to the parent heading |
 
-## キーなし(`M-x` で実行)
+## Unbound commands (run with `M-x`)
 
-| コマンド | 説明 |
+| Command | Description |
 | --- | --- |
-| `forget-remembered-path` | 警告パスの下で、承認して記憶した場所を、選んで取り消す(次から、また確認される) |
-| `forget-remembered-site` | 「always」で記憶した、ブラウザで開いてよいサイトを、選んで取り消す(次から、また確認される) |
+| `forget-remembered-path` | Forget a location approved and remembered under a warn path (it will be confirmed again) |
+| `forget-remembered-site` | Forget a site remembered with "always" for opening in the browser (it will be confirmed again) |
 
 ## キーの表記
 

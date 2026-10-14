@@ -115,9 +115,9 @@ export async function startApp(options: {
   views.refresh();
   if (restored) {
     if (restored.selection) applySelection(ctx, restored.selection);
-    echo.message("前回の状態を復元しました");
+    echo.message("Previous session restored");
   } else {
-    echo.message("C-x C-f でファイルを開きます");
+    echo.message("Type C-x C-f to open a file");
   }
   // アプリがアクティブになったときに、表示中のファイルを照合する(監視で拾えない場合の保険)
   window.addEventListener("focus", () => {
@@ -136,7 +136,7 @@ export async function startApp(options: {
   wireHostEvents(ctx, commands);
   const problemCount = bindings.problems.length + ctx.problems.length;
   if (problemCount) {
-    echo.message(`設定: ${problemCount} 件の問題があります(C-h b で確認できます)`);
+    echo.message(`Configuration: ${problemCount} problem(s) (see C-h b)`);
   }
 
   return {

@@ -202,7 +202,7 @@ const rehypeAlerts: Plugin<[], HastRoot> = () => (tree) => {
 const rehypeImages: Plugin<[], HastRoot> = () => (tree, file: VFile) => {
   const { docPath, resolveResource } = file.data;
   if (docPath === undefined || resolveResource === undefined) {
-    throw new Error("rehypeImages: docPath と resolveResource が必要です");
+    throw new Error("rehypeImages: docPath and resolveResource are required");
   }
   visit(tree, "element", (node, index, parent) => {
     if (node.tagName !== "img" || !parent || index === undefined) return;
@@ -211,12 +211,12 @@ const rehypeImages: Plugin<[], HastRoot> = () => (tree, file: VFile) => {
     if (target) {
       node.properties["src"] = resolveResource(target.path);
     } else {
-      const label = String(node.properties?.["alt"] || src || "(src なし)");
+      const label = String(node.properties?.["alt"] || src || "(no src)");
       const replacement: Element = {
         type: "element",
         tagName: "span",
         properties: { className: ["blocked-image"] },
-        children: [{ type: "text", value: `[画像をブロックしました: ${label}]` }],
+        children: [{ type: "text", value: `[Image blocked: ${label}]` }],
       };
       parent.children[index] = replacement as ElementContent;
     }

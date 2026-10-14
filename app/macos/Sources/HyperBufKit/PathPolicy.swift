@@ -48,7 +48,8 @@ public struct PathPolicy: Sendable {
         // 許可と警告が同じパスなら、安全側(警告)にして、報告する
         let both = Set(self.warn.map { $0.lowercased() }).intersection(self.allow.map { $0.lowercased() })
         for path in both.sorted() {
-            self.problems.append("allowPaths と warnPaths に同じパスがあります(警告として扱います): \(path)")
+            self.problems.append(
+                "The same path is in both allowPaths and warnPaths (treated as a warning path): \(path)")
         }
         self.allow.removeAll { both.contains($0.lowercased()) }
     }
@@ -65,17 +66,17 @@ public struct PathPolicy: Sendable {
         func list(_ key: String) -> [String]? {
             guard let raw = object[key] else { return nil }
             guard let items = raw as? [Any] else {
-                problems.append("\(key) は文字列の配列にしてください(無視します)")
+                problems.append("\(key) must be an array of strings (ignored)")
                 return nil
             }
             var out: [String] = []
             for item in items {
                 guard let path = item as? String, !path.isEmpty, path.count <= 1024, !path.contains("\0") else {
-                    problems.append("\(key) に不正な項目があります(無視します)")
+                    problems.append("\(key) has an invalid entry (ignored)")
                     continue
                 }
                 guard path.hasPrefix("/") || path.hasPrefix("~/") || path == "~" else {
-                    problems.append("\(key): 絶対パス(または ~/…)で書いてください: \(path)")
+                    problems.append("\(key): write an absolute path (or ~/…): \(path)")
                     continue
                 }
                 out.append(path)

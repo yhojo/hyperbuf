@@ -14,6 +14,7 @@ Changes since 0.1.0, mostly from the feedback of the initial private distributio
 - Dragging the mode line resizes windows: dragging the mode line moves the border below the window (vertical); dragging its right end moves the border on the right (horizontal).
 - The cursor keys `←` / `→` go back / forward in the reference history, in addition to `C-b` / `C-f`.
 - A new `appearance` setting in `config.json` (`"system"` by default, `"light"` or `"dark"`) fixes the app to light or dark regardless of the OS setting. See `docs/configuration.md`.
+- A new `alpha` setting in `config.json`, `[active, inactive]` in percent (for example `[80, 65]`), makes the whole frame translucent, like `(set-frame-parameter nil 'alpha '(80 65))` in Emacs. It is ignored while the macOS accessibility option Reduce Transparency is on. See `docs/configuration.md`.
 - `M-x count-words` (`M-=`) counts the lines, words and characters of the selected text, or of the whole document, and shows them in the echo area (for example `Region has 3 lines, 42 words, 210 characters (180 without whitespace)`). It counts the displayed text, not the Markdown source. A live count in the mode line is intentionally not planned.
 
 ### Changed

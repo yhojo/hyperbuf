@@ -180,7 +180,7 @@ private final class ServerStartingLauncher: AppLauncher, @unchecked Sendable {
         #expect(CLI.run(["a.md"], env) == 3)
         let url = try #require(output.launched.first)
         #expect(url.host == "ping")
-        #expect(output.err.contains("接続できません"))
+        #expect(output.err.contains("cannot connect"))
     }
 
     @Test func reportsWhenTheAppCannotBeLaunched() throws {
@@ -214,6 +214,6 @@ private final class ServerStartingLauncher: AppLauncher, @unchecked Sendable {
         #expect(output.out == ["hyperbuf \(cliVersion)"])
         let help = Output()
         #expect(CLI.run(["--help"], help.environment(cwd: "/", socketPath: "/nonexistent")) == 0)
-        #expect(help.out.first?.contains("使い方") == true)
+        #expect(help.out.first?.contains("Usage") == true)
     }
 }

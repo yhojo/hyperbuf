@@ -40,6 +40,6 @@ window.__hyperbuf = await startApp({
   renderer,
 }).catch((err: unknown) => {
   const el = document.getElementById("echo");
-  if (el) el.textContent = `起動に失敗: ${err instanceof Error ? err.message : String(err)}`;
+  if (el) el.textContent = `Startup failed: ${err instanceof Error ? err.message : String(err)}`;
   throw err;
 });

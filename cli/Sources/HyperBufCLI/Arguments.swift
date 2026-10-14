@@ -48,23 +48,23 @@ public enum Arguments {
     public static let targets: Set<String> = ["current", "split-right", "split-below", "new-frame"]
 
     public static let usage = """
-        使い方: hyperbuf [オプション] <ファイル>[:<行>] ...
+        Usage: hyperbuf [options] <file>[:<line>] ...
 
-        Markdown を、HyperBuf.app で開く。アプリが起動していなければ、起動する。
+        Open Markdown files in HyperBuf.app. Launches the app if it is not running.
 
-        オプション:
-          --line <N>         行番号で位置を指定する(<ファイル>:<行> でもよい)
-          --anchor <ID>      見出しなどのアンカーで位置を指定する
-          --project <DIR>    プロジェクトのルートを明示する(アプリが起動していないとき、最初に開くプロジェクト)
-          --target <T>       表示先: current(既定)| split-right | split-below | new-frame
-          --wait             アプリ内の確認(プロジェクトの外のファイルなど)を、最大 60 秒待つ(既定は 3 秒)
-          --no-activate      起動するとき、アプリを前面に出さない
-          --print-url        開かずに、hyperbuf:// の URL を出力する
-          --version          バージョンを表示する
-          -h, --help         この説明を表示する
+        Options:
+          --line <N>         Position by line number (or use <file>:<line>)
+          --anchor <ID>      Position by anchor, such as a heading
+          --project <DIR>    Specify the project root explicitly (the first project to open when the app is not running)
+          --target <T>       Where to show: current (default) | split-right | split-below | new-frame
+          --wait             Wait up to 60 seconds for confirmation in the app (e.g. files outside the project) (default: 3)
+          --no-activate      Do not bring the app to the front when launching it
+          --print-url        Print the hyperbuf:// URL instead of opening it
+          --version          Print the version
+          -h, --help         Show this help
 
-        終了コード: 0 成功 / 1 使い方の誤り / 2 ファイルの問題 / 3 アプリを起動できない /
-                    4 拒否・期限切れ / 5 内部のエラー
+        Exit codes: 0 success / 1 usage error / 2 file problem / 3 cannot launch the app /
+                    4 rejected or expired / 5 internal error
         """
 
     public static func parse(_ arguments: [String]) -> Result<Command, UsageError> {
@@ -84,22 +84,22 @@ public enum Arguments {
             case "--print-url": options.printURL = true
             case "--line":
                 guard let text = value(for: argument), let n = Int(text), n > 0 else {
-                    return .failure(UsageError("--line には、1 以上の整数が必要です"))
+                    return .failure(UsageError("--line requires an integer of 1 or more"))
                 }
                 options.line = n
             case "--anchor":
                 guard let text = value(for: argument), !text.isEmpty else {
-                    return .failure(UsageError("--anchor には、値が必要です"))
+                    return .failure(UsageError("--anchor requires a value"))
                 }
                 options.anchor = text
             case "--project":
                 guard let text = value(for: argument), !text.isEmpty else {
-                    return .failure(UsageError("--project には、ディレクトリが必要です"))
+                    return .failure(UsageError("--project requires a directory"))
                 }
                 options.project = text
             case "--target":
                 guard let text = value(for: argument), targets.contains(text) else {
-                    return .failure(UsageError("--target は、\(targets.sorted().joined(separator: " / ")) のいずれかです"))
+                    return .failure(UsageError("--target must be one of: \(targets.sorted().joined(separator: " / "))"))
                 }
                 options.target = text
             case "--":
@@ -107,15 +107,15 @@ public enum Arguments {
                 index = arguments.count
             default:
                 if argument.hasPrefix("-") && argument != "-" {
-                    return .failure(UsageError("未知のオプションです: \(argument)"))
+                    return .failure(UsageError("Unknown option: \(argument)"))
                 }
                 options.files.append(argument)
             }
             index += 1
         }
-        if options.files.isEmpty { return .failure(UsageError("開くファイルを指定してください")) }
+        if options.files.isEmpty { return .failure(UsageError("Specify a file to open")) }
         if options.files.count > 1 && (options.line != nil || options.anchor != nil) {
-            return .failure(UsageError("--line と --anchor は、ファイルが 1 つのときだけ使えます"))
+            return .failure(UsageError("--line and --anchor can be used only with a single file"))
         }
         return .success(.open(options))
     }

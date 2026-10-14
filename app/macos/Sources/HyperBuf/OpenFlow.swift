@@ -87,7 +87,7 @@ final class OpenFlow {
 
     private func expire(_ id: String, _ request: Request) {
         guard let entry = pending.removeValue(forKey: id) else { return }
-        entry.reply?(.failure(id: request.id, ProtocolError(.timeout, "ユーザーの回答がありませんでした")))
+        entry.reply?(.failure(id: request.id, ProtocolError(.timeout, "No response from the user")))
         // 画面に残っている確認(ミニバッファ)も、閉じる。答えても、もう無効なので
         entry.frame.cancelOpen(id)
     }
@@ -117,7 +117,7 @@ final class OpenFlow {
                     id: nil,
                     ProtocolError(
                         rawCode: error?["code"] as? String ?? "internal",
-                        message: error?["message"] as? String ?? "失敗しました")))
+                        message: error?["message"] as? String ?? "Failed")))
         }
     }
 

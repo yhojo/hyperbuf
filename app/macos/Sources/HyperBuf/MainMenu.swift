@@ -37,54 +37,57 @@ enum MainMenu {
 
     private static func appMenu(model: AppModel) -> NSMenu {
         let menu = NSMenu(title: "HyperBuf")
-        entry(menu, "HyperBuf について", #selector(AppModel.menuAbout(_:)), target: model)
-        entry(menu, "サードパーティのライセンスを表示", #selector(AppModel.menuShowNotices(_:)), target: model)
+        entry(menu, "About HyperBuf", #selector(AppModel.menuAbout(_:)), target: model)
+        entry(menu, "Show Third-Party Licenses", #selector(AppModel.menuShowNotices(_:)), target: model)
         menu.addItem(.separator())
-        entry(menu, "設定ファイルの場所を表示", #selector(AppModel.menuRevealConfig(_:)), target: model)
+        entry(menu, "Show Config File in Finder", #selector(AppModel.menuRevealConfig(_:)), target: model)
         menu.addItem(.separator())
-        let services = NSMenu(title: "サービス")
-        menu.addItem(withTitle: "サービス", action: nil, keyEquivalent: "").submenu = services
+        let services = NSMenu(title: "Services")
+        menu.addItem(withTitle: "Services", action: nil, keyEquivalent: "").submenu = services
         NSApp.servicesMenu = services
         menu.addItem(.separator())
-        entry(menu, "HyperBuf を隠す", #selector(NSApplication.hide(_:)), "h")
-        entry(menu, "ほかを隠す", #selector(NSApplication.hideOtherApplications(_:)), "h", modifiers: [.command, .option])
-        entry(menu, "すべてを表示", #selector(NSApplication.unhideAllApplications(_:)))
+        entry(menu, "Hide HyperBuf", #selector(NSApplication.hide(_:)), "h")
+        entry(
+            menu, "Hide Others", #selector(NSApplication.hideOtherApplications(_:)), "h",
+            modifiers: [.command, .option])
+        entry(menu, "Show All", #selector(NSApplication.unhideAllApplications(_:)))
         menu.addItem(.separator())
-        entry(menu, "HyperBuf を終了", #selector(NSApplication.terminate(_:)), "q")
+        entry(menu, "Quit HyperBuf", #selector(NSApplication.terminate(_:)), "q")
         return menu
     }
 
     private static func fileMenu(model: AppModel) -> NSMenu {
-        let menu = NSMenu(title: "ファイル")
-        entry(menu, "新しいフレーム", #selector(AppModel.menuNewFrame(_:)), "n", target: model)
-        entry(menu, "ファイルを開く…", #selector(AppModel.menuOpenFile(_:)), "o", target: model)
+        let menu = NSMenu(title: "File")
+        entry(menu, "New Frame", #selector(AppModel.menuNewFrame(_:)), "n", target: model)
+        entry(menu, "Open File…", #selector(AppModel.menuOpenFile(_:)), "o", target: model)
         menu.addItem(.separator())
-        entry(menu, "フレームを閉じる", #selector(NSWindow.performClose(_:)), "w")
+        entry(menu, "Close Frame", #selector(NSWindow.performClose(_:)), "w")
         return menu
     }
 
     /// 編集: コピーなどは、フォーカスのある WebView に届く(ファーストレスポンダ)。
     private static func editMenu() -> NSMenu {
-        let menu = NSMenu(title: "編集")
-        entry(menu, "コピー", #selector(NSText.copy(_:)), "c")
-        entry(menu, "すべてを選択", #selector(NSText.selectAll(_:)), "a")
+        let menu = NSMenu(title: "Edit")
+        entry(menu, "Copy", #selector(NSText.copy(_:)), "c")
+        entry(menu, "Select All", #selector(NSText.selectAll(_:)), "a")
         return menu
     }
 
     private static func frameMenu(model: AppModel) -> NSMenu {
-        let menu = NSMenu(title: "フレーム")
+        let menu = NSMenu(title: "Frame")
         for slot in 1...SessionStore.maxFrames {
-            entry(menu, "フレーム \(slot)", #selector(AppModel.menuActivateFrame(_:)), "\(slot)", target: model)
+            entry(menu, "Frame \(slot)", #selector(AppModel.menuActivateFrame(_:)), "\(slot)", target: model)
             menu.items.last?.tag = slot
         }
         return menu
     }
 
     private static func windowMenu() -> NSMenu {
-        let menu = NSMenu(title: "ウインドウ")
-        entry(menu, "しまう", #selector(NSWindow.performMiniaturize(_:)), "m")
-        entry(menu, "拡大/縮小", #selector(NSWindow.performZoom(_:)))
-        entry(menu, "フルスクリーン", #selector(NSWindow.toggleFullScreen(_:)), "f", modifiers: [.command, .control])
+        let menu = NSMenu(title: "Window")
+        entry(menu, "Minimize", #selector(NSWindow.performMiniaturize(_:)), "m")
+        entry(menu, "Zoom", #selector(NSWindow.performZoom(_:)))
+        entry(
+            menu, "Enter Full Screen", #selector(NSWindow.toggleFullScreen(_:)), "f", modifiers: [.command, .control])
         return menu
     }
 }

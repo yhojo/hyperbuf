@@ -7,7 +7,7 @@
 // コンストラクタでは投げない。どのメソッドも、呼ばれたときに、失敗した Promise を返す。
 // 理由: docs/license-options.md(EPL-2.0 の同梱を避け、ライセンスの選択肢を広く保つ。約 1.5 MB のチャンクも減る)。
 const unsupported = () =>
-  Promise.reject(new Error("ELK レイアウトは、HyperBuf では使えません(layout: elk は未対応)"));
+  Promise.reject(new Error("The ELK layout is not supported in HyperBuf (layout: elk)"));
 
 export default class ELK {
   constructor() {

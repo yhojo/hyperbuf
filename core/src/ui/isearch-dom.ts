@@ -209,5 +209,5 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
     window.getSelection()?.removeAllRanges();
     content.scrollTop = origin.scrollTop;
   }
-  if (accepted && current === null && query) echo.message(`見つかりません: ${query}`);
+  if (accepted && current === null && query) echo.message(`Not found: ${query}`);
 }

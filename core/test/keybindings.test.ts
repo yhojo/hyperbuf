@@ -71,27 +71,27 @@ test("不明なコマンド・不正な表記・割り当てのないキーの�
     known,
   );
   assert.equal(r.problems.length, 3);
-  assert.ok(r.problems.some((p) => p.includes("不明なコマンド")));
-  assert.ok(r.problems.some((p) => p.includes("表記が不正")));
-  assert.ok(r.problems.some((p) => p.includes("外せません")));
+  assert.ok(r.problems.some((p) => p.includes("unknown command")));
+  assert.ok(r.problems.some((p) => p.includes("invalid key notation")));
+  assert.ok(r.problems.some((p) => p.includes("cannot be removed")));
   assert.equal(r.bindings["M-w"], "back"); // 正しいものは、適用される
   assert.ok(!("M-q" in r.bindings));
 });
 
 test("C-g は、取り消しに予約されている", () => {
   const r = applyOverrides(defaults, { "C-g": "back" }, known);
-  assert.ok(r.problems[0]?.includes("予約"));
+  assert.ok(r.problems[0]?.includes("reserved"));
   assert.ok(!("C-g" in r.bindings));
 });
 
 test("プレフィックスとコマンドの衝突は、無視する(外してから割り当てれば、できる)", () => {
   // C-x は、C-x 2 などのプレフィックス
   const conflict = applyOverrides(defaults, { "C-x": "back" }, known);
-  assert.ok(conflict.problems[0]?.includes("衝突"));
+  assert.ok(conflict.problems[0]?.includes("conflicts"));
   assert.ok(!("C-x" in conflict.bindings));
   // C-x 2 の下に、さらに割り当てると、C-x 2 がコマンドとプレフィックスの両方になる
   const deeper = applyOverrides(defaults, { "C-x 2 a": "back" }, known);
-  assert.ok(deeper.problems[0]?.includes("衝突"));
+  assert.ok(deeper.problems[0]?.includes("conflicts"));
   // 先に、外す(解除は、並びに関係なく先に処理される)
   const ok = applyOverrides(defaults, { "C-x 2 a": "back", "C-x 2": null }, known);
   assert.deepEqual(ok.problems, []);
@@ -116,16 +116,16 @@ test("describe-bindings の内容: 割り当て済み・キーなし・設定の
   const md = renderBindingsHelp({
     docs: { forward: "進む|戻る", back: "戻る", "next-link": "次のリンク" },
     bindings: { "C-f": "forward", "s-]": "forward", "C-b": "back" },
-    problems: ["「M-q」: 不明なコマンドです: x"],
+    problems: ['"M-q": unknown command: x'],
   });
-  assert.match(md, /^# キー割り当て/);
-  assert.match(md, /## 設定の問題[\s\S]*不明なコマンドです/);
-  assert.match(md, /\| `C-f`、 `s-]` \| `forward` \| 進む\\\|戻る \|/); // 表の区切りを壊さない
-  assert.match(md, /## キーなし[\s\S]*\| `next-link` \| 次のリンク \|/);
+  assert.match(md, /^# Key bindings/);
+  assert.match(md, /## Configuration problems[\s\S]*unknown command/);
+  assert.match(md, /\| `C-f`, `s-]` \| `forward` \| 進む\\\|戻る \|/); // 表の区切りを壊さない
+  assert.match(md, /## Unbound commands[\s\S]*\| `next-link` \| 次のリンク \|/);
   const none = renderBindingsHelp({
     docs: { back: "x" },
     bindings: { "C-b": "back" },
     problems: [],
   });
-  assert.doesNotMatch(none, /設定の問題/);
+  assert.doesNotMatch(none, /Configuration problems/);
 });

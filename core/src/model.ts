@@ -109,7 +109,7 @@ export function windows(model: Model): Win[] {
 
 export function selectedWindow(model: Model): Win {
   const win = windows(model).find((w) => w.id === model.selected);
-  if (!win) throw new Error("選択中の window がありません");
+  if (!win) throw new Error("No selected window");
   return win;
 }
 
@@ -193,7 +193,7 @@ function nodeOf(model: Model, win: Win): LayoutNode {
     } else node.children.forEach(walk);
   };
   walk(model.root);
-  if (!found) throw new Error("window がレイアウトにありません");
+  if (!found) throw new Error("Window not in layout");
   return found;
 }
 
@@ -202,7 +202,7 @@ function firstLeaf(node: LayoutNode): Extract<LayoutNode, { type: "leaf" }> {
 }
 
 function replaceChild(parent: LayoutNode, old: LayoutNode, next: LayoutNode): void {
-  if (parent.type !== "split") throw new Error("split ではありません");
+  if (parent.type !== "split") throw new Error("Not a split");
   parent.children[parent.children[0] === old ? 0 : 1] = next;
 }
 

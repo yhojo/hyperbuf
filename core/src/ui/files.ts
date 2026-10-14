@@ -51,7 +51,7 @@ export async function promptFindFile(ctx: AppContext): Promise<string | null> {
     if (text === "" || text.endsWith("/")) return null;
     const abs = resolveInput(text, base, home);
     if (!abs.endsWith(".md")) {
-      echo.message("Markdown(.md)のファイルだけ開けます");
+      echo.message("Only Markdown (.md) files can be opened");
       return null;
     }
     return { done: abs };
@@ -101,10 +101,10 @@ export async function promptFindFileRecursive(ctx: AppContext): Promise<string |
       noticed.add(dir);
       echo.message(
         tree.error
-          ? `一覧にできません: ${tree.error}`
+          ? `Cannot list: ${tree.error}`
           : tree.refused
-            ? `${tree.refused}(1 階層の一覧にします)`
-            : "ファイル数の上限で打ち切りました",
+            ? `${tree.refused} (listing one level only)`
+            : "Listing truncated at the file limit",
       );
     }
     if (tree.refused) {

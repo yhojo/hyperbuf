@@ -21,7 +21,7 @@ public enum OpenClassifier {
     ) -> Result<Outcome, ProtocolError> {
         // シンボリックリンクは解決したうえで判定する(リンクによる迂回を防ぐ)
         guard let real = PathUtil.canonicalPath(open.path) else {
-            return .failure(ProtocolError(.notFound, "ファイルがありません: \(open.path)"))
+            return .failure(ProtocolError(.notFound, "No such file: \(open.path)"))
         }
         switch policy.decide(real, remembered: remembered) {
         case .confirm(let remember): return .success(.confirm(absolute: real, remember: remember))

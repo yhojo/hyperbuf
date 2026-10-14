@@ -25,14 +25,12 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
     try {
       openBuffer(model, path, await host.readFile(path));
       views.refresh();
-      echo.message(`外部更新を反映: ${abbreviateHome(path, host.home)}`);
+      echo.message(`Reverted: ${abbreviateHome(path, host.home)}`);
     } catch (err) {
       // 読めない = 消えた(または、置換の途中)。バッファは残して、知らせる
       buf.missing = true;
       views.refresh();
-      echo.message(
-        `外部更新を反映できません: ${abbreviateHome(path, host.home)} (${errorMessage(err)})`,
-      );
+      echo.message(`Cannot revert: ${abbreviateHome(path, host.home)} (${errorMessage(err)})`);
     }
   });
 
@@ -41,7 +39,7 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
   host.onOpenCancel?.((id) => {
     if (confirming !== id) return;
     minibuffer.cancel();
-    echo.message("連携: 要求の期限が切れました");
+    echo.message("Integration: request timed out");
   });
 
   // 外部(CLI・Emacs 連携)からの「開く」要求。docs/integration-protocol.md
@@ -50,7 +48,7 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
       if (req.id) host.respond?.(req.id, result);
     };
     const fail = (code: string, message: string): void => {
-      echo.message(`連携: ${message}`);
+      echo.message(`Integration: ${message}`);
       host.log?.(`REJECTED ${code} ${message}`);
       respond({ ok: false, error: { code, message } });
     };
@@ -58,10 +56,10 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
     if (req.confirm) {
       // 警告パスのファイルは、ダイアログではなくミニバッファで確認する(docs/project-model.md §5)。
       // 承認されたら、シェルが提案したパスが記憶される(永続化される)。
-      const where = req.remember ? `${abbreviateHome(req.remember, host.home)} を記憶して、` : "";
+      const where = req.remember ? `Remember ${abbreviateHome(req.remember, host.home)} and ` : "";
       confirming = req.id ?? null;
       const answer = await minibuffer.prompt(
-        `${where}${abbreviateHome(req.path, host.home)} を開きますか(警告パスです)? `,
+        `${where}open ${abbreviateHome(req.path, host.home)} (a warn path)? `,
         ["yes", "no"],
         { allowFree: false },
       );
@@ -70,7 +68,7 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
       // 回答は、承認でも拒否でも、シェルに伝える(承認が受理されたときだけ、読めるようになる)
       const granted = (await host.confirmOpen?.(req.id ?? "", answer === "yes")) ?? false;
       if (answer !== "yes" || !granted) {
-        return fail("outside-project", "警告パスのため開きませんでした");
+        return fail("outside-project", "Not opened because it is a warn path");
       }
     }
     const anchor = req.anchor ?? (req.line ? `line:${req.line}` : null);
@@ -79,11 +77,11 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
       jump(model, selectedWindow(model), req.path, anchor);
       views.refresh();
       echo.message(
-        `連携で開きました: ${abbreviateHome(req.path, host.home)}${anchor ? "#" + anchor : ""}`,
+        `Opened by integration: ${abbreviateHome(req.path, host.home)}${anchor ? "#" + anchor : ""}`,
       );
       respond({ ok: true, result: { path: req.path } });
     } catch (err) {
-      fail("not-found", `開けません: ${req.path} (${errorMessage(err)})`);
+      fail("not-found", `Cannot open: ${req.path} (${errorMessage(err)})`);
     }
   });
 

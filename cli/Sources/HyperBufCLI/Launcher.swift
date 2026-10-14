@@ -34,12 +34,13 @@ public struct OpenCommandLauncher: AppLauncher {
         do {
             try process.run()
         } catch {
-            throw LaunchError(message: "open を実行できません: \(error)")
+            throw LaunchError(message: "Cannot run open: \(error)")
         }
         process.waitUntilExit()
         guard process.terminationStatus == 0 else {
             let detail = String(decoding: stderr.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-            throw LaunchError(message: "アプリを起動できません: \(detail.trimmingCharacters(in: .whitespacesAndNewlines))")
+            throw LaunchError(
+                message: "Cannot launch the app: \(detail.trimmingCharacters(in: .whitespacesAndNewlines))")
         }
     }
 }

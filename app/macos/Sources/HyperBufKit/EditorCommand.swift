@@ -52,7 +52,7 @@ public struct EditorConfig: Sendable, Equatable {
 
     /// メニューの項目名。
     public var menuTitle: String {
-        command == nil ? "エディタ用に位置を記録" : "\(name) で編集"
+        command == nil ? "Record Location for Editor" : "Edit in \(name)"
     }
 }
 

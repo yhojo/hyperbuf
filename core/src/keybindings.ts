@@ -44,21 +44,21 @@ export function applyOverrides(
   for (const [sequence, value] of entries) {
     if (!isValidKeySequence(sequence)) {
       problems.push(
-        `「${sequence}」: キーの表記が不正です(例: C-x 2、M-x、s-[。修飾キーは C- M- s- S- の順、最大 ${MAX_SEQUENCE_KEYS} 個)`,
+        `"${sequence}": invalid key notation (e.g. C-x 2, M-x, s-[; modifiers in the order C- M- s- S-, at most ${MAX_SEQUENCE_KEYS} keys)`,
       );
       continue;
     }
     if (RESERVED.has(sequence)) {
-      problems.push(`「${sequence}」は、取り消しに予約されているので、割り当てを変えられません`);
+      problems.push(`"${sequence}" is reserved for quitting and cannot be rebound`);
       continue;
     }
     if (value === null) {
       if (sequence in bindings) delete bindings[sequence];
-      else problems.push(`「${sequence}」: 割り当てがないので、外せません`);
+      else problems.push(`"${sequence}": not bound, so it cannot be removed`);
       continue;
     }
     if (typeof value !== "string" || !known.has(value)) {
-      problems.push(`「${sequence}」: 不明なコマンドです: ${String(value)}`);
+      problems.push(`"${sequence}": unknown command: ${String(value)}`);
       continue;
     }
     const candidate = { ...bindings, [sequence]: value };
@@ -66,7 +66,7 @@ export function applyOverrides(
       createKeymap(candidate);
     } catch {
       problems.push(
-        `「${sequence}」: 他の割り当てと衝突します(同じキーを、プレフィックスとコマンドの両方には使えません)`,
+        `"${sequence}": conflicts with another binding (a key cannot be both a prefix and a command)`,
       );
       continue;
     }

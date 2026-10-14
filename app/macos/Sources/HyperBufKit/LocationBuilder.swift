@@ -37,12 +37,12 @@ public enum LocationBuilder {
         do {
             absolute = try access.canonical(web.path)
         } catch {
-            return .failure(ProtocolError(.notFound, "このファイルの位置は、エディタに渡せません"))
+            return .failure(ProtocolError(.notFound, "The location of this file cannot be passed to the editor"))
         }
-        guard absolute.hasSuffix(".md") else { return .failure(ProtocolError(.notMarkdown, ".md のみ扱えます")) }
+        guard absolute.hasSuffix(".md") else { return .failure(ProtocolError(.notMarkdown, ".md files only")) }
         // ビューアが描画した版の識別情報。読んだ記録がなければ、「描画した版」が分からないので、渡さない
         guard let fingerprint = access.fingerprints.get(absolute) else {
-            return .failure(ProtocolError(.stale, "描画した版のファイルの識別情報がありません"))
+            return .failure(ProtocolError(.stale, "No identity information for the rendered version of the file"))
         }
         return .success(
             LocationPayload(

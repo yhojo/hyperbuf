@@ -34,7 +34,7 @@ public enum FileResolver {
         var path = absolute(raw, cwd: cwd)
         var isDirectory: ObjCBool = false
         guard fm.fileExists(atPath: path, isDirectory: &isDirectory) else {
-            return .failure(Failure(message: "ファイルがありません: \(argument)"))
+            return .failure(Failure(message: "No such file: \(argument)"))
         }
         if isDirectory.boolValue {
             // ディレクトリは、その中の index.md、なければ README.md を開く(docs/project-model.md §3.1)
@@ -43,11 +43,13 @@ public enum FileResolver {
                     var inner: ObjCBool = false
                     return fm.fileExists(atPath: $0, isDirectory: &inner) && !inner.boolValue
                 })
-            else { return .failure(Failure(message: "ディレクトリに index.md も README.md もありません: \(argument)")) }
+            else { return .failure(Failure(message: "Neither index.md nor README.md in the directory: \(argument)")) }
             path = index
         }
-        guard path.hasSuffix(".md") else { return .failure(Failure(message: ".md のファイルのみ開けます: \(argument)")) }
-        if let line, line <= 0 { return .failure(Failure(message: "行番号が不正です: \(argument)")) }
+        guard path.hasSuffix(".md") else {
+            return .failure(Failure(message: "Only .md files can be opened: \(argument)"))
+        }
+        if let line, line <= 0 { return .failure(Failure(message: "Invalid line number: \(argument)")) }
         return .success(Resolved(path: path, line: line))
     }
 

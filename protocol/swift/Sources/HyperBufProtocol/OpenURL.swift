@@ -23,21 +23,21 @@ public enum OpenURL {
     /// URL から要求を作る。操作が `open` でない URL(ping を除く)は、未知の操作として扱う。
     public static func parse(_ url: URL) -> Result<Request, ProtocolError> {
         guard url.scheme == HyperBufProtocol.urlScheme else {
-            return .failure(ProtocolError(.badRequest, "未対応の URL です"))
+            return .failure(ProtocolError(.badRequest, "Unsupported URL"))
         }
         guard let op = url.host.flatMap(RequestOperation.init(rawValue:)), op == .open || op == .ping else {
-            return .failure(ProtocolError(.unknownOp, "未対応の操作です: \(url.host ?? "")"))
+            return .failure(ProtocolError(.unknownOp, "Unsupported operation: \(url.host ?? "")"))
         }
         let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
         let q = Dictionary(items.map { ($0.name, $0.value ?? "") }, uniquingKeysWith: { first, _ in first })
         var request = Request(op: op)
         if let v = q["v"] {
-            guard let n = Int(v) else { return .failure(ProtocolError(.badRequest, "v が不正です")) }
+            guard let n = Int(v) else { return .failure(ProtocolError(.badRequest, "Invalid v")) }
             request.v = n
         }
         request.path = q["path"]
         if let line = q["line"] {
-            guard let n = Int(line) else { return .failure(ProtocolError(.badRequest, "line が不正です")) }
+            guard let n = Int(line) else { return .failure(ProtocolError(.badRequest, "Invalid line")) }
             request.line = n
         }
         request.anchor = q["anchor"]

@@ -8,7 +8,7 @@ import WebKit
 /// 項目を選ぶと、Web コアが、指した場所(選択・クリック位置)を、元の Markdown の位置にして、記録する。
 final class EditorWebView: WKWebView {
     var onEditRequested: (() -> Void)?
-    var editMenuTitle = "エディタで編集"
+    var editMenuTitle = "Edit in Editor"
 
     // 起動直後から、クリックなしでキー操作を受け付ける。WKWebView は、ウィンドウに載っても、
     // 自分では、ファーストレスポンダにならない(クリックして初めてなる)

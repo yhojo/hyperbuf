@@ -283,7 +283,7 @@ const before = document.querySelector('.mode-line .ml-hist').textContent;
 await fire('x','KeyX',{ctrlKey:true}); await fire('x','KeyX'); await fire('u','KeyU');
 return JSON.stringify({ before, after: document.querySelector('.mode-line .ml-hist').textContent, echo: document.getElementById('echo').textContent });
 """ % json.dumps(follow_path))
-check("C-x x u で追従がオンになり、モードラインに [追従] が出る", "[追従]" in r["after"] and "[追従]" not in r["before"] and "オン" in r["echo"], r)
+check("C-x x u で追従がオンになり、モードラインに [Follow] が出る", "[Follow]" in r["after"] and "[Follow]" not in r["before"] and "on" in r["echo"], r)
 follow_lines[101] = "行 100 (変更)\n\n"
 open(follow_path + ".tmp", "w", encoding="utf-8").write("".join(follow_lines))
 os.replace(follow_path + ".tmp", follow_path)  # エディタの保存と同じく、置き換える
@@ -327,7 +327,7 @@ check("trustedUrls に合う URL は、確認なしで、ブラウザで開く",
 check("それ以外は、URL 全体を見せて、確認する", (not r["confirm"]["hidden"]) and "https://other.example/x" in r["confirm"]["label"] and "always" in r["confirm"]["label"], r["confirm"])
 check("no と答えると、開かない。yes なら、開く(毎回、確認する)", opened.count("https://other.example/x") == 3 and not r["again"]["hidden"] and not r["third"]["hidden"], (r["again"], opened))
 check("always で、そのサイトを記憶し、次からは確認しない", r["remembered"]["hidden"] and json.load(open(os.path.join(tmp, "sites.json")))["origins"] == ["https://other.example"], (r["remembered"], opened))
-check("ユーザー名・パスワードを含む URL は、確認もせず、開かない", r["denied"]["hidden"] and "evil.example" not in " ".join(opened) and "開きません" in r["denied"]["echo"], (r["denied"], opened))
+check("ユーザー名・パスワードを含む URL は、確認もせず、開かない", r["denied"]["hidden"] and "evil.example" not in " ".join(opened) and "not opened" in r["denied"]["echo"], (r["denied"], opened))
 check("mailto は、毎回、確認する(always は出ない)", (not r["mailto"]["hidden"]) and "always" not in r["mailto"]["label"] and "mailto:someone@example.com" not in opened, r["mailto"])
 
 print("キーマップの設定と describe-bindings")
@@ -349,14 +349,14 @@ return JSON.stringify({ before, afterMp, afterCf, afterCb, header, text, rows })
 """)
 check("利用者が割り当てた M-p が、back として働く", "long.md" in r["afterMp"], r)
 check("利用者が外した C-f は、何も起こさない", r["afterCf"] == r["afterMp"], r)
-check("標準のままの C-b は、働く", r["afterCb"] != r["afterCf"] or "履歴" in r["afterCb"], r["afterCb"])
+check("標準のままの C-b は、働く", r["afterCb"] != r["afterCf"] or "History" in r["afterCb"], r["afterCb"])
 check("C-h b で、キー割り当ての一覧(仮想 buffer)が開く", "*Help: keybindings*" in r["header"], r["header"])
 check("一覧に、利用者の割り当て(M-p)と、標準の割り当てが出る", "M-p" in r["text"] and "describe-bindings" in r["text"] and "C-x 2" in r["text"], r["text"][:300])
 forward_row = next((row for row in r["rows"] if "`forward`" in row or row.split("forward")[0:1] and "forward" in row), "")
 check("外した C-f は、forward の割り当てに出ない(s-] だけ)", "s-]" in forward_row and "C-f" not in forward_row, forward_row)
 check("利用者が足した M-p は、back の割り当てに出る", any("M-p" in row and "back" in row for row in r["rows"]), [row for row in r["rows"] if "back" in row])
 check("不正な設定(不明なコマンド・不正な表記・C-g)は、無視して、一覧に出る",
-      all(s in r["text"] for s in ["設定の問題", "no-such-command", "Ctrl-y", "C-g"]), r["text"][:600])
+      all(s in r["text"] for s in ["Configuration problems", "no-such-command", "Ctrl-y", "C-g"]), r["text"][:600])
 
 print("ファイルを開く(C-x C-f のパス補完・C-x p f)・ミニバッファ(候補・履歴)・kill-buffer")
 r = run("""
@@ -443,7 +443,7 @@ return JSON.stringify({ hasBefore, label, hasAfter: model.buffers.has(P + '/inte
 check("C-x k: 既定は、いまの buffer", "interaction.md" in r["label"], r["label"])
 check("buffer が閉じて、履歴からも参照がなくなる", r["hasBefore"] and not r["hasAfter"] and all(not p.endswith("interaction.md") for h in r["histories"] for p in h), r)
 check("閉じた buffer を表示していた window は、ひとつ前の参照を表示する", "interaction.md" not in r["header"], r["header"])
-check("閉じたことが知らされる", "閉じました" in r["echo"], r["echo"])
+check("閉じたことが知らされる", "Killed buffer" in r["echo"], r["echo"])
 
 if failures:
     print(f"\nNG: {len(failures)} 件")

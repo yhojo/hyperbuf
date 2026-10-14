@@ -41,7 +41,7 @@ export function installKeyboard(
     if (r.type === "unbound") {
       if (r.keys.length > 1) {
         e.preventDefault();
-        ctx.echo.message(`${r.keys.join(" ")} は未割り当てです`);
+        ctx.echo.message(`${r.keys.join(" ")} is undefined`);
       }
       return; // 単独の未割り当てキーは WebView 既定に任せる(Cmd+C など)
     }
@@ -61,7 +61,7 @@ export function installKeyboard(
       ctx.views.refresh();
       latency.record(t0, (ms, s) => {
         ctx.echo.status(
-          `${ctx.host.name} | ${name} → ${r.command}: ${ms.toFixed(1)}ms (描画 ${ctx.views.stats.ms.toFixed(1)}ms ${ctx.views.stats.diagrams}) | 中央値 ${s.median.toFixed(1)} / p95 ${s.p95.toFixed(1)} / 最大 ${s.max.toFixed(1)} (n=${s.n})`,
+          `${ctx.host.name} | ${name} → ${r.command}: ${ms.toFixed(1)}ms (render ${ctx.views.stats.ms.toFixed(1)}ms ${ctx.views.stats.diagrams}) | median ${s.median.toFixed(1)} / p95 ${s.p95.toFixed(1)} / max ${s.max.toFixed(1)} (n=${s.n})`,
         );
       });
     });

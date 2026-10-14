@@ -4,7 +4,9 @@ All notable changes to HyperBuf are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions are not yet strictly semantic: 0.x releases may change behavior between minor versions.
 
-## [Unreleased] (planned: 0.1.1)
+## [Unreleased]
+
+## [0.1.1] - 2026-10-14
 
 Changes since 0.1.0, mostly from the feedback of the initial private distribution.
 
@@ -19,6 +21,7 @@ Changes since 0.1.0, mostly from the feedback of the initial private distributio
 
 ### Changed
 
+- The `.dmg` now includes `CHANGELOG.md`, so you can see what changed in each version.
 - **All UI text is now fixed to English** and is not localized: menus, mode line, echo area, minibuffer prompts, command descriptions (`M-x`, `C-h b`), error messages, `hyperbuf` CLI output, and the messages and docstrings of the Emacs package (`emacs/`). Documents, file names and input stay fully international. See `docs/interaction-model.md` §6b.
 - The separate Frame menu is merged into the Window menu, following macOS conventions. The Window menu lists the open frames as `HyperBuf [N]` with `Cmd-1`…`Cmd-9`, and the front one is checked. `Cmd-N` for a frame that is not open now does nothing; create a new frame with `File > New Frame` or `C-x 5 2`.
 - When the OS appearance (light / dark) changes while the app is running, Mermaid diagrams are now redrawn with the new theme. Before, they kept the old colors and could become unreadable. The reading position is kept.

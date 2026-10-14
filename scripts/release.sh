@@ -107,6 +107,7 @@ cp -R "$app" "$stage/HyperBuf.app"
 ln -s /Applications "$stage/Applications"
 cp LICENSE "$stage/LICENSE.txt"
 cp NOTICE "$stage/NOTICE.txt"
+cp CHANGELOG.md "$stage/CHANGELOG.md"
 cp app/macos/Resources/dmg/README.md "$stage/README.md"
 # Emacs 連携(GPL-3.0-or-later。アプリとは別のプログラムとして、ライセンスを添えて同梱する)
 mkdir "$stage/emacs"

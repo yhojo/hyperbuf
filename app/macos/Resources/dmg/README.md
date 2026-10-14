@@ -119,6 +119,10 @@ hyperbuf docs/plan.md:120     # 120 行目を開く
 
 詳しくは、`emacs/README.md` を見てください。
 
+## 更新内容
+
+版ごとの変更は、同じディスクイメージの `CHANGELOG.md`(英語)にあります。
+
 ## ライセンス
 
 - HyperBuf 本体: Apache-2.0(`LICENSE.txt`、`NOTICE.txt`)。同梱するサードパーティのライセンスは、アプリの中(`HyperBuf.app/Contents/Resources/THIRD-PARTY-NOTICES.txt`)にあります。

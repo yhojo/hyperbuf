@@ -250,15 +250,13 @@ export class Views {
     };
     const targets = (e: PointerEvent) => {
       const atEdge = e.clientX >= bar.getBoundingClientRect().right - EDGE;
-      return {
-        v: find(boundaryBelow(model, win)),
-        h: atEdge ? find(boundaryRight(model, win)) : null,
-      };
+      const h = atEdge ? find(boundaryRight(model, win)) : null;
+      return { v: h ? null : find(boundaryBelow(model, win)), h };
     };
     bar.addEventListener("pointermove", (e) => {
       if (e.buttons !== 0) return;
       const { v, h } = targets(e);
-      bar.style.cursor = h ? (v ? "move" : "col-resize") : v ? "row-resize" : "";
+      bar.style.cursor = h ? "col-resize" : v ? "row-resize" : "";
     });
     bar.addEventListener("pointerdown", (e) => {
       const { v, h } = targets(e);

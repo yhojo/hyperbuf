@@ -16,9 +16,10 @@
 ## リリースの手順
 
 1. **バージョンを決める**: `app/macos/Sources/HyperBufKit/Version.swift` の `hyperBufVersion`(アプリの版の正)と、CLI の `cliVersion`(`cli/Sources/HyperBufCLI/CLI.swift`)を、そろえて更新する。`Info.plist` の版は、`make-app.sh` が `Version.swift` から設定する(ビルド番号はコミット数)。
-2. **チェック**: `scripts/check.sh` が通ること。GUI の統合テスト(`scripts/integration-test*.sh`)も通ること。
-3. **リハーサル**(任意。公証しない): `scripts/release.sh --dry-run`。組み立て・ad-hoc 署名・`.zip` / `.dmg` の作成だけを試す。**この成果物は、配布しない**。
-4. **本番**:
+2. **変更履歴**: `CHANGELOG.md` の `[Unreleased]` を、版の見出し(`## [x.y.z] - 日付`)に確定し、新しい空の `[Unreleased]` を先頭に置く。
+3. **チェック**: `scripts/check.sh` が通ること。GUI の統合テスト(`scripts/integration-test*.sh`)も通ること。
+4. **リハーサル**(任意。公証しない): `scripts/release.sh --dry-run`。組み立て・ad-hoc 署名・`.zip` / `.dmg` の作成だけを試す。**この成果物は、配布しない**。
+5. **本番**:
 
    ```bash
    HYPERBUF_NOTARY_PROFILE=hyperbuf-notary scripts/release.sh
@@ -26,8 +27,8 @@
 
    成果物は `dist/release/`(`HyperBuf-<版>.zip`、`HyperBuf-<版>.dmg`、`SHA256SUMS`)。署名の際に、キーチェーンへのアクセスの許可を尋ねられることがある。
 
-5. **配布の前の確認**(下の「まっさらな Mac での確認」)。
-6. **公開**: タグ(`v<版>`)を付け、GitHub Releases に成果物と `SHA256SUMS` をアップロードする(ソースの公開前は、非公開の共有でもよい)。
+6. **配布の前の確認**(下の「まっさらな Mac での確認」)。
+7. **公開**: タグ(`v<版>`)を付け、GitHub Releases に成果物と `SHA256SUMS` をアップロードする(リリースノートは、`CHANGELOG.md` の、その版の節を使う)(ソースの公開前は、非公開の共有でもよい)。
 
 ## 対応するアーキテクチャ
 
@@ -51,7 +52,7 @@ release ビルドは **Universal(arm64 と x86_64)**。Apple Silicon と、Intel
 ## 同梱するもの
 
 - `HyperBuf.app/Contents/Resources/bin/hyperbuf`: CLI(`PATH` に通すには、シンボリックリンクを張る。Homebrew cask の `binary` でも張れる)。アプリの実行ファイル(`HyperBuf`)と、大文字小文字を区別しないファイルシステムで衝突しないよう、`MacOS/` ではなく `Resources/bin/` に置く。
-- `LICENSE.txt`、`NOTICE.txt`、`THIRD-PARTY-NOTICES.txt`(サードパーティの著作権表示とライセンス。メニューの「サードパーティのライセンスを表示」で開く)。
+- `LICENSE.txt`、`NOTICE.txt`、`THIRD-PARTY-NOTICES.txt`(サードパーティの著作権表示とライセンス。アプリメニューの `Show Third-Party Licenses` で開く)。
 - `.dmg` には、`LICENSE.txt`・`NOTICE.txt` に加えて、配布用の `README.md`(元: `app/macos/Resources/dmg/README.md`。インストール・基本の操作・`hyperbuf` コマンドのリンク・Emacs 連携)と、`emacs/`(`hyperbuf.el`・`README.md`・`LICENSE`)も入る。`emacs/` は GPL-3.0-or-later で、アプリ(Apache-2.0)とは別のプログラムとして、自身のライセンスを添えて同梱する(集積であり、結合ではない)。CLI(`hyperbuf`)は、署名・公証済みの `.app` の中(`Contents/Resources/bin/`)にあり、配布用の README が、リンクの作り方を案内する。
 
 ## 署名の設計
@@ -82,4 +83,4 @@ release ビルドは **Universal(arm64 と x86_64)**。Apple Silicon と、Intel
 - Homebrew cask(`binary` で CLI も入れる)。公開後の整備。
 - リリースの自動化(GitHub Actions)。署名の秘密を CI に置くかどうかの判断が要るため、手動のリリースから始める。
 - 自動更新(Sparkle など)。外部通信を伴うため、「Local first」の方針との調整が要る。当面は、なし。
-- `hyperbuf` コマンドを `PATH` に通すメニュー(「コマンドラインツールをインストール…」)。
+- `hyperbuf` コマンドを `PATH` に通すメニュー(`Install Command Line Tool…` の名前を想定。文言は英語)。

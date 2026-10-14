@@ -5,7 +5,8 @@ import AppKit
 import HyperBufKit
 
 /// メニューバー。SwiftUI の `App` / `Scene` は使わない(フレームのウィンドウは AppKit で作り、空の設定ウィンドウなどを出さない)。
-/// フレームの切り替え(`Cmd-1` … `Cmd-9`)は、メニューのショートカットなので、WebView にフォーカスがあっても効く。
+/// フレームの切り替え(`Cmd-1` … `Cmd-9`)は、Window メニューの項目のショートカットなので、WebView にフォーカスがあっても効く
+/// (開いているフレームの項目だけが並ぶ。`AppModel.refreshWindowMenu`)。
 @MainActor
 enum MainMenu {
     static func install(model: AppModel) {
@@ -13,11 +14,12 @@ enum MainMenu {
         main.addItem(item(appMenu(model: model)))
         main.addItem(item(fileMenu(model: model)))
         main.addItem(item(editMenu()))
-        main.addItem(item(frameMenu(model: model)))
         let window = windowMenu()
         main.addItem(item(window))
         NSApp.mainMenu = main
         NSApp.windowsMenu = window
+        model.windowMenu = window
+        model.refreshWindowMenu()
     }
 
     private static func item(_ submenu: NSMenu) -> NSMenuItem {
@@ -70,15 +72,6 @@ enum MainMenu {
         let menu = NSMenu(title: "Edit")
         entry(menu, "Copy", #selector(NSText.copy(_:)), "c")
         entry(menu, "Select All", #selector(NSText.selectAll(_:)), "a")
-        return menu
-    }
-
-    private static func frameMenu(model: AppModel) -> NSMenu {
-        let menu = NSMenu(title: "Frame")
-        for slot in 1...SessionStore.maxFrames {
-            entry(menu, "Frame \(slot)", #selector(AppModel.menuActivateFrame(_:)), "\(slot)", target: model)
-            menu.items.last?.tag = slot
-        }
         return menu
     }
 

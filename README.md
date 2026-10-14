@@ -30,6 +30,7 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 - **Render what engineers write.** — GFM、SVG、数式、図表、コードなど、実務で使われる表現への対応を重視する。
 - **Extensible by design.** — 拡張しやすく、設定や動作が理解できる構造を目指す。
 - **Local first.** — 基本的な閲覧はオフラインで完結し、意図しない外部通信を行わない。
+- **Mac outside, Emacs inside.** — メニューバーやダイアログは macOS の流儀、フレームの中（キー操作・モードライン・ミニバッファ）はEmacsの流儀で作る。アプリ自身の文言は英語に固定し（ローカライズしない）、扱う文書やファイル名は国際化されている。詳細は `docs/interaction-model.md` §6b。
 
 ## Product goals
 
@@ -74,6 +75,7 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 | Close window | `C-x 0` | 現在のwindowを閉じる |
 | Only window | `C-x 1` | 現在のwindowだけを残す |
 | Other window | `C-x o` | 操作対象のwindowを移動 |
+| Resize window | `C-x ^` / `C-x }` / `C-x {` / `C-x -` | 縦に広げる・横に広げる・横に狭める・文書がちょうど収まる高さに縮める（モードラインのドラッグでも変更できる） |
 | Switch buffer | `C-x b` | 表示するbufferを切り替える |
 | Find file | `C-x C-f` | ファイルを開く（基準のディレクトリから始まるパス補完。ディレクトリは `RET` で中へ） |
 | Find file (tree) | `C-x p f` | 基準のディレクトリ以下の文書を再帰で一覧にして絞り込む（`../`・`~/` で基準を変えられる） |
@@ -81,7 +83,7 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 | Command palette | `M-x` | 名前からコマンドを実行 |
 | Search in document | `C-s` / `C-r` | 文書内のインクリメンタル検索（入力のたびに一致を数えてハイライト、`RET` で確定、`C-g` で取消） |
 | Search in project | `M-s g` | プロジェクト全体の全文検索（結果は仮想bufferに出る） |
-| Back / Forward | `C-b` / `C-f`（別名 `Cmd+[` / `Cmd+]`） | 各windowの参照履歴を前後移動 |
+| Back / Forward | `C-b` / `C-f`（別名 `←` / `→`、`Cmd+[` / `Cmd+]`） | 各windowの参照履歴を前後移動 |
 | Outline | `C-c C-n` / `C-p` / `C-f` / `C-b` / `C-u` | 次・前・同じレベルの次・同じレベルの前・上のレベルの見出しへ移動 |
 | Kill buffer | `C-x k` | bufferを閉じる |
 | Follow updates | `C-x x u` | 外部で更新されたとき、最初に変わった場所へ移る／移らないの切替（既定はオフ） |

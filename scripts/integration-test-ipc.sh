@@ -295,10 +295,10 @@ if shutil.which("emacs"):
 echo = select_and_edit("dup")
 loc = call({"v": 1, "op": "get-location"})["result"]["location"]
 check("同じ文言が複数あるときは、block(推測しない)", loc and loc["precision"] == "block" and "dup と dup" in loc["expect"], loc)
-check("画面にも、曖昧であることが出る", "曖昧" in echo, echo)
+check("画面にも、曖昧であることが出る", "ambiguous" in echo, echo)
 if shutil.which("emacs"):
     r = emacs_visit()
-    check("Emacs は、ブロックの先頭へ移動し、曖昧だと知らせる", r.returncode == 0 and r.stdout.strip() == "L5 C0" and "曖昧" in r.stderr, (r.returncode, r.stdout, r.stderr[-300:]))
+    check("Emacs は、ブロックの先頭へ移動し、曖昧だと知らせる", r.returncode == 0 and r.stdout.strip() == "L5 C0" and "ambiguous" in r.stderr, (r.returncode, r.stdout, r.stderr[-300:]))
 
 before = call({"v": 1, "op": "get-location"})["result"]["location"]
 echo = page("await window.__hyperbuf.search('uniqueword'); await window.__hyperbuf.commands['edit-in-editor'](); return document.getElementById('echo').textContent;")
@@ -311,7 +311,7 @@ open(edit_file, "w", encoding="utf-8").write("# 書き換え\n\n先頭に 1 行�
 time.sleep(1.0)
 if shutil.which("emacs"):
     r = emacs_visit()
-    check("ファイルが変わったら、Emacs は移動せず、警告する(続行の手段はない)", r.returncode != 0 and "移動しません" in r.stderr and "描画した版" in r.stderr, (r.returncode, r.stdout, r.stderr[-400:]))
+    check("ファイルが変わったら、Emacs は移動せず、警告する(続行の手段はない)", r.returncode != 0 and "not moving" in r.stderr and "rendered" in r.stderr, (r.returncode, r.stdout, r.stderr[-400:]))
     check("警告のとき、移動の結果(L… C…)は出ない = 移動していない", not __import__("re").search(r"L\d+ C\d+", r.stdout), r.stdout)
 
 print("Emacs(hyperbuf.el)")

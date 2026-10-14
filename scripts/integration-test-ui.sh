@@ -235,7 +235,7 @@ await press(['Backspace','Backspace']); const up = Math.round(content().scrollTo
 return JSON.stringify({ seq, none, sameHistory, end, top, down, up, page: content().clientHeight });
 """)
 check("C-c C-n / C-p / C-f / C-b / C-u", r["seq"] == ["セクション 1", "セクション 2", "セクション 3", "セクション 2", "セクション 3", "セクション 2", "長い文書"], r["seq"])
-check("先頭のレベルより上はない", "ありません" in r["none"], r["none"])
+check("先頭のレベルより上はない", "No parent heading" in r["none"], r["none"])
 check("見出し移動は、参照履歴に積まれない", r["sameHistory"])
 check("M-> / M-<(Option+Shift+. / ,)", r["end"] and r["top"] == 0, r)
 check("SPC で 1 画面下、DEL で戻る", r["down"] > r["page"] * 0.8 and r["up"] == 0, r)

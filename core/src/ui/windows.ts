@@ -223,11 +223,11 @@ export class Views {
     const found = resizableSplit(model, win, "col");
     const el = found && this.splitEls.get(found.node);
     if (!found || !el) return "sole";
-    const body = view.content.querySelector<HTMLElement>(".markdown-body");
-    if (!body) return "fits";
+    const last = view.content.querySelector<HTMLElement>(".markdown-body")?.lastElementChild;
+    if (!(last instanceof HTMLElement)) return "fits";
     // 文書の末尾までの高さ + window の枠(モードラインなど)。本文の下の余白(スクロール用)は、含めない
     const chrome = view.el.offsetHeight - view.content.clientHeight;
-    const wanted = body.offsetTop + body.offsetHeight + 8 + chrome;
+    const wanted = last.offsetTop + last.offsetHeight + 8 + chrome;
     const excess = view.el.offsetHeight - wanted;
     if (excess <= 1) return "fits";
     resizeWindow(model, win, "col", -excess / el.clientHeight);

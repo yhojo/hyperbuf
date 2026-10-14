@@ -109,8 +109,15 @@ body {
 .content {
   flex: 1;
   overflow: auto;
-  padding: 8px 20px 40vh;
+  /* 下の余白(末尾の見出しを画面の上まで送れるように)は、ここではなく .markdown-body::after に置く。
+     ここに vh の padding を置くと、window の最小の高さになってしまい、小さい画面の分割で、はみ出す */
+  padding: 8px 20px 0;
   position: relative;
+}
+.content .markdown-body::after {
+  content: "";
+  display: block;
+  height: 40vh;
 }
 .content a.link-focus {
   outline: 2px solid var(--accent);

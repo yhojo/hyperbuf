@@ -53,7 +53,7 @@ release ビルドは **Universal(arm64 と x86_64)**。Apple Silicon と、Intel
 
 - `HyperBuf.app/Contents/Resources/bin/hyperbuf`: CLI(`PATH` に通すには、シンボリックリンクを張る。Homebrew cask の `binary` でも張れる)。アプリの実行ファイル(`HyperBuf`)と、大文字小文字を区別しないファイルシステムで衝突しないよう、`MacOS/` ではなく `Resources/bin/` に置く。
 - `LICENSE.txt`、`NOTICE.txt`、`THIRD-PARTY-NOTICES.txt`(サードパーティの著作権表示とライセンス。アプリメニューの `Show Third-Party Licenses` で開く)。
-- `.dmg` には、`LICENSE.txt`・`NOTICE.txt` に加えて、配布用の `README.md`(元: `app/macos/Resources/dmg/README.md`。インストール・基本の操作・`hyperbuf` コマンドのリンク・Emacs 連携)と、`emacs/`(`hyperbuf.el`・`README.md`・`LICENSE`)も入る。`emacs/` は GPL-3.0-or-later で、アプリ(Apache-2.0)とは別のプログラムとして、自身のライセンスを添えて同梱する(集積であり、結合ではない)。CLI(`hyperbuf`)は、署名・公証済みの `.app` の中(`Contents/Resources/bin/`)にあり、配布用の README が、リンクの作り方を案内する。
+- `.dmg` には、`LICENSE.txt`・`NOTICE.txt` ・`CHANGELOG.md`(利用者が更新内容を確認できる。0.1.1 から)に加えて、配布用の `README.md`(元: `app/macos/Resources/dmg/README.md`。インストール・基本の操作・`hyperbuf` コマンドのリンク・Emacs 連携)と、`emacs/`(`hyperbuf.el`・`README.md`・`LICENSE`)も入る。`emacs/` は GPL-3.0-or-later で、アプリ(Apache-2.0)とは別のプログラムとして、自身のライセンスを添えて同梱する(集積であり、結合ではない)。CLI(`hyperbuf`)は、署名・公証済みの `.app` の中(`Contents/Resources/bin/`)にあり、配布用の README が、リンクの作り方を案内する。
 
 ## 署名の設計
 

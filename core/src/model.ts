@@ -254,23 +254,30 @@ export function resizeWindow(model: Model, win: Win, dir: SplitDirection, delta:
 }
 
 /**
- * `win` のモードライン(下端)の下にある境界を持つ、上下の分割。`win` が画面の最下段なら null。
- * 内側の分割から順に、`win` を含む側が「上」になっている最初のものを探す(モードラインのドラッグで動かす境界)。
+ * `win` の下端(`col`)・右端(`row`)にある境界を持つ分割。`win` が画面の端なら null。
+ * 内側の分割から順に、`win` を含む側が「上(左)」になっている最初のものを探す(モードラインのドラッグで動かす境界)。
  */
-export function boundaryBelow(
+function boundaryAfter(
   model: Model,
   win: Win,
+  dir: SplitDirection,
 ): Extract<LayoutNode, { type: "split" }> | null {
   let child: LayoutNode | null = nodeOf(model, win);
   while (child) {
     const parent: LayoutNode | null = findParent(model.root, child);
-    if (parent?.type === "split" && parent.dir === "col" && parent.children[0] === child) {
+    if (parent?.type === "split" && parent.dir === dir && parent.children[0] === child) {
       return parent;
     }
     child = parent;
   }
   return null;
 }
+
+/** モードラインの下の境界(上下の分割)。 */
+export const boundaryBelow = (model: Model, win: Win) => boundaryAfter(model, win, "col");
+
+/** window の右の境界(左右の分割)。モードラインの右端のドラッグで動かす。 */
+export const boundaryRight = (model: Model, win: Win) => boundaryAfter(model, win, "row");
 
 export function clampRatio(r: number): number {
   return Math.min(MAX_RATIO, Math.max(MIN_RATIO, r));

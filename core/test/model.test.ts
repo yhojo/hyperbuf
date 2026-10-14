@@ -6,6 +6,7 @@ import test from "node:test";
 import {
   back,
   boundaryBelow,
+  boundaryRight,
   createModel,
   currentEntry,
   deleteOthers,
@@ -207,4 +208,13 @@ test("window の大きさ: 広げる・狭める・上限と、モードライ�
   assert.equal(m.root.type === "split" ? m.root.ratio : 0, 0.9);
   assert.equal(boundaryBelow(m, top), m.root);
   assert.equal(boundaryBelow(m, bottom), null);
+});
+
+test("モードラインの右端の境界: 左右の分割で、左の window だけが持つ", () => {
+  const m = setup();
+  const left = selectedWindow(m);
+  const right = split(m, "row");
+  assert.equal(boundaryRight(m, left), m.root);
+  assert.equal(boundaryRight(m, right), null);
+  assert.equal(boundaryBelow(m, left), null);
 });

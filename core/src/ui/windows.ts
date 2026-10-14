@@ -8,6 +8,7 @@ import { firstChangedLine } from "../diff.ts";
 import type { HistoryEntry, LayoutNode, Model, Win } from "../model.ts";
 import {
   boundaryBelow,
+  boundaryRight,
   clampRatio,
   currentEntry,
   resizableSplit,
@@ -234,33 +235,54 @@ export class Views {
     return "shrunk";
   }
 
-  /** モードラインのドラッグで、その下の境界を動かす(Emacs と同じ)。 */
+  /**
+   * モードラインのドラッグで、境界を動かす(Emacs と同じ)。モードラインの本体では、下の境界(縦方向)、
+   * 右端では、右の境界(横方向)も、いっしょに動かす。
+   */
   private bindModeLineDrag(win: Win, view: WinView): void {
     const bar = view.modeLine.el;
-    const boundary = () => {
-      const node = boundaryBelow(this.opts.model, win);
+    const { model } = this.opts;
+    /** 右端とみなす幅(px)。 */
+    const EDGE = 24;
+    const find = (node: LayoutNode | null) => {
       const el = node && this.splitEls.get(node);
-      return node && el ? { node, el } : null;
+      return node?.type === "split" && el ? { node, el } : null;
+    };
+    const targets = (e: PointerEvent) => {
+      const atEdge = e.clientX >= bar.getBoundingClientRect().right - EDGE;
+      return {
+        v: find(boundaryBelow(model, win)),
+        h: atEdge ? find(boundaryRight(model, win)) : null,
+      };
     };
     bar.addEventListener("pointermove", (e) => {
-      if (e.buttons === 0) bar.style.cursor = boundary() ? "row-resize" : "";
+      if (e.buttons !== 0) return;
+      const { v, h } = targets(e);
+      bar.style.cursor = h ? (v ? "move" : "col-resize") : v ? "row-resize" : "";
     });
     bar.addEventListener("pointerdown", (e) => {
-      const b = boundary();
-      if (e.button !== 0 || !b) return;
+      const { v, h } = targets(e);
+      if (e.button !== 0 || (!v && !h)) return;
       e.preventDefault();
       try {
         bar.setPointerCapture(e.pointerId);
       } catch {
         // 捕捉できなくても、バー上の移動は拾える
       }
-      const startY = e.clientY;
-      const startRatio = b.node.ratio ?? 0.5;
+      const start = {
+        x: e.clientX,
+        y: e.clientY,
+        v: v?.node.ratio ?? 0.5,
+        h: h?.node.ratio ?? 0.5,
+      };
       const move = (ev: PointerEvent): void => {
-        const size = b.el.clientHeight;
-        if (size <= 0) return;
-        b.node.ratio = clampRatio(startRatio + (ev.clientY - startY) / size);
-        this.applyRatios(this.opts.model.root, this.opts.frame.firstElementChild);
+        if (v && v.el.clientHeight > 0) {
+          v.node.ratio = clampRatio(start.v + (ev.clientY - start.y) / v.el.clientHeight);
+        }
+        if (h && h.el.clientWidth > 0) {
+          h.node.ratio = clampRatio(start.h + (ev.clientX - start.x) / h.el.clientWidth);
+        }
+        this.applyRatios(model.root, this.opts.frame.firstElementChild);
       };
       const end = (): void => {
         bar.removeEventListener("pointermove", move);

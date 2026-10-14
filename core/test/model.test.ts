@@ -5,15 +5,19 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   back,
+  boundaryBelow,
+  boundaryRight,
   createModel,
   currentEntry,
   deleteOthers,
   deleteWindow,
   forward,
+  jump,
   killBuffer,
   openBuffer,
   otherWindow,
   removeWindow,
+  resizeWindow,
   resolveLink,
   selectedWindow,
   split,
@@ -176,4 +180,41 @@ test("kill-buffer: ない buffer を閉じても、何も起きない", () => {
   const w = selectedWindow(m);
   assert.deepEqual(killBuffer(m, "nope.md"), []);
   assert.deepEqual(paths(w), ["a.md"]);
+});
+
+test("外部からの位置つき open: 表示中の文書なら、履歴を積まずに位置だけ置き換える", () => {
+  const m = setup();
+  const w = selectedWindow(m);
+  jump(m, w, "a.md", "line:3");
+  jump(m, w, "a.md", "line:9");
+  assert.equal(w.history.length, 1);
+  assert.equal(currentEntry(w)?.anchor, "line:9");
+  jump(m, w, "a.md"); // 位置なし: そのまま
+  assert.equal(currentEntry(w)?.anchor, "line:9");
+  jump(m, w, "b.md", "line:1"); // 別の文書は、通常どおり積む
+  assert.deepEqual(paths(w), ["a.md", "b.md"]);
+});
+
+test("window の大きさ: 広げる・狭める・上限と、モードラインの境界", () => {
+  const m = setup();
+  const top = selectedWindow(m);
+  const bottom = split(m, "col");
+  assert.equal(resizeWindow(m, top, "row", 0.1), false); // 左右の分割はない
+  assert.equal(resizeWindow(m, top, "col", 0.2), true);
+  assert.ok(Math.abs((m.root.type === "split" ? (m.root.ratio ?? 0) : 0) - 0.7) < 1e-9);
+  assert.equal(resizeWindow(m, bottom, "col", 0.2), true); // 下の window が広がる = 境界が上へ
+  assert.ok(Math.abs((m.root.type === "split" ? (m.root.ratio ?? 0) : 0) - 0.5) < 1e-9);
+  resizeWindow(m, top, "col", 5);
+  assert.equal(m.root.type === "split" ? m.root.ratio : 0, 0.9);
+  assert.equal(boundaryBelow(m, top), m.root);
+  assert.equal(boundaryBelow(m, bottom), null);
+});
+
+test("モードラインの右端の境界: 左右の分割で、左の window だけが持つ", () => {
+  const m = setup();
+  const left = selectedWindow(m);
+  const right = split(m, "row");
+  assert.equal(boundaryRight(m, left), m.root);
+  assert.equal(boundaryRight(m, right), null);
+  assert.equal(boundaryBelow(m, left), null);
 });

@@ -15,6 +15,10 @@ export const DEFAULT_BINDINGS: Readonly<Record<string, CommandName>> = {
   "C-x 0": "delete-window",
   "C-x 1": "delete-other-windows",
   "C-x o": "other-window",
+  "C-x ^": "enlarge-window",
+  "C-x -": "shrink-window-if-larger-than-buffer",
+  "C-x }": "enlarge-window-horizontally",
+  "C-x {": "shrink-window-horizontally",
   "C-x b": "switch-buffer",
   "C-x k": "kill-buffer",
   "C-x C-f": "find-file",
@@ -28,6 +32,9 @@ export const DEFAULT_BINDINGS: Readonly<Record<string, CommandName>> = {
   // Back / Forward は、編集における C-f/C-b が文字の流れを泳ぐのと同じく、参照の流れを泳ぐ操作
   "C-f": "forward",
   "C-b": "back",
+  // カーソルキーの左右も(Emacs に不慣れな人のため)
+  left: "back",
+  right: "forward",
   "s-]": "forward",
   "s-[": "back",
   // outline-mode 風の見出し移動(C-c 系は、このために取ってある)

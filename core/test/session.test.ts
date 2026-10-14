@@ -3,7 +3,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createModel, selectedWindow, split, visit, windows } from "../src/model.ts";
+import { createModel, resizeWindow, selectedWindow, split, visit, windows } from "../src/model.ts";
 import {
   MAX_HISTORY,
   parseSnapshot,
@@ -222,5 +222,21 @@ test("存在しない window や仮想 buffer の選択範囲は、保存しな�
   assert.equal(
     takeSnapshot(model, { ...selectionIn(model), path: "*search: x*" })!.selection,
     undefined,
+  );
+});
+
+test("window の大きさ(分割の割合)も、保存して復元する", () => {
+  const model = sample();
+  resizeWindow(model, selectedWindow(model), "row", 0.2);
+  resizeWindow(model, selectedWindow(model), "col", 0.2);
+  const before = JSON.stringify(model.root, (k, v) => (k === "history" ? undefined : v));
+  const snap = takeSnapshot(model);
+  const restored = restoreModel(
+    parseSnapshot(JSON.parse(JSON.stringify(snap)))!,
+    all("a.md", "b.md", "c.md"),
+  )!;
+  assert.equal(
+    JSON.stringify(restored.root, (k, v) => (k === "history" ? undefined : v)),
+    before,
   );
 });

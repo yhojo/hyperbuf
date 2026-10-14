@@ -9,7 +9,7 @@
 
 | キー | コマンド | 説明 |
 | --- | --- | --- |
-| `C-b`、 `s-[` | `back` | 参照履歴を戻る |
+| `C-b`、 `left`、 `s-[` | `back` | 参照履歴を戻る |
 | `C-c C-b` | `backward-same-level` | 同じレベルの、前の見出しへ(親をまたがない) |
 | `M-<` | `beginning-of-document` | 文書の先頭へ |
 | `C-x 5 0` | `delete-frame` | このフレームを閉じる(最後の 1 つなら、アプリを終了する) |
@@ -19,10 +19,12 @@
 | `C-h b` | `describe-bindings` | キー割り当ての一覧を出す(設定の問題も) |
 | `C-c e` | `edit-in-editor` | 指した場所(選択・右クリック・画面の上端)を、エディタで編集するために記録する |
 | `M->` | `end-of-document` | 文書の末尾へ |
+| `C-x ^` | `enlarge-window` | 選択中の window を、縦に広げる(隣は縮む) |
+| `C-x }` | `enlarge-window-horizontally` | 選択中の window を、横に広げる(隣は縮む) |
 | `M-x` | `execute-command` | コマンドを、名前を選んで実行する |
 | `C-x C-f` | `find-file` | ファイルを開く(基準のディレクトリから始まるパス補完。ディレクトリは RET で入る。~/・../・絶対パスも可) |
 | `RET` | `follow-link` | 選んでいるリンクをたどる |
-| `C-f`、 `s-]` | `forward` | 参照履歴を進む |
+| `C-f`、 `right`、 `s-]` | `forward` | 参照履歴を進む |
 | `C-c C-f` | `forward-same-level` | 同じレベルの、次の見出しへ(親をまたがない) |
 | `C-c j` | `goto-heading` | 見出しを選んで、そこへ移動する |
 | `M-g g` | `goto-line` | 元の Markdown の行番号を指定して、そこへ移動する |
@@ -43,6 +45,8 @@
 | `C-v`、 `SPC` | `scroll-page-down` | 1 画面分、下へスクロールする |
 | `DEL`、 `M-v`、 `S-SPC` | `scroll-page-up` | 1 画面分、上へスクロールする |
 | `M-s g` | `search-project` | 基準のディレクトリ以下を全文検索して、結果を仮想 buffer に出す |
+| `C-x {` | `shrink-window-horizontally` | 選択中の window を、横に狭める(隣は広がる) |
+| `C-x -` | `shrink-window-if-larger-than-buffer` | 選択中の window が文書より大きければ、文書がちょうど収まる高さまで縮める |
 | `C-x 2` | `split-below` | window を、上下に分割する(履歴は、複製される) |
 | `C-x 3` | `split-right` | window を、左右に分割する(履歴は、複製される) |
 | `C-x b` | `switch-buffer` | 開いている buffer を、最近使った順の候補から選んで表示する |

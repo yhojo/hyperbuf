@@ -157,6 +157,9 @@ body {
   min-height: 1.6em;
 }
 #status {
+  /* 画面が狭くても折り返さない(行数が変わって、気が散らないように)。右側は、見切れてよい */
+  white-space: nowrap;
+  overflow: hidden;
   color: var(--muted);
   border-top: 1px solid var(--line);
 }

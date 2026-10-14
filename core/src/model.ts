@@ -31,7 +31,13 @@ export type SplitDirection = "row" | "col";
 
 export type LayoutNode =
   | { type: "leaf"; win: Win }
-  | { type: "split"; dir: SplitDirection; children: [LayoutNode, LayoutNode] };
+  | {
+      type: "split";
+      dir: SplitDirection;
+      children: [LayoutNode, LayoutNode];
+      /** 最初の子が占める割合(省略は 0.5)。 */
+      ratio?: number;
+    };
 
 export interface Model {
   buffers: Map<string, Buffer>;
@@ -134,6 +140,20 @@ export function visit(model: Model, win: Win, path: string, anchor: string | nul
   touch(model, path);
 }
 
+/**
+ * 外部(エディタ連携)から、位置つきで開く。表示中の文書と同じなら、履歴を積まずに、位置だけを置き換える
+ * (Emacs で `goto-line` するのと同じ。開くたびに履歴が積み上がらない)。
+ */
+export function jump(model: Model, win: Win, path: string, anchor: string | null = null): void {
+  const cur = currentEntry(win);
+  if (cur && cur.path === path) {
+    if (anchor !== null) win.history[win.index] = { path, anchor, scroll: 0 };
+    touch(model, path);
+    return;
+  }
+  visit(model, win, path, anchor);
+}
+
 export function back(model: Model, win: Win): boolean {
   if (win.index <= 0) return false;
   win.index -= 1;
@@ -199,6 +219,68 @@ export function split(model: Model, dir: SplitDirection): Win {
   if (!parent) model.root = replacement;
   else replaceChild(parent, node, replacement);
   return fresh;
+}
+
+export const MIN_RATIO = 0.1;
+export const MAX_RATIO = 0.9;
+
+/** `win` を含む、`dir` の向きの分割のうち、最も内側のもの(`win` が最初の子の側か、も返す)。 */
+export function resizableSplit(
+  model: Model,
+  win: Win,
+  dir: SplitDirection,
+): { node: Extract<LayoutNode, { type: "split" }>; first: boolean } | null {
+  let child: LayoutNode | null = nodeOf(model, win);
+  while (child) {
+    const parent: LayoutNode | null = findParent(model.root, child);
+    if (parent?.type === "split" && parent.dir === dir) {
+      return { node: parent, first: parent.children[0] === child };
+    }
+    child = parent;
+  }
+  return null;
+}
+
+/**
+ * `win` を、`dir` の向きに、分割全体の割合 `delta` だけ広げる(負なら狭める)。
+ * 隣は、その分だけ縮む。広げる向きに分割がなければ false。
+ */
+export function resizeWindow(model: Model, win: Win, dir: SplitDirection, delta: number): boolean {
+  const found = resizableSplit(model, win, dir);
+  if (!found) return false;
+  const current = found.node.ratio ?? 0.5;
+  found.node.ratio = clampRatio(found.first ? current + delta : current - delta);
+  return true;
+}
+
+/**
+ * `win` の下端(`col`)・右端(`row`)にある境界を持つ分割。`win` が画面の端なら null。
+ * 内側の分割から順に、`win` を含む側が「上(左)」になっている最初のものを探す(モードラインのドラッグで動かす境界)。
+ */
+function boundaryAfter(
+  model: Model,
+  win: Win,
+  dir: SplitDirection,
+): Extract<LayoutNode, { type: "split" }> | null {
+  let child: LayoutNode | null = nodeOf(model, win);
+  while (child) {
+    const parent: LayoutNode | null = findParent(model.root, child);
+    if (parent?.type === "split" && parent.dir === dir && parent.children[0] === child) {
+      return parent;
+    }
+    child = parent;
+  }
+  return null;
+}
+
+/** モードラインの下の境界(上下の分割)。 */
+export const boundaryBelow = (model: Model, win: Win) => boundaryAfter(model, win, "col");
+
+/** window の右の境界(左右の分割)。モードラインの右端のドラッグで動かす。 */
+export const boundaryRight = (model: Model, win: Win) => boundaryAfter(model, win, "row");
+
+export function clampRatio(r: number): number {
+  return Math.min(MAX_RATIO, Math.max(MIN_RATIO, r));
 }
 
 export function deleteWindow(model: Model): boolean {

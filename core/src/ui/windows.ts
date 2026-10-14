@@ -6,7 +6,16 @@
 
 import { firstChangedLine } from "../diff.ts";
 import type { HistoryEntry, LayoutNode, Model, Win } from "../model.ts";
-import { currentEntry, windows } from "../model.ts";
+import {
+  boundaryBelow,
+  boundaryRight,
+  clampRatio,
+  currentEntry,
+  resizableSplit,
+  resizeWindow,
+  selectedWindow,
+  windows,
+} from "../model.ts";
 import type { Renderer } from "../pipeline.ts";
 import { uniquifyNames } from "../names.ts";
 import { findAnchor, topSourceLine, visibleAnchor } from "./anchors.ts";
@@ -161,6 +170,7 @@ export class Views {
       const live = new Set(windows(model).map((w) => w.id));
       for (const id of this.views.keys()) if (!live.has(id)) this.views.delete(id);
     }
+    this.applyRatios(model.root, frame.firstElementChild);
     for (const win of windows(model)) {
       const view = this.viewOf(win);
       if (relayout) view.lastEntry = null;
@@ -169,11 +179,128 @@ export class Views {
     this.opts.onChange?.();
   }
 
+  /** 分割の割合を DOM に反映する(再構築はしない。スクロール位置を失わないため)。 */
+  private applyRatios(node: LayoutNode, el: Element | null): void {
+    if (node.type !== "split" || !el) return;
+    const ratio = node.ratio ?? 0.5;
+    node.children.forEach((child, i) => {
+      const childEl = el.children[i];
+      if (childEl instanceof HTMLElement)
+        childEl.style.flexGrow = String(i === 0 ? ratio : 1 - ratio);
+      this.applyRatios(child, childEl ?? null);
+    });
+  }
+
+  /** 分割の要素(`build` が作ったもの)。割合を px から求めるのに使う。 */
+  private readonly splitEls = new WeakMap<LayoutNode, HTMLElement>();
+
+  /**
+   * 選択中の window を、`dir` の向きに `px` だけ広げる(負なら狭める)。
+   * @returns その向きに分割がなく、広げられなければ false
+   */
+  resizeSelected(dir: "row" | "col", px: number): boolean {
+    const { model } = this.opts;
+    const win = selectedWindow(model);
+    const found = resizableSplit(model, win, dir);
+    const el = found && this.splitEls.get(found.node);
+    if (!found || !el) return false;
+    const size = dir === "col" ? el.clientHeight : el.clientWidth;
+    if (size <= 0) return false;
+    resizeWindow(model, win, dir, px / size);
+    this.refresh();
+    return true;
+  }
+
+  /**
+   * 選択中の window が、文書の全体を表示してなお余るなら、ちょうど収まる高さまで縮める
+   * (`shrink-window-if-larger-than-buffer`)。
+   * @returns "shrunk" 縮めた / "fits" 余っていない / "sole" 上下の分割がない
+   */
+  shrinkToFit(): "shrunk" | "fits" | "sole" {
+    const { model } = this.opts;
+    const win = selectedWindow(model);
+    const view = this.selected();
+    const found = resizableSplit(model, win, "col");
+    const el = found && this.splitEls.get(found.node);
+    if (!found || !el) return "sole";
+    const body = view.content.querySelector<HTMLElement>(".markdown-body");
+    if (!body) return "fits";
+    // 文書の末尾までの高さ + window の枠(モードラインなど)。本文の下の余白(スクロール用)は、含めない
+    const chrome = view.el.offsetHeight - view.content.clientHeight;
+    const wanted = body.offsetTop + body.offsetHeight + 8 + chrome;
+    const excess = view.el.offsetHeight - wanted;
+    if (excess <= 1) return "fits";
+    resizeWindow(model, win, "col", -excess / el.clientHeight);
+    this.refresh();
+    return "shrunk";
+  }
+
+  /**
+   * モードラインのドラッグで、境界を動かす(Emacs と同じ)。モードラインの本体では、下の境界(縦方向)、
+   * 右端では、右の境界(横方向)も、いっしょに動かす。
+   */
+  private bindModeLineDrag(win: Win, view: WinView): void {
+    const bar = view.modeLine.el;
+    const { model } = this.opts;
+    /** 右端とみなす幅(px)。 */
+    const EDGE = 24;
+    const find = (node: LayoutNode | null) => {
+      const el = node && this.splitEls.get(node);
+      return node?.type === "split" && el ? { node, el } : null;
+    };
+    const targets = (e: PointerEvent) => {
+      const atEdge = e.clientX >= bar.getBoundingClientRect().right - EDGE;
+      const h = atEdge ? find(boundaryRight(model, win)) : null;
+      return { v: h ? null : find(boundaryBelow(model, win)), h };
+    };
+    bar.addEventListener("pointermove", (e) => {
+      if (e.buttons !== 0) return;
+      const { v, h } = targets(e);
+      bar.style.cursor = h ? "col-resize" : v ? "row-resize" : "";
+    });
+    bar.addEventListener("pointerdown", (e) => {
+      const { v, h } = targets(e);
+      if (e.button !== 0 || (!v && !h)) return;
+      e.preventDefault();
+      try {
+        bar.setPointerCapture(e.pointerId);
+      } catch {
+        // 捕捉できなくても、バー上の移動は拾える
+      }
+      const start = {
+        x: e.clientX,
+        y: e.clientY,
+        v: v?.node.ratio ?? 0.5,
+        h: h?.node.ratio ?? 0.5,
+      };
+      const move = (ev: PointerEvent): void => {
+        if (v && v.el.clientHeight > 0) {
+          v.node.ratio = clampRatio(start.v + (ev.clientY - start.y) / v.el.clientHeight);
+        }
+        if (h && h.el.clientWidth > 0) {
+          h.node.ratio = clampRatio(start.h + (ev.clientX - start.x) / h.el.clientWidth);
+        }
+        this.applyRatios(model.root, this.opts.frame.firstElementChild);
+      };
+      const end = (): void => {
+        bar.removeEventListener("pointermove", move);
+        bar.removeEventListener("pointerup", end);
+        bar.removeEventListener("pointercancel", end);
+        this.opts.onSelect(win);
+        this.opts.onChange?.();
+      };
+      bar.addEventListener("pointermove", move);
+      bar.addEventListener("pointerup", end);
+      bar.addEventListener("pointercancel", end);
+    });
+  }
+
   private build(node: LayoutNode): HTMLElement {
     if (node.type === "leaf") return this.viewOf(node.win).el;
     const el = document.createElement("div");
     el.className = `split ${node.dir}`;
     el.append(...node.children.map((c) => this.build(c)));
+    this.splitEls.set(node, el);
     return el;
   }
 
@@ -231,6 +358,7 @@ export class Views {
         this.opts.onFollow(win, a.getAttribute("href") ?? "");
       }
     });
+    this.bindModeLineDrag(win, view);
     this.views.set(win.id, view);
     return view;
   }
@@ -292,7 +420,7 @@ export class Views {
     const key = `${entry.path}@${buf.version}`;
     const name = this.names.get(entry.path) ?? entry.path;
     const gone = buf.missing ? "  (削除されました。移動された可能性があります)" : "";
-    view.modeLine.name.textContent = `${name}${entry.anchor ? "#" + entry.anchor : ""}${gone}`;
+    view.modeLine.name.textContent = `${name}${gone}`;
     view.modeLine.hist.textContent = `[履歴 ${win.index + 1}/${win.history.length}]${this.followUpdates ? " [追従]" : ""}`;
 
     if (view.lastKey !== key) {

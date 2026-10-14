@@ -89,6 +89,7 @@ A keyboard-driven macOS viewer (not an editor) for browsing many cross-reference
 - コミットメッセージは Conventional Commits 形式(`type: 要約`)。要約は日本語可。
 - PoC は `poc/<テーマ>` ブランチで行う。コードは原則 `main` にマージせず、結果をまとめた設計文書のみ取り込む。PoC ブランチは削除せず残す。
 - `main` の履歴を書き換える操作(force push 等)はしない。
+- 利用者に見える変更(機能・挙動の変更・不具合の修正)は、マージのときに `CHANGELOG.md` の `[Unreleased]` に英語で書く(リリースの手順は `docs/release.md`)。
 
 ## Repository layout (monorepo)
 

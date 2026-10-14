@@ -21,6 +21,25 @@ import Testing
         #expect(try load(t, "{}") == UserSettings())
     }
 
+    @Test func appearanceDefaultsToSystemAndAcceptsThreeValues() throws {
+        let t = try TempProject()
+        defer { t.remove() }
+        #expect(try load(t, "{}").appearance == .system)
+        #expect(try load(t, #"{"appearance": "dark"}"#).appearance == .dark)
+        #expect(try load(t, #"{"appearance": "light"}"#).appearance == .light)
+        #expect(try load(t, #"{"appearance": "system"}"#).appearance == .system)
+    }
+
+    @Test func invalidAppearanceKeepsSystemAndIsReported() throws {
+        let t = try TempProject()
+        defer { t.remove() }
+        for bad in [#""blue""#, "true", "1", "null"] {
+            let s = try load(t, #"{"appearance": \#(bad)}"#)
+            #expect(s.appearance == .system)
+            #expect(s.problems.count == 1 && s.problems[0].contains("appearance"))
+        }
+    }
+
     @Test func readsFlagsAndUrls() throws {
         let t = try TempProject()
         defer { t.remove() }

@@ -68,6 +68,7 @@ final class AppModel: NSObject, NSWindowDelegate {
     /// 起動: 前回のフレームを復元し(なければ、スロット 1 を 1 つ)、起動の引数のファイル(ディレクトリは
     /// `index.md`、なければ `README.md`)を開く。
     func start(arguments: [String]) {
+        applyAppearance(UserSettings.load().appearance)
         var restored = false
         if restoreEnabled, let stored = sessionStore.load(), let list = stored["frames"] as? [[String: Any]],
             !list.isEmpty
@@ -114,6 +115,16 @@ final class AppModel: NSObject, NSWindowDelegate {
         window.makeKeyAndOrderFront(nil)
         schedulePersist()
         return frame
+    }
+
+    /// 外観(`appearance`)を、アプリ全体に適用する。ウィンドウ・メニュー・WebView の `prefers-color-scheme` が、これに従う。
+    /// `system` なら、固定を外して OS に従う。
+    func applyAppearance(_ appearance: Appearance) {
+        switch appearance {
+        case .system: NSApp.appearance = nil
+        case .light: NSApp.appearance = NSAppearance(named: .aqua)
+        case .dark: NSApp.appearance = NSAppearance(named: .darkAqua)
+        }
     }
 
     /// 空いている最小のスロットで、新しいフレームを作る。

@@ -15,22 +15,37 @@ type MermaidApi = (typeof import("mermaid"))["default"];
 let mermaidPromise: Promise<MermaidApi> | null = null;
 let diagramSeq = 0;
 
+/** いまの外観(ライト / ダーク)に合う Mermaid のテーマ。 */
+const currentTheme = (): "dark" | "default" =>
+  window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default";
+
+function initializeMermaid(mermaid: MermaidApi): void {
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: "strict",
+    // Mermaid 12 の既定のレイアウトは ELK(elkjs。EPL-2.0)。GitHub と同じ見た目になる dagre(Mermaid 11 までの既定)に
+    // 固定し、elkjs は同梱しない(build-options.mjs。docs/license-options.md)。図が `layout: elk` を指定すると、
+    // その図は、図の位置にエラーとして表示される
+    layout: "dagre",
+    theme: currentTheme(),
+    logLevel: "fatal",
+  });
+}
+
 function loadMermaid(): Promise<MermaidApi> {
   mermaidPromise ??= import("mermaid").then(({ default: mermaid }) => {
-    const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    mermaid.initialize({
-      startOnLoad: false,
-      securityLevel: "strict",
-      // Mermaid 12 の既定のレイアウトは ELK(elkjs。EPL-2.0)。GitHub と同じ見た目になる dagre(Mermaid 11 までの既定)に
-      // 固定し、elkjs は同梱しない(build-options.mjs。docs/license-options.md)。図が `layout: elk` を指定すると、
-      // その図は、図の位置にエラーとして表示される
-      layout: "dagre",
-      theme: dark ? "dark" : "default",
-      logLevel: "fatal",
-    });
+    initializeMermaid(mermaid);
     return mermaid;
   });
   return mermaidPromise;
+}
+
+/**
+ * 外観が切り替わったとき、Mermaid のテーマを、いまの外観に合わせ直す(図は、描画時に色が決まるので、
+ * 呼び出し側が、表示中の図を描き直す)。まだ読み込んでいなければ、何もしない(読み込むときに、いまの外観になる)。
+ */
+export async function refreshMermaidTheme(): Promise<void> {
+  if (mermaidPromise) initializeMermaid(await mermaidPromise);
 }
 
 export async function hydrateDiagrams(root: HTMLElement): Promise<DiagramStats> {

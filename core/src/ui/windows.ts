@@ -156,6 +156,17 @@ export class Views {
     return view.content.querySelectorAll("a")[view.linkIndex]?.getAttribute("href") ?? null;
   }
 
+  /**
+   * 図(Mermaid)のある window を、描画し直す。図は、描画時に色が決まるので、外観(ライト / ダーク)が
+   * 切り替わったときに、呼ぶ。閲覧位置は、外部更新のときと同じく、保つ。
+   */
+  redrawDiagrams(): void {
+    for (const view of this.views.values()) {
+      if (view.content.querySelector(".mermaid-diagram, .render-error")) view.lastKey = null;
+    }
+    this.refresh();
+  }
+
   /** model の状態に合わせて、全 window を描画し直す。 */
   refresh(): void {
     const { model, frame } = this.opts;

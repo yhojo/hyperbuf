@@ -60,6 +60,7 @@ export const DEFAULT_BINDINGS: Readonly<Record<string, CommandName>> = {
   "C-r": "isearch-backward",
   "M-s g": "search-project",
   "M-g g": "goto-line",
+  "M-=": "count-words",
   // ビューアで指した場所を、エディタで編集する(右クリックメニューの「Emacs で編集」と同じ)
   "C-c e": "edit-in-editor",
   "C-h b": "describe-bindings",

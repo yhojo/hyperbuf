@@ -13,6 +13,7 @@ Changes since 0.1.0, mostly from the feedback of the initial private distributio
 - Window resizing, as in Emacs: `C-x ^` (enlarge window), `C-x -` (`shrink-window-if-larger-than-buffer`), `C-x }` (enlarge window horizontally) and `C-x {` (shrink window horizontally). The sizes are saved in the session.
 - Dragging the mode line resizes windows: dragging the mode line moves the border below the window (vertical); dragging its right end moves the border on the right (horizontal).
 - The cursor keys `←` / `→` go back / forward in the reference history, in addition to `C-b` / `C-f`.
+- `M-x count-words` (`M-=`) counts the lines, words and characters of the selected text, or of the whole document, and shows them in the echo area (for example `Region has 3 lines, 42 words, 210 characters (180 without whitespace)`). It counts the displayed text, not the Markdown source. A live count in the mode line is intentionally not planned.
 
 ### Changed
 

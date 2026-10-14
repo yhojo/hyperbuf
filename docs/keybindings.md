@@ -12,6 +12,7 @@ Commands can be run by name with `M-x`.
 | `C-b`, `left`, `s-[` | `back` | Go back in reference history |
 | `C-c C-b` | `backward-same-level` | Go to the previous heading at the same level (does not cross parents) |
 | `M-<` | `beginning-of-document` | Go to the beginning of the document |
+| `M-=` | `count-words` | Count the lines, words and characters of the selected text (or of the whole document) as displayed |
 | `C-x 5 0` | `delete-frame` | Delete this frame (quits the app if it is the last one) |
 | `C-x 5 1` | `delete-other-frames` | Delete all other frames |
 | `C-x 1` | `delete-other-windows` | Make the selected window fill the frame |

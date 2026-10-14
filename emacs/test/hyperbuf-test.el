@@ -11,16 +11,16 @@
 (defconst hyperbuf-test--examples
   (expand-file-name "../../protocol/examples/"
                     (file-name-directory (or load-file-name buffer-file-name)))
-  "共有の適合テスト用の例(protocol/examples/)。")
+  "Shared conformance examples (protocol/examples/).")
 
 (defun hyperbuf-test--example (name)
-  "protocol/examples/NAME.json を、plist のリストとして読む。"
+  "Read protocol/examples/NAME.json as a list of plists."
   (with-temp-buffer
     (insert-file-contents (expand-file-name (concat name ".json") hyperbuf-test--examples))
     (json-parse-buffer :object-type 'plist :array-type 'list :null-object nil)))
 
 (defmacro hyperbuf-test--with-socket-dir (var &rest body)
-  "短い一時ディレクトリを作り、そのソケットのパスを VAR に束ねて BODY を実行する。"
+  "Make a short temp directory, bind its socket path to VAR and run BODY."
   (declare (indent 1))
   `(let* ((dir (make-temp-file "hbe" t))
           (,var (expand-file-name "s.sock" dir))
@@ -30,7 +30,7 @@
        (delete-directory dir t))))
 
 (defun hyperbuf-test--server (path handler)
-  "PATH で待ち受ける、テスト用のサーバー。HANDLER は (PROC LINE) を受け取る。"
+  "Start a test server listening on PATH.  HANDLER receives (PROC LINE)."
   (make-network-process
    :name "hyperbuf-test-server" :server t :family 'local :service path
    :noquery t :coding 'utf-8
@@ -40,18 +40,18 @@
   (process-send-string proc (concat (json-serialize plist) "\n")))
 
 (defmacro hyperbuf-test--with-md-file (var &rest body)
-  "一時の .md ファイルを作り、そのパスを VAR に束ねて BODY を実行する。"
+  "Make a temporary .md file, bind its path to VAR and run BODY."
   (declare (indent 1))
   `(let* ((dir (make-temp-file "hbm" t))
           (,var (expand-file-name "note.md" dir)))
-     (with-temp-file ,var (insert "# 見出し\n\n本文\n"))
+     (with-temp-file ,var (insert "# Heading\n\nBody\n"))
      (unwind-protect (progn ,@body)
        (delete-directory dir t))))
 
-;;;; 共有の例
+;;;; Shared examples
 
 (ert-deftest hyperbuf-test-conformance-open-validation ()
-  "protocol/examples/open-validation.json: 検証の結果が、サーバーと同じ。"
+  "protocol/examples/open-validation.json: validation matches the server."
   (let ((cases (hyperbuf-test--example "open-validation")))
     (should (> (length cases) 10))
     (dolist (item cases)
@@ -66,7 +66,7 @@
           (should (equal (list name expect) (list name (car problem)))))))))
 
 (ert-deftest hyperbuf-test-conformance-url ()
-  "protocol/examples/url.json: 同じ要求から、同じ URL を作る。"
+  "protocol/examples/url.json: the same request yields the same URL."
   (let ((checked 0))
     (dolist (item (hyperbuf-test--example "url"))
       (let ((request (plist-get item :request)))
@@ -80,7 +80,7 @@
                                       :anchor (plist-get request :anchor)))))))))
     (should (>= checked 4))))
 
-;;;; 要求の組み立て
+;;;; Building requests
 
 (ert-deftest hyperbuf-test-build-request ()
   (let ((r (hyperbuf--build-request "/a/b.md" 12 nil nil nil)))
@@ -103,7 +103,7 @@
   (should (eq hyperbuf-transport 'socket))
   (should (string-match-p "\\`[0-9]+\\.[0-9]+\\.[0-9]+\\'" hyperbuf-version)))
 
-;;;; ソケットのパス
+;;;; Socket path
 
 (ert-deftest hyperbuf-test-socket-path ()
   (let ((hyperbuf-socket-path nil))
@@ -127,7 +127,7 @@
         (should (<= (string-bytes path) 103))
         (should (string-match-p "hyperbuf-[0-9]+\\.sock\\'" path))))))
 
-;;;; ソケットでの往復(テスト用のサーバー)
+;;;; Round trips over the socket (test server)
 
 (ert-deftest hyperbuf-test-socket-round-trip ()
   (hyperbuf-test--with-socket-dir path
@@ -177,31 +177,31 @@
                        (hyperbuf-test--reply
                         proc (list :v 1 :ok :false
                                    :error (list :code "outside-project"
-                                                :message "範囲外のため開きませんでした")))))))
+                                                :message "Not opened because it is a warn path")))))))
         (unwind-protect
             (let ((err (should-error (hyperbuf-open file) :type 'user-error)))
-              (should (string-match-p "範囲外" (cadr err)))
+              (should (string-match-p "warn path" (cadr err)))
               (should (string-match-p "outside-project" (cadr err))))
           (delete-process server))))))
 
 (ert-deftest hyperbuf-test-socket-timeout ()
   (hyperbuf-test--with-socket-dir path
     (hyperbuf-test--with-md-file file
-      (let ((server (hyperbuf-test--server path (lambda (_proc _line) nil)))  ; 応答しない
+      (let ((server (hyperbuf-test--server path (lambda (_proc _line) nil)))  ; never replies
             (hyperbuf-timeout 0.1)
             (hyperbuf--reply-slack 0))
         (unwind-protect
             (let ((err (should-error (hyperbuf-open file) :type 'user-error)))
-              (should (string-match-p "応答がありません" (cadr err))))
+              (should (string-match-p "No response" (cadr err))))
           (delete-process server))))))
 
-;;;; アプリが起動していないとき
+;;;; When the app is not running
 
 (ert-deftest hyperbuf-test-not-running-without-launch ()
   (hyperbuf-test--with-socket-dir _path
     (hyperbuf-test--with-md-file file
       (let ((err (should-error (hyperbuf-open file) :type 'user-error)))
-        (should (string-match-p "起動していません" (cadr err)))))))
+        (should (string-match-p "not running" (cadr err)))))))
 
 (ert-deftest hyperbuf-test-launches-the-app-with-the-open-url ()
   (hyperbuf-test--with-socket-dir _path
@@ -231,7 +231,7 @@
         (cl-letf (((symbol-function 'call-process) (lambda (&rest _) 1)))
           (should-error (hyperbuf-open file) :type 'user-error))))))
 
-;;;; 入力の検証(接続の前)
+;;;; Input validation (before connecting)
 
 (ert-deftest hyperbuf-test-rejects-bad-files-before-connecting ()
   (hyperbuf-test--with-socket-dir _path
@@ -248,7 +248,7 @@
               (should-error (hyperbuf-open file nil (make-string 201 ?a)) :type 'user-error)))
         (delete-directory dir t)))))
 
-;;;; CLI 経由
+;;;; Via the CLI
 
 (ert-deftest hyperbuf-test-cli-transport ()
   (hyperbuf-test--with-md-file file
@@ -266,12 +266,12 @@
                              (expand-file-name file)))))
       (cl-letf (((symbol-function 'call-process)
                  (lambda (_program _in out &rest _)
-                   (with-current-buffer out (insert "範囲外のため開きませんでした"))
+                   (with-current-buffer out (insert "Not opened because it is a warn path"))
                    4)))
         (let ((err (should-error (hyperbuf-open file) :type 'user-error)))
-          (should (string-match-p "範囲外" (cadr err))))))))
+          (should (string-match-p "warn path" (cadr err))))))))
 
-;;;; コマンド
+;;;; Commands
 
 (ert-deftest hyperbuf-test-open-file-uses-the-current-line ()
   (hyperbuf-test--with-md-file file
@@ -294,13 +294,13 @@
       (with-current-buffer (find-file-noselect file)
         (let ((hyperbuf-save-before-open t))
           (goto-char (point-max))
-          (insert "追記\n")
+          (insert "Appended\n")
           (should (buffer-modified-p))
           (hyperbuf-open-file)
           (should-not (buffer-modified-p))
-          (should (string-match-p "追記" (with-temp-buffer (insert-file-contents file) (buffer-string)))))
+          (should (string-match-p "Appended" (with-temp-buffer (insert-file-contents file) (buffer-string)))))
         (let ((hyperbuf-save-before-open nil))
-          (insert "未保存\n")
+          (insert "Unsaved\n")
           (hyperbuf-open-file)
           (should (buffer-modified-p))
           (set-buffer-modified-p nil))
@@ -310,26 +310,26 @@
   (with-temp-buffer
     (should-error (hyperbuf-open-file) :type 'user-error)))
 
-;;;; ビューアから編集位置へ(hyperbuf-visit-location)
+;;;; From the viewer to the edit location (hyperbuf-visit-location)
 
 (defun hyperbuf-test--sha (text)
-  "TEXT(UTF-8 のバイト列)の SHA-256。"
+  "SHA-256 of TEXT as UTF-8 bytes."
   (secure-hash 'sha256 (encode-coding-string text 'utf-8)))
 
 (ert-deftest hyperbuf-test-offset ()
   (let ((text "ab\n日本語\n\nlast"))
     (should (= (hyperbuf--offset text 1 1) 0))
-    (should (= (hyperbuf--offset text 1 3) 2))          ; 行末(改行の直前)
+    (should (= (hyperbuf--offset text 1 3) 2))          ; end of line (just before the newline)
     (should (= (hyperbuf--offset text 2 1) 3))
     (should (= (hyperbuf--offset text 2 4) 6))
-    (should (= (hyperbuf--offset text 3 1) 7))          ; 空行
+    (should (= (hyperbuf--offset text 3 1) 7))          ; empty line
     (should (= (hyperbuf--offset text 4 5) (length text)))
-    (should-not (hyperbuf--offset text 1 4))            ; 行の長さを超える
-    (should-not (hyperbuf--offset text 5 1))            ; 行が足りない
+    (should-not (hyperbuf--offset text 1 4))            ; beyond the line length
+    (should-not (hyperbuf--offset text 5 1))            ; not enough lines
     (should-not (hyperbuf--offset text 1 0))))
 
 (ert-deftest hyperbuf-test-conformance-location-check ()
-  "protocol/examples/location-check.json: 照合の結果が、共有の例と同じ。"
+  "protocol/examples/location-check.json: check results match the shared examples."
   (let ((cases (hyperbuf-test--example "location-check")))
     (should (>= (length cases) 8))
     (dolist (item cases)
@@ -349,7 +349,7 @@
 
 (defun hyperbuf-test--location (path text start-line start-col end-line end-col expect
                                      &optional precision before after)
-  "PATH の内容 TEXT について、get-location の位置(plist)を作る。"
+  "Build a get-location location (a plist) for PATH with contents TEXT."
   (list :v 1 :path path
         :range (list :start (list :line start-line :column start-col)
                      :end (list :line end-line :column end-col))
@@ -361,7 +361,7 @@
         :markedAt (* 1000 (float-time))))
 
 (defmacro hyperbuf-test--with-viewer (location-form &rest body)
-  "LOCATION-FORM(get-location が返す位置)を返す、テスト用のビューアに接続して BODY を実行する。"
+  "Run BODY connected to a test viewer that returns LOCATION-FORM for get-location."
   (declare (indent 1))
   `(hyperbuf-test--with-socket-dir path
      (let ((server (hyperbuf-test--server
@@ -376,9 +376,9 @@
 (ert-deftest hyperbuf-test-visit-moves-to-the-exact-position-and-highlights ()
   (hyperbuf-test--with-md-file file
     (let* ((text (with-temp-buffer (insert-file-contents file) (buffer-string)))
-           ;; 「見出し」の 3 文字(1 行目の 3 桁目から)
-           (location (hyperbuf-test--location file text 1 3 1 6 "見出し"
-                                              "exact" "# " "\n\n本文\n"))
+           ;; The 7 characters of "Heading" (from column 3 of line 1)
+           (location (hyperbuf-test--location file text 1 3 1 10 "Heading"
+                                              "exact" "# " "\n\nBody\n"))
            (pulsed nil)
            (messages nil))
       (hyperbuf-test--with-viewer location
@@ -390,14 +390,14 @@
             (hyperbuf-visit-location)
             (should (file-equal-p (buffer-file-name) file))
             (should (= (point) 3))
-            (should (equal pulsed '(3 6)))
-            (should (string-match-p "見出し" (car messages)))
+            (should (equal pulsed '(3 10)))
+            (should (string-match-p "Heading" (car messages)))
             (kill-buffer)))))))
 
 (ert-deftest hyperbuf-test-visit-says-so-when-the-position-is-only-block-precise ()
   (hyperbuf-test--with-md-file file
     (let* ((text (with-temp-buffer (insert-file-contents file) (buffer-string)))
-           (location (hyperbuf-test--location file text 1 1 1 6 "# 見出し" "block" "" "\n\n本文\n"))
+           (location (hyperbuf-test--location file text 1 1 1 10 "# Heading" "block" "" "\n\nBody\n"))
            (messages nil))
       (hyperbuf-test--with-viewer location
         (cl-letf (((symbol-function 'pulse-momentary-highlight-region) #'ignore)
@@ -405,62 +405,62 @@
                    (lambda (format-string &rest args) (push (apply #'format format-string args) messages))))
           (save-window-excursion
             (hyperbuf-visit-location)
-            (should (string-match-p "曖昧" (car messages)))
+            (should (string-match-p "ambiguous" (car messages)))
             (kill-buffer)))))))
 
 (ert-deftest hyperbuf-test-visit-refuses-a-stale-view ()
-  "ビューアが描画したあと、ファイルが変わったら、移動せず、警告する(続行の手段もない)。"
+  "If the file changed after the viewer rendered it, warn and do not move (no way to continue)."
   (hyperbuf-test--with-md-file file
     (let* ((text (with-temp-buffer (insert-file-contents file) (buffer-string)))
-           (location (hyperbuf-test--location file text 1 3 1 6 "見出し" "exact" "# " "\n\n本文\n")))
-      ;; 指したあとに、ファイルが書き換えられた
-      (with-temp-file file (insert "# 新しい見出し\n\n別の本文\n"))
+           (location (hyperbuf-test--location file text 1 3 1 10 "Heading" "exact" "# " "\n\nBody\n")))
+      ;; The file was rewritten after the location was marked
+      (with-temp-file file (insert "# New heading\n\nOther body\n"))
       (hyperbuf-test--with-viewer location
         (let ((before (current-buffer))
               (err (should-error (hyperbuf-visit-location) :type 'user-error)))
           (should (eq (current-buffer) before))
-          (should (string-match-p "移動しません" (cadr err)))
-          (should (string-match-p "描画した版" (cadr err)))
+          (should (string-match-p "not moving" (cadr err)))
+          (should (string-match-p "rendered" (cadr err)))
           (with-current-buffer "*hyperbuf-mismatch*"
             (should (string-match-p "SHA-256" (buffer-string)))
-            (should (string-match-p "ビューアで、ファイルを開き直して" (buffer-string)))))))))
+            (should (string-match-p "reopen the file in the viewer" (buffer-string)))))))))
 
 (ert-deftest hyperbuf-test-visit-refuses-when-the-text-at-the-position-differs ()
   (hyperbuf-test--with-md-file file
     (let* ((text (with-temp-buffer (insert-file-contents file) (buffer-string)))
-           ;; ビューアが指していたのは「本文」だが、位置は、見出しの行を指している(食い違い)
-           (location (hyperbuf-test--location file text 1 3 1 6 "本文" "exact" "# " "")))
+           ;; The viewer pointed at "Body", but the location points at the heading line (mismatch)
+           (location (hyperbuf-test--location file text 1 3 1 10 "Body" "exact" "# " "")))
       (hyperbuf-test--with-viewer location
         (let ((err (should-error (hyperbuf-visit-location) :type 'user-error)))
-          (should (string-match-p "文字列が" (cadr err)))
+          (should (string-match-p "text at that location differs" (cadr err)))
           (with-current-buffer "*hyperbuf-mismatch*"
-            (should (string-match-p "本文" (buffer-string)))
-            (should (string-match-p "見出し" (buffer-string)))))))))
+            (should (string-match-p "Body" (buffer-string)))
+            (should (string-match-p "Heading" (buffer-string)))))))))
 
 (ert-deftest hyperbuf-test-visit-checks-the-unsaved-buffer-not-just-the-disk ()
-  "未保存の編集で、文字列がずれていたら、ディスクが同じでも、移動しない。"
+  "If unsaved edits shifted the text, do not move even if the disk is unchanged."
   (hyperbuf-test--with-md-file file
     (let* ((text (with-temp-buffer (insert-file-contents file) (buffer-string)))
-           (location (hyperbuf-test--location file text 1 3 1 6 "見出し" "exact" "# " "\n\n本文\n")))
+           (location (hyperbuf-test--location file text 1 3 1 10 "Heading" "exact" "# " "\n\nBody\n")))
       (with-current-buffer (find-file-noselect file)
         (goto-char (point-min))
-        (insert "先頭に追記した行\n")  ; 保存しない: ディスクは、ビューアが読んだ版のまま
+        (insert "Line added at the top\n")  ; not saved: the disk keeps the version the viewer read
         (hyperbuf-test--with-viewer location
           (let ((err (should-error (hyperbuf-visit-location) :type 'user-error)))
-            (should (string-match-p "移動しません" (cadr err)))))
+            (should (string-match-p "not moving" (cadr err)))))
         (set-buffer-modified-p nil)
         (kill-buffer)))))
 
 (ert-deftest hyperbuf-test-visit-without-a-marked-location-or-viewer ()
   (hyperbuf-test--with-viewer nil
     (let ((err (should-error (hyperbuf-visit-location) :type 'user-error)))
-      (should (string-match-p "位置がありません" (cadr err)))))
+      (should (string-match-p "No location marked" (cadr err)))))
   (hyperbuf-test--with-socket-dir _path
     (let ((err (should-error (hyperbuf-visit-location) :type 'user-error)))
-      (should (string-match-p "起動していません" (cadr err))))))
+      (should (string-match-p "not running" (cadr err))))))
 
 (ert-deftest hyperbuf-test-visit-rejects-unsafe-paths-from-the-viewer ()
-  "ソケットの相手が返した位置でも、パスは、検証する(絶対パスの .md のみ)。"
+  "Even for a location returned by the socket peer, validate the path (absolute .md paths only)."
   (hyperbuf-test--with-viewer (hyperbuf-test--location "/etc/passwd" "x" 1 1 1 2 "x")
     (should-error (hyperbuf-visit-location) :type 'user-error))
   (hyperbuf-test--with-viewer (hyperbuf-test--location "relative.md" "x" 1 1 1 2 "x")

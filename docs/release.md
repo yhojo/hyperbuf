@@ -51,7 +51,7 @@ release ビルドは **Universal(arm64 と x86_64)**。Apple Silicon と、Intel
 ## 同梱するもの
 
 - `HyperBuf.app/Contents/Resources/bin/hyperbuf`: CLI(`PATH` に通すには、シンボリックリンクを張る。Homebrew cask の `binary` でも張れる)。アプリの実行ファイル(`HyperBuf`)と、大文字小文字を区別しないファイルシステムで衝突しないよう、`MacOS/` ではなく `Resources/bin/` に置く。
-- `LICENSE.txt`、`NOTICE.txt`、`THIRD-PARTY-NOTICES.txt`(サードパーティの著作権表示とライセンス。メニューの「サードパーティのライセンスを表示」で開く)。
+- `LICENSE.txt`、`NOTICE.txt`、`THIRD-PARTY-NOTICES.txt`(サードパーティの著作権表示とライセンス。アプリメニューの `Show Third-Party Licenses` で開く)。
 - `.dmg` には、`LICENSE.txt`・`NOTICE.txt` に加えて、配布用の `README.md`(元: `app/macos/Resources/dmg/README.md`。インストール・基本の操作・`hyperbuf` コマンドのリンク・Emacs 連携)と、`emacs/`(`hyperbuf.el`・`README.md`・`LICENSE`)も入る。`emacs/` は GPL-3.0-or-later で、アプリ(Apache-2.0)とは別のプログラムとして、自身のライセンスを添えて同梱する(集積であり、結合ではない)。CLI(`hyperbuf`)は、署名・公証済みの `.app` の中(`Contents/Resources/bin/`)にあり、配布用の README が、リンクの作り方を案内する。
 
 ## 署名の設計
@@ -82,4 +82,4 @@ release ビルドは **Universal(arm64 と x86_64)**。Apple Silicon と、Intel
 - Homebrew cask(`binary` で CLI も入れる)。公開後の整備。
 - リリースの自動化(GitHub Actions)。署名の秘密を CI に置くかどうかの判断が要るため、手動のリリースから始める。
 - 自動更新(Sparkle など)。外部通信を伴うため、「Local first」の方針との調整が要る。当面は、なし。
-- `hyperbuf` コマンドを `PATH` に通すメニュー(「コマンドラインツールをインストール…」)。
+- `hyperbuf` コマンドを `PATH` に通すメニュー(`Install Command Line Tool…` の名前を想定。文言は英語)。

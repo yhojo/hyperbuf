@@ -53,14 +53,15 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 | `C-x b` | 開いている文書(buffer)を切り替える |
 | `C-s` / `C-r` | 文書内を検索する |
 | `TAB` / `RET` | リンクを選ぶ / たどる |
-| `C-b` / `C-f` | 戻る / 進む(参照の履歴) |
+| `C-b` / `C-f`(または `←` / `→`) | 戻る / 進む(参照の履歴) |
 | `C-x 2` / `C-x 3` / `C-x 0` / `C-x o` | window の分割・閉じる・移動 |
+| `C-x ^` / `C-x }` / `C-x {` / `C-x -` | window の大きさを変える(モードラインのドラッグでも) |
 | `M-x` | コマンド名で実行 |
 | `C-h b` | キー割り当ての一覧 |
 
 `M-` は Option キーです。キー割り当ての全一覧は、アプリの中で `C-h b` を押すと見られます。
 設定(キー割り当て、ファイルのアクセス範囲、外部リンクなど)は、
-`~/Library/Application Support/HyperBuf/config.json` に書きます(アプリメニューの「設定ファイルの場所を表示」から、Finder で開けます)。
+`~/Library/Application Support/HyperBuf/config.json` に書きます(アプリメニューの `Show Config File in Finder`から、Finder で開けます)。
 
 ## コマンドラインから開く(`hyperbuf`)
 
@@ -88,7 +89,7 @@ hyperbuf docs/plan.md:120     # 120 行目を開く
 
 `hyperbuf-open-file` は、いま見ているファイルを、現在の行つきで HyperBuf に開きます(Emacs → HyperBuf)。
 
-### ビューアから Emacs で編集する(右クリックの「Emacs で編集」)
+### ビューアから Emacs で編集する(右クリックの `Edit in Emacs`)
 
 ビューアで読んでいて、直したい箇所を見つけたら、その場所を、Emacs で開けます(HyperBuf → Emacs)。次の準備をします。
 
@@ -101,7 +102,7 @@ hyperbuf docs/plan.md:120     # 120 行目を開く
 
    Emacs を起動したまま、`M-x server-start` でも構いません。
 
-2. **HyperBuf に、呼び出すコマンドを教える。** `~/Library/Application Support/HyperBuf/config.json` に書きます(アプリメニューの「設定ファイルの場所を表示」で、Finder に出せます。ファイルがなければ作ります)。
+2. **HyperBuf に、呼び出すコマンドを教える。** `~/Library/Application Support/HyperBuf/config.json` に書きます(アプリメニューの `Show Config File in Finder`で、Finder に出せます。ファイルがなければ作ります)。
 
    ```json
    {
@@ -112,7 +113,7 @@ hyperbuf docs/plan.md:120     # 120 行目を開く
 
    `emacsclient` のパスは、環境で違います。`which emacsclient` で確かめてください(Homebrew の Emacs なら `/opt/homebrew/bin/emacsclient`(Apple シリコン)か `/usr/local/bin/emacsclient`(Intel)。Emacs.app なら `/Applications/Emacs.app/Contents/MacOS/bin/emacsclient` など)。設定を変えたら、HyperBuf を再起動します。
 
-3. **使う。** ビューアで、直したい文字列を選択して、**右クリック →「Emacs で編集」**(または `C-c e`)を選びます。Emacs が前面に出て、その位置にカーソルが移ります。
+3. **使う。** ビューアで、直したい文字列を選択して、**右クリック → `Edit in Emacs`**(または `C-c e`)を選びます。Emacs が前面に出て、その位置にカーソルが移ります。
 
 誤った場所を黙って編集させないために、移動の前に、必ず照合します。ファイルが、ビューアで見ていた内容から変わっているとき、位置の文字列が合わないときは、移動せずに知らせます。同じ文言が複数あって位置が決められないときは、ブロックの先頭へ移動して、そのことを知らせます。
 

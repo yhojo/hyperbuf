@@ -28,7 +28,6 @@ public struct OpenOptions: Equatable, Sendable {
     public var files: [String] = []
     public var line: Int?
     public var anchor: String?
-    public var project: String?
     public var target: String?
     /// アプリ内の確認(範囲外など)を、長く待つ。
     public var wait = false
@@ -55,7 +54,6 @@ public enum Arguments {
         Options:
           --line <N>         Position by line number (or use <file>:<line>)
           --anchor <ID>      Position by anchor, such as a heading
-          --project <DIR>    Ignored (accepted only for backward compatibility; HyperBuf has no per-window project)
           --target <T>       Where to show: current (default) | split-right | split-below | new-frame
           --wait             Wait up to 60 seconds for confirmation in the app (e.g. files outside the project) (default: 3)
           --no-activate      Do not bring the app to the front when launching it
@@ -92,11 +90,6 @@ public enum Arguments {
                     return .failure(UsageError("--anchor requires a value"))
                 }
                 options.anchor = text
-            case "--project":
-                guard let text = value(for: argument), !text.isEmpty else {
-                    return .failure(UsageError("--project requires a directory"))
-                }
-                options.project = text
             case "--target":
                 guard let text = value(for: argument), targets.contains(text) else {
                     return .failure(UsageError("--target must be one of: \(targets.sorted().joined(separator: " / "))"))

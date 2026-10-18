@@ -39,7 +39,7 @@ import Testing
         for bad: [String] in [
             [], ["--line"], ["--line", "x", "a.md"], ["--line", "0", "a.md"], ["--line", "-1", "a.md"],
             ["--target", "nowhere", "a.md"], ["--bogus", "a.md"], ["--line", "2", "a.md", "b.md"],
-            ["--anchor", "x", "a.md", "b.md"], ["--project"],
+            ["--anchor", "x", "a.md", "b.md"], ["--project", "dir", "a.md"],
         ] {
             guard case .failure = Arguments.parse(bad) else {
                 Issue.record("使い方の誤りになるはず: \(bad)")

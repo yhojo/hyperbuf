@@ -64,14 +64,13 @@
     }
   },
   {
-    "name": "--project と --target",
+    "name": "--target",
     "files": ["docs/a.md"],
     "cwd": "${TMP}",
-    "args": ["--project", "${TMP}", "--target", "split-right", "docs/a.md"],
+    "args": ["--target", "split-right", "docs/a.md"],
     "request": {
       "op": "open",
       "path": "${TMP}/docs/a.md",
-      "project": "${TMP}",
       "target": "split-right"
     }
   },

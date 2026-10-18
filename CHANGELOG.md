@@ -6,6 +6,12 @@ Versions are not yet strictly semantic: 0.x releases may change behavior between
 
 ## [Unreleased]
 
+### Added
+
+- Project roots, as in Emacs `project.el`: `C-x p f` now lists Markdown files under the nearest ancestor directory that has a VCS marker (`.git`, `.hg`, `.svn`, `.bzr`, `_darcs`, `.jj`), or under the buffer's directory if there is none. `~` and `/` are never roots. Directories that must not become a root can be listed in `projectIgnorePaths`.
+- `C-x p g` (`project-find-regexp`): search all files under the project root (plain text for now; `.gitignore` is not read). `M-s g` still searches under the buffer's directory.
+- `C-x p b` (`project-switch-to-buffer`) and `C-x p k` (`project-kill-buffers`): switch to, or kill after confirming, the buffers of the current frame that belong to the same project root.
+
 ### Removed
 
 - The `hyperbuf --project` option. It was already ignored since HyperBuf has no per-window project; passing it is now a usage error.

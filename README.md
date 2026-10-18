@@ -79,11 +79,13 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 | Resize window | `C-x ^` / `C-x }` / `C-x {` / `C-x -` | 縦に広げる・横に広げる・横に狭める・文書がちょうど収まる高さに縮める（モードラインのドラッグでも変更できる） |
 | Switch buffer | `C-x b` | 表示するbufferを切り替える |
 | Find file | `C-x C-f` | ファイルを開く（基準のディレクトリから始まるパス補完。ディレクトリは `RET` で中へ） |
-| Find file (tree) | `C-x p f` | 基準のディレクトリ以下の文書を再帰で一覧にして絞り込む（`../`・`~/` で基準を変えられる） |
+| Find file (tree) | `C-x p f` | プロジェクト・ルート（`.git` などのあるディレクトリまでさかのぼって求める。なければ基準のディレクトリ）以下の文書を再帰で一覧にして絞り込む（`../`・`~/` で起点を変えられる） |
 | Frames | `Cmd-1`…`Cmd-9` / `C-x 5 2` `0` `o` `1` | フレーム（macOSのウィンドウ）の切り替え・作成・削除。各フレームは独立した作業場 |
 | Command palette | `M-x` | 名前からコマンドを実行 |
 | Search in document | `C-s` / `C-r` | 文書内のインクリメンタル検索（入力のたびに一致を数えてハイライト、`RET` で確定、`C-g` で取消） |
-| Search in project | `M-s g` | プロジェクト全体の全文検索（結果は仮想bufferに出る） |
+| Search in directory | `M-s g` | 基準のディレクトリ以下の全文検索（結果は仮想bufferに出る） |
+| Search in project | `C-x p g` | プロジェクト・ルート以下の全文検索（結果は仮想bufferに出る） |
+| Project buffers | `C-x p b` / `C-x p k` | 同じプロジェクト・ルートのbufferだけから切り替える・まとめて閉じる（閉じる前に確認する） |
 | Back / Forward | `C-b` / `C-f`（別名 `←` / `→`、`Cmd+[` / `Cmd+]`） | 各windowの参照履歴を前後移動 |
 | Outline | `C-c C-n` / `C-p` / `C-f` / `C-b` / `C-u` | 次・前・同じレベルの次・同じレベルの前・上のレベルの見出しへ移動 |
 | Kill buffer | `C-x k` | bufferを閉じる |

@@ -30,6 +30,7 @@
   "trustedUrls": ["https://github.com/yhojo/*", "https://*.wikipedia.org/*"],
   "warnPaths": ["/usr", "/opt", "/tmp", "~/.ssh"],
   "allowPaths": ["~/work", "/usr/share/doc"],
+  "projectIgnorePaths": ["~/work/wrapper"],
   "keybindings": {
     "M-p": "back",
     "M-n": "forward",
@@ -93,6 +94,17 @@
 - `mailto:` は、毎回、確認します(`always` はありません)。それ以外のスキーム(`file:`・`javascript:` など)は、開きません。
 - ユーザー名・パスワードを含む URL(`https://example.com@evil.example/`)、制御文字を含む URL、2048 文字を超える URL は、確認もせず、開きません。
 - ブラウザを開く判断は、アプリ(Swift)が、もう一度、確かめます(Web 側の判断は信用しません)。
+
+## プロジェクト・ルート(`projectIgnorePaths`)
+
+`C-x p f` / `C-x p g` / `C-x p b` / `C-x p k` は、いま見ているバッファのディレクトリから親へさかのぼり、最初に VCS の目印(`.git`・`.hg`・`.svn`・`.bzr`・`_darcs`・`.jj`)があるディレクトリを、プロジェクト・ルートにします。見つからなければ、バッファのディレクトリ(`default-directory`)自身です。`~` と `/` は、ルートにしません。フレームとの対応はなく、バッファごとに決まります(詳細: [project-model.md](project-model.md) §14)。
+
+| キー                 | 型           | 意味                                                                                   |
+| -------------------- | ------------ | -------------------------------------------------------------------------------------- |
+| `projectIgnorePaths` | 文字列の配列 | ルートにしないディレクトリ。目印があっても飛ばして、さらに上をさがす。完全一致(下のディレクトリには効かない) |
+
+- 絶対パス、または `~/…` で書く。相対パス、型の違うものは無視して、理由を `C-h b` の「設定の問題」に出す。
+- 一覧と検索は、隠しファイルと `node_modules` を除きます。`.gitignore` は読みません。
 
 ## エディタの連携(`editorName`・`editorCommand`)
 

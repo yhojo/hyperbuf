@@ -36,7 +36,7 @@ import { ensureBuffer, errorMessage, follow, openAt } from "./navigation.ts";
 import { abbreviateHome } from "../paths.ts";
 import { bufferNames, currentProjectRoot } from "./directory.ts";
 import { projectBuffers } from "./project.ts";
-import { promptFindFile, promptFindFileRecursive } from "./files.ts";
+import { displayDir, promptFindFile, promptFindFileRecursive } from "./files.ts";
 import { searchProject } from "./search.ts";
 
 export const COMMAND_NAMES = [
@@ -298,7 +298,7 @@ export function createCommands(ctx: AppContext): Commands {
       const { root, paths } = await projectBuffers(ctx);
       if (!paths.length) return void echo.message("No buffers in this project");
       const path = await pickBuffer(
-        `Switch to buffer in ${abbreviateHome(root, host.home)}: `,
+        `Switch to buffer in ${displayDir(root, host.home)}: `,
         "switch-buffer",
         paths,
       );
@@ -378,7 +378,7 @@ export function createCommands(ctx: AppContext): Commands {
     "isearch-backward": () => startIsearch(ctx, -1),
     "project-find-regexp": async () => {
       const root = await currentProjectRoot(ctx);
-      const query = await minibuffer.prompt(`Search in ${abbreviateHome(root, host.home)}: `);
+      const query = await minibuffer.prompt(`Search in ${displayDir(root, host.home)}: `);
       if (query) await searchProject(ctx, query, root);
     },
     "search-project": async () => {

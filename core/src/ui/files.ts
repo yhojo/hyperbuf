@@ -18,7 +18,7 @@ function entryNames(entries: readonly DirEntry[]): string[] {
 }
 
 /** 入力欄に出す、ディレクトリの文字列(`~/` で短縮し、末尾に `/`)。 */
-function displayDir(dir: string, home: string): string {
+export function displayDir(dir: string, home: string): string {
   const short = abbreviateHome(dir, home);
   return short.endsWith("/") ? short : `${short}/`;
 }

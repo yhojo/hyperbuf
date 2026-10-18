@@ -8,7 +8,7 @@ import type { DirEntry, TreeListing } from "../host.ts";
 import { abbreviateHome, joinPath, resolveInput } from "../paths.ts";
 import type { PromptChoice, PromptSource } from "./minibuffer.ts";
 import type { AppContext } from "./context.ts";
-import { defaultDirectory } from "./directory.ts";
+import { currentProjectRoot, defaultDirectory } from "./directory.ts";
 
 /** ディレクトリが先、名前の昇順。ディレクトリは、末尾に `/`。 */
 function entryNames(entries: readonly DirEntry[]): string[] {
@@ -65,13 +65,14 @@ export async function promptFindFile(ctx: AppContext): Promise<string | null> {
 }
 
 /**
- * `C-x p f`: 基準のディレクトリ以下の `.md` を、再帰で一覧にして絞り込む。
- * `../`・`~/`・絶対パスを入力すると、基準がそのディレクトリに切り替わる(任意のファイルに届く)。
+ * `C-x p f`: プロジェクト・ルート(VCS の目印をさかのぼって求める。なければ基準のディレクトリ)
+ * 以下の `.md` を、再帰で一覧にして絞り込む。
+ * `../`・`~/`・絶対パスを入力すると、起点がそのディレクトリに切り替わる(切り替えたあとは、さかのぼらない)(任意のファイルに届く)。
  * 基準が `~` や `/` のときは、再帰せず、1 階層の一覧にする(シェルが拒否する)。
  */
 export async function promptFindFileRecursive(ctx: AppContext): Promise<string | null> {
   const { host, minibuffer, echo } = ctx;
-  const start = defaultDirectory(ctx);
+  const start = await currentProjectRoot(ctx);
   const home = host.home;
   const trees = new Map<string, Promise<TreeListing>>();
   const noticed = new Set<string>();
@@ -119,7 +120,7 @@ export async function promptFindFileRecursive(ctx: AppContext): Promise<string |
     const { dir } = split(text);
     return { done: joinPath(dir, picked) };
   };
-  return minibuffer.prompt("Find file (tree): ", [], {
+  return minibuffer.prompt(`Find file in ${displayDir(start, home)}: `, [], {
     initial: "",
     history: "find-file-tree",
     source,

@@ -91,6 +91,11 @@ export interface HyperbufHost {
   /** ディレクトリ以下の `.md` の再帰の一覧(隠しファイルと node_modules を除く)。守りはシェルが行う。 */
   listTree(dir: string): Promise<TreeListing>;
   /**
+   * `dir` のプロジェクト・ルート(VCS の目印をさかのぼって求める。なければ `dir` 自身。docs/project-model.md §14)。
+   * ない(古いシェル、開発サーバー)ときは、`dir` をルートとして扱う。
+   */
+  projectRoot?(dir: string): Promise<string>;
+  /**
    * Markdown を読む(絶対パス、`.md` のみ)。アクセスの判定はしない
    * (利用者が打った・選んだパス、判定済みの外部要求、復元されたセッション)。
    */

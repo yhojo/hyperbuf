@@ -27,6 +27,20 @@ export function defaultDirectory(ctx: AppContext): string {
   return ctx.host.home;
 }
 
+/** `dir` のプロジェクト・ルート。ホストが求められなければ、`dir` 自身(`default-directory`)。 */
+export async function projectRootOf(ctx: AppContext, dir: string): Promise<string> {
+  try {
+    return (await ctx.host.projectRoot?.(dir)) ?? dir;
+  } catch {
+    return dir;
+  }
+}
+
+/** 現在のバッファのプロジェクト・ルート(`C-x p ...`。フレームではなく、バッファから求める)。 */
+export function currentProjectRoot(ctx: AppContext): Promise<string> {
+  return projectRootOf(ctx, defaultDirectory(ctx));
+}
+
 /** 現在のバッファの現在の名前(uniquify 済み)。 */
 export function bufferNames(ctx: AppContext): Map<string, string> {
   return uniquifyNames([...ctx.model.buffers.keys()], ctx.host.home);

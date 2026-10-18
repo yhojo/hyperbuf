@@ -65,7 +65,6 @@ public struct CLI: Sendable {
                     Request(
                         id: "cli-\(getpid())-\(requests.count + 1)", op: .open, path: resolved.path,
                         line: options.line ?? resolved.line, anchor: options.anchor,
-                        project: options.project.map { FileResolver.absolute($0, cwd: env.cwd) },
                         target: options.target,
                         timeoutMs: options.wait ? env.waitTimeoutMs : env.timeoutMs))
             }

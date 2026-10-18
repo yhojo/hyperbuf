@@ -6,6 +6,10 @@ Versions are not yet strictly semantic: 0.x releases may change behavior between
 
 ## [Unreleased]
 
+### Removed
+
+- The `hyperbuf --project` option. It was already ignored since HyperBuf has no per-window project; passing it is now a usage error.
+
 ## [0.1.1] - 2026-10-14
 
 Changes since 0.1.0, mostly from the feedback of the initial private distribution.

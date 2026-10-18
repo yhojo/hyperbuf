@@ -34,7 +34,7 @@ import { displayedText } from "./count-dom.ts";
 import { locateFromDom } from "./locate-dom.ts";
 import { ensureBuffer, errorMessage, follow, openAt } from "./navigation.ts";
 import { abbreviateHome } from "../paths.ts";
-import { bufferNames } from "./directory.ts";
+import { bufferNames, currentProjectRoot } from "./directory.ts";
 import { promptFindFile, promptFindFileRecursive } from "./files.ts";
 import { searchProject } from "./search.ts";
 
@@ -81,6 +81,7 @@ export const COMMAND_NAMES = [
   "isearch-forward",
   "isearch-backward",
   "search-project",
+  "project-find-regexp",
   "edit-in-editor",
   "execute-command",
   "describe-bindings",
@@ -142,6 +143,8 @@ export const COMMAND_DOCS: Readonly<Record<CommandName, string>> = {
   "isearch-forward":
     "Search the document incrementally (C-s next, C-r previous, RET accept, C-g cancel)",
   "isearch-backward": "Search the document incrementally, backward",
+  "project-find-regexp":
+    "Search all files under the project root (the nearest ancestor with .git/.hg/…, or the base directory) and show the results in a virtual buffer (plain text, case-insensitive for ASCII; .gitignore is not read)",
   "search-project":
     "Search all files under the base directory and show the results in a virtual buffer",
   "edit-in-editor":
@@ -331,6 +334,11 @@ export function createCommands(ctx: AppContext): Commands {
     // 文書内のインクリメンタル検索(Emacs の isearch)。プロジェクト全体の検索は、search-project(M-s g)
     "isearch-forward": () => startIsearch(ctx, 1),
     "isearch-backward": () => startIsearch(ctx, -1),
+    "project-find-regexp": async () => {
+      const root = await currentProjectRoot(ctx);
+      const query = await minibuffer.prompt(`Search in ${abbreviateHome(root, host.home)}: `);
+      if (query) await searchProject(ctx, query, root);
+    },
     "search-project": async () => {
       const query = await minibuffer.prompt("Search: ");
       if (query) await searchProject(ctx, query);

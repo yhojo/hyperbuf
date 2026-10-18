@@ -41,6 +41,7 @@ Commands can be run by name with `M-x`.
 | `S-TAB` | `prev-link` | Select the previous link |
 | `C-c C-p` | `previous-heading` | Go to the previous heading (the current section's heading if in the middle of one) |
 | `C-x p f` | `project-find-file` | Visit a Markdown file from a recursive list under the base directory (../, ~/ and absolute paths change the base) |
+| `C-x p g` | `project-find-regexp` | Search all files under the project root (the nearest ancestor with .git/.hg/…, or the base directory) and show the results in a virtual buffer (plain text, case-insensitive for ASCII; .gitignore is not read) |
 | `C-n` | `scroll-line-down` | Scroll down one line |
 | `C-p` | `scroll-line-up` | Scroll up one line |
 | `C-v`, `SPC` | `scroll-page-down` | Scroll down one screen |

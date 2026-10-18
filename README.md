@@ -64,7 +64,7 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 - Emacsやコーディングエージェントが更新したファイルを適切に再読み込みする。
 - 更新時には閲覧位置を可能な限り維持する。
 - 将来的に、CLIやEmacs側の小さな連携機能からファイル・行・見出しを指定して開けるようにする。
-- 分割配置、参照履歴、閲覧位置などのセッションを、プロジェクトごとに保存し、次回の起動で復元する（既定で有効。`config.json` の `restoreSession` で無効にできる。詳細は [docs/session-restore.md](docs/session-restore.md)）。
+- 分割配置、参照履歴、閲覧位置などのセッションを、フレーム（ウィンドウ）ごとに保存し、次回の起動で復元する（既定で有効。`config.json` の `restoreSession` で無効にできる。詳細は [docs/session-restore.md](docs/session-restore.md)）。
 
 ## Initial interaction sketch
 

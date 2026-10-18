@@ -55,7 +55,7 @@ public enum Arguments {
         Options:
           --line <N>         Position by line number (or use <file>:<line>)
           --anchor <ID>      Position by anchor, such as a heading
-          --project <DIR>    Specify the project root explicitly (the first project to open when the app is not running)
+          --project <DIR>    Ignored (accepted only for backward compatibility; HyperBuf has no per-window project)
           --target <T>       Where to show: current (default) | split-right | split-below | new-frame
           --wait             Wait up to 60 seconds for confirmation in the app (e.g. files outside the project) (default: 3)
           --no-activate      Do not bring the app to the front when launching it

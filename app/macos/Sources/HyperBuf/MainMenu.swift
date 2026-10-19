@@ -4,9 +4,9 @@
 import AppKit
 import HyperBufKit
 
-/// メニューバー。SwiftUI の `App` / `Scene` は使わない(フレームのウィンドウは AppKit で作り、空の設定ウィンドウなどを出さない)。
-/// フレームの切り替え(`Cmd-1` … `Cmd-9`)は、Window メニューの項目のショートカットなので、WebView にフォーカスがあっても効く
-/// (開いているフレームの項目だけが並ぶ。`AppModel.refreshWindowMenu`)。
+/// The menu bar. SwiftUI's `App` / `Scene` are not used (frame windows are made with AppKit, so no empty settings window etc. appears).
+/// Switching frames (`Cmd-1` ... `Cmd-9`) is the shortcut of Window menu items, so it works even when the WebView has focus
+/// (only the items of open frames are listed; `AppModel.refreshWindowMenu`).
 @MainActor
 enum MainMenu {
     static func install(model: AppModel) {
@@ -67,7 +67,7 @@ enum MainMenu {
         return menu
     }
 
-    /// 編集: コピーなどは、フォーカスのある WebView に届く(ファーストレスポンダ)。
+    /// Edit: copy and the like reach the focused WebView (first responder).
     private static func editMenu() -> NSMenu {
         let menu = NSMenu(title: "Edit")
         entry(menu, "Copy", #selector(NSText.copy(_:)), "c")

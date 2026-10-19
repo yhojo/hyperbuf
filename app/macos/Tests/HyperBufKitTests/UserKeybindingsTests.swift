@@ -28,7 +28,7 @@ import Testing
         #expect(UserKeybindings.load(from: t.url.appendingPathComponent("none.json")).isEmpty)
         #expect(try load(t, "{broken").isEmpty)
         #expect(try load(t, "{}").isEmpty)
-        #expect(try load(t, #"{"keybindings": "M-p"}"#).isEmpty)  // オブジェクトでない
+        #expect(try load(t, #"{"keybindings": "M-p"}"#).isEmpty)  // Not an object
         #expect(try load(t, #"{"keybindings": ["a"]}"#).isEmpty)
     }
 

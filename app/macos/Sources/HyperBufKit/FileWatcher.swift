@@ -3,13 +3,13 @@
 
 import Foundation
 
-/// 表示中のファイルの監視(docs/dev/buffer-model.md §8)。ファイル自体と、その親ディレクトリを
-/// `DispatchSource`(kqueue)で監視する。**非再帰**なので、ビルド中のリポジトリの直下の文書でも、雑音が届かない。
+/// Watching of the files on display (docs/dev/buffer-model.md §8). Watches the file itself and its parent directory
+/// with `DispatchSource` (kqueue). It is **non-recursive**, so noise from a repository under build does not reach documents directly under it.
 ///
-///  - イベントは、短く(約 50ms)まとめて、パスを `stat` し直し、前回の識別(inode・更新日時・大きさ)と比べる
-///  - 保存方式(一時ファイルに書いて置き換える、元を改名して新しく書く)で inode が変わったら、監視を張り直す
-///  - ファイルが消えたら `deleted`。同じパスに再作成されたら `changed`
-///  - 通知は、メインキューで届く
+///  - Events are batched briefly (about 50ms), the path is `stat`ed again and compared with the previous identity (inode, mtime, size)
+///  - If the inode changes through a save method (write a temporary file and replace; rename the original and write a new one), the watch is re-established
+///  - If a file disappears, `deleted`. If it is recreated at the same path, `changed`
+///  - Notifications arrive on the main queue
 public final class FileWatcher: @unchecked Sendable {
     public enum State: Sendable, Equatable {
         case changed
@@ -47,7 +47,7 @@ public final class FileWatcher: @unchecked Sendable {
         for source in directories.values { source.cancel() }
     }
 
-    /// 監視するファイル(正規化した絶対パス)を、これだけにする。
+    /// Makes these the only files watched (normalized absolute paths).
     public func setPaths(_ paths: Set<String>) {
         queue.sync {
             for path in entries.keys where !paths.contains(path) {
@@ -61,7 +61,7 @@ public final class FileWatcher: @unchecked Sendable {
                 entries[path] = entry
                 arm(path, entry)
             }
-            // 親ディレクトリ: 不要になったものを外し、必要なものを足す
+            // Parent directories: remove the ones no longer needed and add the ones needed
             let wanted = Set(paths.map { ($0 as NSString).deletingLastPathComponent })
             for dir in directories.keys where !wanted.contains(dir) {
                 directories[dir]?.cancel()
@@ -93,7 +93,7 @@ public final class FileWatcher: @unchecked Sendable {
             fileDescriptor: fd, eventMask: [.write], queue: queue)
         source.setEventHandler { [weak self] in
             guard let self else { return }
-            // ディレクトリの中身が変わった: その中の、監視しているファイルを調べ直す
+            // The directory contents changed: re-examine the watched files inside it
             for path in self.entries.keys where (path as NSString).deletingLastPathComponent == dir {
                 self.schedule(path)
             }
@@ -123,7 +123,7 @@ public final class FileWatcher: @unchecked Sendable {
             if was != nil { notify(path, .deleted) }
             return
         }
-        // inode が変わった(置き換え)、または、消えたあとの再作成: 新しいファイルに張り直す
+        // The inode changed (replaced), or recreated after being deleted: re-attach to the new file
         if was == nil || was?.inode != now?.inode { arm(path, entry) }
         notify(path, .changed)
     }

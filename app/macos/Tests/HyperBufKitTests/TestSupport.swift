@@ -5,7 +5,7 @@ import Foundation
 
 @testable import HyperBufKit
 
-/// 一時ディレクトリに、テスト用のプロジェクトを作る。
+/// Creates a test project in a temporary directory.
 struct TempProject {
     let url: URL
 
@@ -23,13 +23,13 @@ struct TempProject {
         try text.write(to: file, atomically: true, encoding: .utf8)
     }
 
-    /// `realpath` の形のパス(`/var/...` が `/private/var/...` になる)。判定・比較には、これを使う。
+    /// A path in `realpath` form (`/var/...` becomes `/private/var/...`). Use this for judging and comparing.
     var real: String { PathUtil.canonicalPath(url.path) ?? url.path }
 
     func remove() { try? FileManager.default.removeItem(at: url) }
 }
 
-/// 複数のテスト用プロジェクトを、まとめて片づける。
+/// Cleans up several test projects together.
 func removeAll(_ projects: TempProject...) {
     for project in projects { project.remove() }
 }

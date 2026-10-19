@@ -7,19 +7,19 @@ import HyperBufKit
 import HyperBufProtocol
 import SwiftUI
 
-/// フレーム(macOS のウィンドウ)の一覧と、外部連携(ソケット・URL スキーム)。docs/dev/buffer-model.md §7。
-/// 各フレームは、独立した作業場(`FrameSession`: 自分のバッファ・履歴・分割を持つ)。
+/// The list of frames (macOS windows) and the external integration (socket, URL scheme). docs/dev/buffer-model.md §7.
+/// Each frame is an independent workspace (`FrameSession`: has its own buffers, history and splits).
 @MainActor
 final class AppModel: NSObject, NSWindowDelegate {
     static let shared = AppModel()
     let web: StaticFiles?
-    /// 許可パス / 警告パス(設定ファイル)。全フレームで共有する。
+    /// Allow paths / warn paths (config file). Shared by all frames.
     let policy: PathPolicy
-    /// 利用者が承認して記憶した場所(永続化される)。全フレームで共有する。
+    /// Places the user approved and remembered (persisted). Shared by all frames.
     let remembered: RememberedPaths
     let sessionStore: SessionStore
     let editorConfig: EditorConfig
-    /// 文書のリンクをブラウザで開く判定。全フレームで共有する。
+    /// Judgment for opening document links in the browser. Shared by all frames.
     let urlPolicy: UrlPolicy
     let rememberedSites: RememberedOrigins
     let openFlow = OpenFlow()
@@ -27,22 +27,22 @@ final class AppModel: NSObject, NSWindowDelegate {
     private var server: SocketServer?
     private(set) var frames: [Int: FrameSession] = [:]
     private(set) var activeSlot = 1
-    /// Window メニュー。開いているフレームの項目(`Cmd-<slot>`)を、ここに並べる。
+    /// The Window menu. The items of open frames (`Cmd-<slot>`) are listed here.
     weak var windowMenu: NSMenu?
     private let restoreEnabled: Bool
-    /// 「エディタで編集」で記録した位置(どのフレームのものか)。エディタが `get-location` で取りに来る。
+    /// The location recorded by "Edit in editor" (and which frame it is from). The editor fetches it with `get-location`.
     private var marked: (slot: Int, payload: LocationPayload)?
     private var persistTask: Task<Void, Never>?
     private var closingForQuit = false
 
-    /// 最後にアクティブだったフレーム(なければ、番号の小さいもの)。
+    /// The last active frame (otherwise the one with the lowest number).
     var activeFrame: FrameSession? { frames[activeSlot] ?? frames.values.min { $0.slot < $1.slot } }
 
     override private init() {
         web = WebRoot.locate().map(StaticFiles.init(root:))
         let home = NSHomeDirectory()
         #if DEBUG
-            // テスト用: 利用者の実際のソケット・記憶したパスの保存先を汚さないよう、デバッグビルドだけ差し替えられる
+            // For tests: only debug builds can swap these, so the user's real socket and remembered-path store are not polluted
             let env = ProcessInfo.processInfo.environment
             remembered = RememberedPaths(
                 url: env["HYPERBUF_TRUSTED_ROOTS"].map { URL(fileURLWithPath: $0) } ?? RememberedPaths.standardURL())
@@ -63,15 +63,15 @@ final class AppModel: NSObject, NSWindowDelegate {
         openFlow.model = self
     }
 
-    // MARK: 起動
+    // MARK: Launch
 
-    /// 起動: 前回のフレームを復元し(なければ、スロット 1 を 1 つ)、起動の引数のファイル(ディレクトリは
-    /// `index.md`、なければ `README.md`)を開く。
+    /// Launch: restores the previous frames (or one frame in slot 1 if none) and opens the file given as the launch argument (a directory
+    /// opens `index.md`, else `README.md`).
     func start(arguments: [String]) {
         let settings = UserSettings.load()
         applyAppearance(settings.appearance)
         alpha = settings.alpha
-        // 「透明度を下げる」(アクセシビリティ)が切り替わったら、つけ直す
+        // Re-apply when "Reduce transparency" (accessibility) is toggled
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil, queue: .main
         ) { [weak self] _ in MainActor.assumeIsolated { self?.updateAlpha() } }
@@ -94,9 +94,9 @@ final class AppModel: NSObject, NSWindowDelegate {
         }
     }
 
-    // MARK: フレーム
+    // MARK: Frames
 
-    /// フレームを作って、ウィンドウを出す。
+    /// Creates a frame and shows its window.
     @discardableResult
     func makeFrame(slot: Int, snapshot: Any?, rect: [String: Double]?) -> FrameSession? {
         guard let web, (1...SessionStore.maxFrames).contains(slot), frames[slot] == nil else { return nil }
@@ -111,8 +111,8 @@ final class AppModel: NSObject, NSWindowDelegate {
         window.minSize = NSSize(width: 600, height: 400)
         window.delegate = self
         window.isReleasedWhenClosed = false
-        window.isRestorable = false  // macOS のウィンドウの復元は使わない(復元は、セッションが行う)
-        // Window メニューには、AppKit の自動の一覧ではなく、`Cmd-<slot>` つきの自前の項目を並べる(二重にしない)
+        window.isRestorable = false  // macOS window restoration is not used (the session does the restoring)
+        // The Window menu lists our own items with `Cmd-<slot>`, not AppKit's automatic list (so nothing is duplicated)
         window.isExcludedFromWindowsMenu = true
         frame.window = window
         frames[slot] = frame
@@ -124,10 +124,10 @@ final class AppModel: NSObject, NSWindowDelegate {
         return frame
     }
 
-    /// フレームの透明度(`alpha`)。前面のフレームとそれ以外で、値が違う。
+    /// The frame's opacity (`alpha`). The value differs for the frontmost frame and the others.
     private var alpha = WindowAlpha.opaque
 
-    /// 全フレームの透明度を、いまの状態(前面かどうか)に合わせる。
+    /// Sets every frame's opacity to match the current state (whether it is frontmost).
     func updateAlpha() {
         let reduce = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
         for frame in frames.values {
@@ -136,8 +136,8 @@ final class AppModel: NSObject, NSWindowDelegate {
         }
     }
 
-    /// 外観(`appearance`)を、アプリ全体に適用する。ウィンドウ・メニュー・WebView の `prefers-color-scheme` が、これに従う。
-    /// `system` なら、固定を外して OS に従う。
+    /// Applies the appearance (`appearance`) app-wide. Windows, menus and the WebView's `prefers-color-scheme` follow it.
+    /// For `system`, removes the override and follows the OS.
     func applyAppearance(_ appearance: Appearance) {
         switch appearance {
         case .system: NSApp.appearance = nil
@@ -146,7 +146,7 @@ final class AppModel: NSObject, NSWindowDelegate {
         }
     }
 
-    /// 空いている最小のスロットで、新しいフレームを作る。
+    /// Creates a new frame in the lowest free slot.
     func newFrame() {
         guard let slot = (1...SessionStore.maxFrames).first(where: { frames[$0] == nil }) else {
             NSSound.beep()
@@ -155,12 +155,12 @@ final class AppModel: NSObject, NSWindowDelegate {
         makeFrame(slot: slot, snapshot: nil, rect: nil)
     }
 
-    /// `Cmd-<slot>`: そのフレームを前面に出す。開いていないスロットは、何もしない(新しいフレームは、`newFrame` で作る)。
+    /// `Cmd-<slot>`: brings that frame to the front. Does nothing for a slot that is not open (new frames are made with `newFrame`).
     func activate(slot: Int) {
         frames[slot]?.window?.makeKeyAndOrderFront(nil)
     }
 
-    /// Web コアの `C-x 5 …`(`host.frame`)。
+    /// The Web core's `C-x 5 ...` (`host.frame`).
     func handleFrameAction(_ action: String, from frame: FrameSession) {
         switch action {
         case "make": newFrame()
@@ -175,16 +175,16 @@ final class AppModel: NSObject, NSWindowDelegate {
         }
     }
 
-    /// メニューから、アクティブなフレームでコマンドを実行する。
+    /// Runs a command in the active frame, from the menu.
     func runCommand(_ name: String) { activeFrame?.runCommand(name) }
 
-    // MARK: メニューの操作(MainMenu から)
+    // MARK: Menu actions (from MainMenu)
 
     @objc func menuNewFrame(_ sender: Any?) { newFrame() }
     @objc func menuOpenFile(_ sender: Any?) { runCommand("find-file") }
     @objc func menuRevealConfig(_ sender: Any?) { ConfigLocation.reveal() }
 
-    /// About: 名前・版・著作権(Info.plist)に、ライセンスと、サードパーティのライセンスの場所を添える。
+    /// About: name, version and copyright (Info.plist), plus the license and where the third-party licenses are.
     @objc func menuAbout(_ sender: Any?) {
         let credits = NSAttributedString(
             string:
@@ -193,7 +193,7 @@ final class AppModel: NSObject, NSWindowDelegate {
         NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
     }
 
-    /// 同梱したサードパーティのライセンス(`THIRD-PARTY-NOTICES.txt`)を、既定のアプリで開く。
+    /// Opens the bundled third-party licenses (`THIRD-PARTY-NOTICES.txt`) in the default app.
     @objc func menuShowNotices(_ sender: Any?) {
         if let url = Bundle.main.url(forResource: "THIRD-PARTY-NOTICES", withExtension: "txt") {
             NSWorkspace.shared.open(url)
@@ -208,8 +208,8 @@ final class AppModel: NSObject, NSWindowDelegate {
         refreshWindowMenu()
     }
 
-    /// Window メニューの、フレームの項目を作り直す(開いているフレームだけ。`Cmd-<slot>`、前面のものに印)。
-    /// 標準の項目(しまう・拡大/縮小・フルスクリーン)は、そのまま。
+    /// Rebuilds the frame items of the Window menu (open frames only; `Cmd-<slot>`, the frontmost is marked).
+    /// The standard items (minimize, zoom, full screen) are left as they are.
     func refreshWindowMenu() {
         guard let menu = windowMenu else { return }
         for item in menu.items where item.tag > 0 { menu.removeItem(item) }
@@ -248,17 +248,17 @@ final class AppModel: NSObject, NSWindowDelegate {
         guard let window = notification.object as? NSWindow,
             let frame = frames.values.first(where: { $0.window === window })
         else { return }
-        // 最後の 1 つを閉じる(= 終了)ときは、そのフレームのセッションを残す。ほかのフレームを閉じたときは、破棄する
+        // When the last one is closed (= quit), keep that frame's session. When another frame is closed, discard it
         if frames.count > 1 && !closingForQuit {
             frames[frame.slot] = nil
             if activeSlot == frame.slot { activeSlot = frames.keys.min() ?? 1 }
             updateTitles()
         } else {
             persistNow()
-            // 最後のフレームを閉じる = 終了。SwiftUI の Settings シーンがあると、「最後のウィンドウを閉じたら終了」が
-            // 働かないので、明示的に終了する(セッションは、終了の手順で保存される)。
-            // GCD のメインキューのブロックの中で terminate すると、終了待ち(terminateLater)の入れ子の実行ループが、
-            // 同じ(直列の)メインキューにある保存の Task を動かせず、固まる。実行ループ経由で呼ぶ
+            // Closing the last frame = quit. With a SwiftUI Settings scene, "quit after the last window closes"
+            // does not work, so quit explicitly (the session is saved in the quit procedure).
+            // Calling terminate inside a GCD main-queue block makes the nested run loop of the terminate wait (terminateLater)
+            // unable to run the save Task on the same (serial) main queue, and it hangs. Call it via the run loop
             if !closingForQuit {
                 NSApp.perform(#selector(NSApplication.terminate(_:)), with: nil, afterDelay: 0)
             }
@@ -266,11 +266,11 @@ final class AppModel: NSObject, NSWindowDelegate {
         schedulePersist()
     }
 
-    // MARK: セッションの保存
+    // MARK: Saving the session
 
-    /// フレームのセッションを受け取った(Web コアの遅延書き込み)。全フレームをまとめて、1 つのファイルに書く。
+    /// Received a frame's session (the Web core's deferred write). Writes all frames together into one file.
     func frameDidSave(_ frame: FrameSession, snapshot: Any) -> Bool {
-        guard restoreEnabled else { return true }  // 無効のあいだは、保存しない
+        guard restoreEnabled else { return true }  // Does not save while disabled
         frame.didSave(snapshot)
         schedulePersist()
         return true
@@ -299,7 +299,7 @@ final class AppModel: NSObject, NSWindowDelegate {
         sessionStore.save(["version": 2, "active": activeSlot, "frames": list])
     }
 
-    /// 終了の直前: 全フレームのセッションを、Web コアから受け取って、保存する。
+    /// Just before quitting: receives every frame's session from the Web core and saves it.
     func flushAll() async {
         closingForQuit = true
         let tasks = frames.values.map { frame in Task { @MainActor in await frame.flushSession() } }
@@ -307,9 +307,9 @@ final class AppModel: NSObject, NSWindowDelegate {
         persistNow()
     }
 
-    // MARK: エディタ連携
+    // MARK: Editor integration
 
-    /// Web コアが求めた位置を記録し、設定されていれば、エディタを呼び出す。
+    /// Records the location the Web core asked for and, if configured, invokes the editor.
     func markLocation(_ web: WebLocation, from frame: FrameSession) async -> [String: Any] {
         switch LocationBuilder.build(web, access: frame.access) {
         case .failure(let error):
@@ -334,9 +334,9 @@ final class AppModel: NSObject, NSWindowDelegate {
         }
     }
 
-    // MARK: 外部連携
+    // MARK: External integration
 
-    /// ソケットのサーバーを起動する。すでに別のインスタンスが起動していれば、このインスタンスは終了する。
+    /// Starts the socket server. If another instance is already running, this instance quits.
     func startServer() {
         let server = SocketServer(path: socketPath) { [weak self] request, operation, reply in
             Task { @MainActor in self?.handle(request, operation, reply) }
@@ -368,7 +368,7 @@ final class AppModel: NSObject, NSWindowDelegate {
         case .open:
             openFlow.submit(request, reply: reply)
         case .getLocation:
-            // 利用者が「エディタで編集」で指した位置(照合用の情報つき)。まだなければ null
+            // The location the user pointed at with "Edit in editor" (with information for verification). null if there is none yet
             reply(.success(id: request.id, .object(["location": marked?.payload.json ?? .null])))
         case .getView:
             guard let frame = activeFrame else { return reply(.success(id: request.id, .object(["view": .null]))) }
@@ -378,22 +378,22 @@ final class AppModel: NSObject, NSWindowDelegate {
         }
     }
 
-    /// `hyperbuf://` の URL(起動と、外部リンクからの「開く」)。結果を返す相手はいない。
-    /// URL は、Web ページなどからも起動できる(起点を特定できない)ので、許可パスにないファイルは確認する。
+    /// A `hyperbuf://` URL (launch, and "open" from an external link). There is nobody to return the result to.
+    /// A URL can also be triggered from a web page etc. (the origin cannot be identified), so files not under an allow path are confirmed.
     func handle(url: URL) {
         switch OpenURL.parse(url) {
         case .success(let request) where request.op == RequestOperation.open.rawValue:
             openFlow.submit(request, reply: nil, viaURL: true)
         case .success:
-            break  // ping: アプリを起動するだけ
+            break  // ping: just launches the app
         case .failure(let error):
             activeFrame?.deliverOpen(["id": UUID().uuidString, "path": "", "error": error.message])
         }
     }
 }
 
-/// 設定ファイル(`config.json`)の場所を、Finder で表示する。アプリは設定ファイルを書き換えない
-/// (なければ、置き場所のディレクトリを表示する)。
+/// Shows the location of the config file (`config.json`) in Finder. The app never rewrites the config file
+/// (if it does not exist, shows the directory where it belongs).
 enum ConfigLocation {
     @MainActor static func reveal() {
         let url = EditorConfig.configURL()
@@ -405,9 +405,9 @@ enum ConfigLocation {
     }
 }
 
-/// 起動の引数(ファイル、ディレクトリ)の解釈。docs/dev/buffer-model.md §5.1。
+/// Interpretation of the launch arguments (file, directory). docs/dev/buffer-model.md §5.1.
 enum Launch {
-    /// 開くファイルの絶対パス。ディレクトリは `index.md`、なければ `README.md`(どちらもなければ、何もしない)。
+    /// Absolute path of the file to open. A directory gives `index.md`, else `README.md` (if neither exists, nothing happens).
     static func targets(from arguments: [String]) -> [String] {
         var out: [String] = []
         for argument in arguments.dropFirst() where !argument.hasPrefix("-") {
@@ -430,7 +430,7 @@ enum Launch {
     }
 }
 
-/// ウィンドウの位置と大きさ(セッションに保存する)。
+/// A window's position and size (saved in the session).
 enum Geometry {
     static let defaultSize = NSSize(width: 1000, height: 700)
 
@@ -438,7 +438,7 @@ enum Geometry {
         ["x": rect.origin.x, "y": rect.origin.y, "width": rect.size.width, "height": rect.size.height]
     }
 
-    /// 保存された位置と大きさを、いまの画面に収まるように補正する(画面が変わっていても、外に出ない)。
+    /// Adjusts the saved position and size to fit the current screen (it stays on screen even if the screens changed).
     static func fit(_ saved: [String: Double]?, cascadeIndex: Int) -> NSRect {
         let screens = NSScreen.screens.map(\.visibleFrame)
         let fallback = screens.first ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
@@ -449,7 +449,7 @@ enum Geometry {
             if let screen = screens.first(where: {
                 $0.intersection(rect).width >= 100 && $0.intersection(rect).height >= 50
             }) {
-                // 大きさは画面に収め、位置は画面の内側に寄せる
+                // Fit the size to the screen and move the position inside it
                 var fitted = rect
                 fitted.size.width = min(fitted.width, screen.width)
                 fitted.size.height = min(fitted.height, screen.height)
@@ -469,7 +469,7 @@ enum Geometry {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // `swift run` のように、アプリのバンドルなしで起動したときも、通常のアプリとして前面に出す
+        // Even when launched without an app bundle, like `swift run`, bring it to the front as a normal app
         NSApplication.shared.setActivationPolicy(.regular)
         NSApplication.shared.activate(ignoringOtherApps: true)
         Task { @MainActor in
@@ -486,7 +486,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if url.scheme == "hyperbuf" {
                     AppModel.shared.handle(url: url)
                 } else if url.isFileURL {
-                    // Finder の「このアプリケーションで開く」・ドラッグ&ドロップ: ファイル、ディレクトリ
+                    // Finder's "Open With" and drag & drop: files, directories
                     for path in Launch.targets(from: ["", url.path]) {
                         AppModel.shared.openFlow.submit(Request(op: .open, path: path), reply: nil)
                     }
@@ -496,7 +496,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        // 画面の状態(フレーム・window の配置・履歴・閲覧位置)を、保存してから終わる
+        // Save the screen state (frames, window layout, history, reading positions), then finish
         Task { @MainActor in
             await AppModel.shared.flushAll()
             NSApp.reply(toApplicationShouldTerminate: true)

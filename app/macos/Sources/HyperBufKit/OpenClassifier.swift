@@ -4,22 +4,22 @@
 import Foundation
 import HyperBufProtocol
 
-/// 検証済みの `open` 要求を、ファイルシステムと判定(許可 / 警告パス)に照らして分類する。
+/// Classifies a validated `open` request against the file system and the judgment (allow / warn paths).
 public enum OpenClassifier {
     public enum Outcome: Sendable, Equatable {
-        /// そのまま開ける。絶対パス(`realpath` の形)。
+        /// Can be opened as is. An absolute path (in `realpath` form).
         case open(absolute: String)
-        /// 警告パス。利用者の承認が要る。承認されたら `remember` を記憶する(アプリが提案したもの)。
+        /// A warn path. The user's approval is needed. If approved, `remember` is remembered (proposed by the app).
         case confirm(absolute: String, remember: String)
     }
 
-    /// - Parameter alwaysConfirmUnlessAllowed: URL スキーム経由。許可パス(記憶を含む)にないファイルは、
-    ///   警告パスの外でも確認する(起点を特定できない経路のため)。
+    /// - Parameter alwaysConfirmUnlessAllowed: the URL scheme route. Files not under an allow path (including remembered ones)
+    ///  are confirmed even outside the warn paths (because this route cannot identify its origin).
     public static func classify(
         _ open: ValidatedOpen, policy: PathPolicy, remembered: RememberedPaths,
         alwaysConfirmUnlessAllowed: Bool = false
     ) -> Result<Outcome, ProtocolError> {
-        // シンボリックリンクは解決したうえで判定する(リンクによる迂回を防ぐ)
+        // Judge after resolving symbolic links (prevents bypass via a link)
         guard let real = PathUtil.canonicalPath(open.path) else {
             return .failure(ProtocolError(.notFound, "No such file: \(open.path)"))
         }

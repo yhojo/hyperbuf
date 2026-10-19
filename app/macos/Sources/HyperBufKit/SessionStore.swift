@@ -3,22 +3,22 @@
 
 import Foundation
 
-/// セッション(フレームの並び。docs/dev/buffer-model.md §9)の保存先。全体で 1 つのファイル。
+/// Where the session (the sequence of frames; docs/dev/buffer-model.md §9) is saved. A single file overall.
 ///
-/// 守ること:
-///  - 保存するのは、Web コアが作った、パスと位置だけのデータ(文書の内容は含まない)。大きさを制限する
-///  - 中身は信頼しない(Web コアが検証する)。ここでは、JSON として読めるか、形の大枠(スロット)だけを見る
-///  - 保存先は 0600、置き場所のディレクトリは 0700(利用者の作業の記録なので)
-///  - 書き込みは、一時ファイルに書いてから置き換える(途中の状態を見せない)
+/// Rules:
+///  - Only data made by the Web core, with just paths and positions (no document contents), is saved. Its size is limited
+///  - The contents are not trusted (the Web core validates them). Here only whether it reads as JSON and the rough shape (slots) are checked
+///  - The file is 0600 and its directory 0700 (it is a record of the user's work)
+///  - Writes go to a temporary file first, then replace (never show an intermediate state)
 public struct SessionStore: Sendable {
-    /// 保存するデータの最大の大きさ(バイト)。docs/dev/session-restore.md §4 の表と同じ値にする。
+    /// Maximum size of the saved data (bytes). Keep the same value as the table in docs/dev/session-restore.md §4.
     public static let maxBytes = 4_000_000
-    /// フレームの数の上限(`Cmd-1` … `Cmd-9`)。docs/dev/session-restore.md §4 の表と同じ値にする。
+    /// Upper limit on the number of frames (`Cmd-1` ... `Cmd-9`). Keep the same value as the table in docs/dev/session-restore.md §4.
     public static let maxFrames = 9
 
     public static func standardDirectory() -> URL {
         #if DEBUG
-            // テスト用: 利用者の実際のセッションを使わないよう、デバッグビルドだけ、差し替えられる
+            // For tests: only debug builds can swap this, so the user's real session is not used
             if let path = ProcessInfo.processInfo.environment["HYPERBUF_SESSION_DIR"] {
                 return URL(fileURLWithPath: path, isDirectory: true)
             }
@@ -35,8 +35,8 @@ public struct SessionStore: Sendable {
 
     var fileURL: URL { directory.appendingPathComponent("session.json") }
 
-    /// 保存されたセッション: `{"version": 2, "active": 1, "frames": [{"slot": 1, "rect": {...}, "snapshot": {...}}]}`。
-    /// なければ、壊れていれば、大きすぎれば、nil。スロットが不正・重複したフレームは、捨てる。
+    /// The saved session: `{"version": 2, "active": 1, "frames": [{"slot": 1, "rect": {...}, "snapshot": {...}}]}`.
+    /// nil if absent, broken or too large. Frames with an invalid or duplicate slot are dropped.
     public func load() -> [String: Any]? {
         guard let size = (try? fileURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize, size <= Self.maxBytes,
             let data = try? Data(contentsOf: fileURL),
@@ -55,7 +55,7 @@ public struct SessionStore: Sendable {
         return stored
     }
 
-    /// セッションを保存する。大きすぎる・JSON にできないものは、保存しない。
+    /// Saves the session. Anything too large or not representable as JSON is not saved.
     @discardableResult
     public func save(_ session: [String: Any]) -> Bool {
         guard JSONSerialization.isValidJSONObject(session),
@@ -77,9 +77,9 @@ public struct SessionStore: Sendable {
     }
 }
 
-/// 設定ファイル(`config.json`)の、セッションに関する項目。
+/// The session-related entries of the config file (`config.json`).
 public enum SessionSettings {
-    /// `restoreSession`: 前回の状態を復元し、保存するか。既定は true(`false` のときだけ、無効)。
+    /// `restoreSession`: whether to restore and save the previous state. Defaults to true (disabled only when `false`).
     public static func restoreEnabled(from url: URL = EditorConfig.configURL()) -> Bool {
         guard let data = try? Data(contentsOf: url),
             let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],

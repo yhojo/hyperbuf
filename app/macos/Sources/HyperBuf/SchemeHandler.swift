@@ -5,9 +5,9 @@ import Foundation
 import HyperBufKit
 import WebKit
 
-/// `hyperbuf://app/*`(Web コア)と、`hyperbuf://file/<絶対パス>`(文書が参照する画像)を配る。
-/// 画像は、読み込みのたびに `FileAccess` が判定する(警告パスの画像は、404 になる。Web コアの判断を信用しない)。
-/// file:// だと ES modules が読めないこと、ファイルアクセスの範囲を自分で管理したいことから、カスタムスキームを使う。
+/// Serves `hyperbuf://app/*` (the Web core) and `hyperbuf://file/<absolute path>` (images referenced by documents).
+/// `FileAccess` judges images on every load (an image under a warn path gets a 404; the Web core's judgment is not trusted).
+/// A custom scheme is used because ES modules cannot be loaded over file:// and the file access scope must be managed by us.
 @MainActor
 final class SchemeHandler: NSObject, WKURLSchemeHandler {
     private let web: StaticFiles
@@ -30,7 +30,7 @@ final class SchemeHandler: NSObject, WKURLSchemeHandler {
                 let file = try web.read(relative)
                 respond(task, url: url, status: 200, mime: file.mime, csp: ContentSecurityPolicy.app, body: file.data)
             case "file":
-                // `url.path` は、パーセントエンコードを戻した絶対パス
+                // `url.path` is the absolute path with percent-encoding decoded
                 let file = try access.readResource(url.path)
                 respond(
                     task, url: url, status: 200, mime: file.mime, csp: ContentSecurityPolicy.resource, body: file.data)

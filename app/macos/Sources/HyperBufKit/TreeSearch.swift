@@ -4,7 +4,7 @@
 import Foundation
 
 public struct SearchHit: Sendable, Equatable, Codable {
-    /// 絶対パス。
+    /// Absolute path.
     public let path: String
     public let line: Int
     public let text: String
@@ -12,19 +12,19 @@ public struct SearchHit: Sendable, Equatable, Codable {
 
 public struct SearchResponse: Sendable, Equatable, Codable {
     public let results: [SearchHit]
-    /// 打ち切りの前の、該当した行の数(1 ファイルにつき最大 `maxPerFile` 行)。
+    /// Number of matching lines before cutoff (at most `maxPerFile` lines per file).
     public let total: Int
     public let truncated: Bool
-    /// 検索しなかった理由(起点が `~` や `/` のとき、など)。
+    /// The reason the search was not run (the base is `~` or `/`, etc.).
     public let refused: String?
     public let listMs: Double
     public let scanMs: Double
 }
 
-/// ディレクトリ以下の全文検索(自前の並列走査)。docs/history/poc-navigation-results.md。
+/// Full-text search below a directory (own parallel traversal). docs/history/poc-navigation-results.md.
 ///
-/// 大文字小文字は ASCII だけ区別しない(日本語などは完全一致)。正規表現は未対応。
-/// 正規表現・除外規則が必要になったら、`host.search` の契約を保ったままエンジンを差し替える。
+/// Case is ignored for ASCII only (Japanese etc. must match exactly). Regular expressions are not supported.
+/// If regular expressions or exclusion rules become necessary, swap the engine while keeping the `host.search` contract.
 public enum TreeSearch {
     public static let maxPerFile = 3
 
@@ -67,7 +67,7 @@ public enum TreeSearch {
 
     private static func fold(_ b: UInt8) -> UInt8 { (b >= 65 && b <= 90) ? b + 32 : b }
 
-    /// 1 ファイルの走査。行ごとに部分一致を探し、最初の `maxPerFile` 行を返す。
+    /// Scans one file. Looks for a substring match per line and returns the first `maxPerFile` lines.
     static func scan(_ data: Data, _ needle: [UInt8], path: String) -> [SearchHit] {
         var found: [SearchHit] = []
         let m = needle.count
@@ -101,7 +101,7 @@ public enum TreeSearch {
     }
 }
 
-/// 各 index に 1 スレッドしか書かない前提で、配列への並行な書き込みを許す。
+/// Allows concurrent writes to the array, on the premise that each index is written by only one thread.
 private struct UnsafeSendableBuffer: @unchecked Sendable {
     let buffer: UnsafeMutableBufferPointer<[SearchHit]>
     init(_ buffer: UnsafeMutableBufferPointer<[SearchHit]>) { self.buffer = buffer }

@@ -3,7 +3,7 @@
 
 import AppKit
 
-// SwiftUI の `App` は使わず、AppKit で起動する(メニューは MainMenu、ウィンドウは AppModel が作る)。
+// Launches with AppKit without SwiftUI's `App` (the menu is MainMenu, windows are made by AppModel).
 MainActor.assumeIsolated {
     let app = NSApplication.shared
     let delegate = AppDelegate()

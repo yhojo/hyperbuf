@@ -3,17 +3,17 @@
 
 import Foundation
 
-/// ディレクトリの列挙(入力欄の補完 `C-x C-f`、再帰の一覧 `C-x p f`、全文検索の対象)。
+/// Directory enumeration (input completion `C-x C-f`, recursive listing `C-x p f`, the targets of full-text search).
 ///
-/// 対象は `*.md` とディレクトリだけ。隠しファイル(`.` で始まる)と `node_modules` は除く。
-/// シンボリックリンクのディレクトリには入らない(ループ・脱出の防止)。
+/// Only `*.md` and directories are targeted. Hidden files (starting with `.`) and `node_modules` are excluded.
+/// Symbolic-link directories are not entered (prevents loops and escapes).
 public enum DirectoryLister {
     public static let excludedDirectoryNames: Set<String> = ["node_modules"]
-    /// 1 階層の一覧の件数の上限(仮の値。動作確認の中で決める)。
+    /// Upper limit on the count of a one-level listing (a provisional value; to be decided during testing).
     public static let maxEntries = 2000
-    /// 再帰の一覧の、ファイル数の上限。
+    /// Upper limit on the file count of a recursive listing.
     public static let maxTreeFiles = 20000
-    /// 再帰の一覧の、時間の上限(秒)。外付けディスクやネットワークボリュームで止まらないように。
+    /// Upper limit on the time (seconds) of a recursive listing, so it does not hang on external disks or network volumes.
     public static let maxTreeSeconds = 3.0
 
     public struct Entry: Sendable, Equatable {
@@ -28,15 +28,15 @@ public enum DirectoryLister {
     }
 
     public struct Tree: Sendable, Equatable {
-        /// 起点からの相対パス(昇順)。
+        /// Path relative to the base (ascending).
         public var files: [String] = []
         public var truncated = false
-        /// 再帰しなかった理由。
+        /// The reason it did not recurse.
         public var refused: String?
         public var error: String?
     }
 
-    /// ディレクトリの 1 階層。`hidden` のときだけ、隠しファイルを含める。
+    /// One level of a directory. Hidden files are included only for `hidden`.
     public static func list(_ dir: String, hidden: Bool = false, limit: Int = maxEntries) -> Listing {
         let keys: [URLResourceKey] = [.isDirectoryKey]
         guard
@@ -62,7 +62,7 @@ public enum DirectoryLister {
         return result
     }
 
-    /// 再帰の一覧の起点にしてよいか。`~` と `/` は拒否する(理由を返す)。
+    /// Whether it may be the base of a recursive listing. `~` and `/` are refused (the reason is returned).
     public static func refusalReason(for dir: String, home: String) -> String? {
         let real = PathUtil.canonicalPath(dir) ?? dir
         if real == "/" { return "The root (/) cannot be a recursion root" }
@@ -70,7 +70,7 @@ public enum DirectoryLister {
         return nil
     }
 
-    /// ディレクトリ以下の `.md` を再帰でたどる(守り: 起点の制限、ファイル数・時間の上限)。
+    /// Recursively traverses `.md` files below a directory (safeguards: base restriction, limits on file count and time).
     public static func tree(
         _ dir: String, home: String, maxFiles: Int = maxTreeFiles, maxSeconds: Double = maxTreeSeconds
     ) -> Tree {

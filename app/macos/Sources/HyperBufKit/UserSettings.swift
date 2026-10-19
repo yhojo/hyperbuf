@@ -3,19 +3,19 @@
 
 import Foundation
 
-/// アプリの外観。`system` は、OS の設定に従う。`light` / `dark` は、OS の設定に関係なく、固定する。
+/// The app's appearance. `system` follows the OS setting. `light` / `dark` are fixed regardless of the OS setting.
 public enum Appearance: String, Sendable, CaseIterable {
     case system, light, dark
 }
 
-/// フレーム(ウィンドウ)全体の透明度。Emacs の `(set-frame-parameter nil 'alpha '(80 65))` と同じ意味。
-/// 値は、パーセント(不透明が 100)。`active` は前面(キー)のフレーム、`inactive` は、それ以外。
+/// Opacity of the whole frame (window). Same meaning as Emacs' `(set-frame-parameter nil 'alpha '(80 65))`.
+/// Values are percentages (100 is opaque). `active` is for the frontmost (key) frame, `inactive` for the others.
 public struct WindowAlpha: Sendable, Equatable {
     public var active: Int
     public var inactive: Int
 
     public static let opaque = WindowAlpha(active: 100, inactive: 100)
-    /// 透明度として受け付ける範囲(これより低いと、ウィンドウが、見えなくなる)。
+    /// The accepted range for opacity (lower than this and the window becomes invisible).
     public static let range = 10...100
 
     public init(active: Int, inactive: Int) {
@@ -23,31 +23,31 @@ public struct WindowAlpha: Sendable, Equatable {
         self.inactive = inactive
     }
 
-    /// `NSWindow.alphaValue` にする値(0〜1)。アクセシビリティの「透明度を下げる」がオンなら、常に不透明。
+    /// The value for `NSWindow.alphaValue` (0-1). Always opaque when the accessibility "Reduce transparency" is on.
     public func value(isKey: Bool, reduceTransparency: Bool) -> Double {
         reduceTransparency ? 1 : Double(isKey ? active : inactive) / 100
     }
 }
 
-/// 設定ファイル(`config.json`)の、スカラーと一覧の設定。docs/user/configuration.md。
-/// 設定のキーを足す・消すときは、docs/user/configuration.md の「List of configuration keys」も直す(`ConfigDocsTests` が検査する)。
-/// 型が違うものは、既定のままにして、理由を `problems` に残す(`C-h b` の「設定の問題」に出る)。
+/// The scalar and list settings of the config file (`config.json`). docs/user/configuration.md.
+/// When adding or removing a settings key, also fix "List of configuration keys" in docs/user/configuration.md (`ConfigDocsTests` checks it).
+/// Wrongly typed values stay at their defaults and the reason is left in `problems` (shown as "configuration problems" in `C-h b`).
 public struct UserSettings: Sendable, Equatable {
-    /// 前回の状態を復元し、保存するか。
+    /// Whether to restore and save the previous state.
     public var restoreSession = true
-    /// 数式の中の `\_` を `_` に戻すか(Marked 2 などとの互換)。
+    /// Whether to turn `\_` inside math back into `_` (compatibility with Marked 2 etc.).
     public var mathUnescapeUnderscore = true
-    /// ファイルが外部で更新されたとき、変更箇所の先頭へスクロールするか。
+    /// Whether to scroll to the start of the changed part when a file is updated externally.
     public var followUpdates = false
-    /// モードラインに、Git のブランチ名を出すか。docs/dev/buffer-model.md §6.9。
+    /// Whether to show the Git branch name in the mode line. docs/dev/buffer-model.md §6.9.
     public var modeLineVcsBranch = true
-    /// 外観(ライト / ダーク)。既定は、OS に従う。
+    /// Appearance (light / dark). Defaults to following the OS.
     public var appearance = Appearance.system
-    /// フレームの透明度(既定は、透過なし)。
+    /// Frame opacity (the default is no transparency).
     public var alpha = WindowAlpha.opaque
-    /// 確認なしにブラウザで開く URL のパターン(`*` は、任意の文字列)。
+    /// Patterns of URLs opened in the browser without confirmation (`*` matches any string).
     public var trustedUrls: [String] = []
-    /// プロジェクト・ルートにしないディレクトリ(`~/…` または絶対パス。完全一致)。docs/dev/buffer-model.md §6.4。
+    /// Directories that are never a project root (`~/...` or absolute paths; exact match). docs/dev/buffer-model.md §6.4.
     public var projectIgnorePaths: [String] = []
     public var problems: [String] = []
 
@@ -63,7 +63,7 @@ public struct UserSettings: Sendable, Equatable {
         else { return settings }
         func flag(_ key: String, _ current: Bool) -> Bool {
             guard let raw = object[key] else { return current }
-            // JSON の数値(1 / 0)を、真偽値として受け取らない(`as? Bool` は、NSNumber の 1 を true にしてしまう)
+            // Do not accept a JSON number (1 / 0) as a Boolean (`as? Bool` turns an NSNumber 1 into true)
             if let number = raw as? NSNumber, CFGetTypeID(number) == CFBooleanGetTypeID() { return number.boolValue }
             settings.problems.append("\(key) must be true or false (ignored)")
             return current
@@ -80,7 +80,7 @@ public struct UserSettings: Sendable, Equatable {
             }
         }
         if let raw = object["alpha"] {
-            // 2 つの整数(パーセント)。JSON の真偽値(NSNumber)は、整数として受け取らない
+            // Two integers (percentages). A JSON Boolean (NSNumber) is not accepted as an integer
             func percent(_ value: Any) -> Int? {
                 guard let number = value as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID(),
                     number.doubleValue == Double(number.intValue), WindowAlpha.range.contains(number.intValue)

@@ -90,12 +90,12 @@ import Testing
         let t = try TempProject()
         defer { t.remove() }
         let url = t.url.appendingPathComponent("config.json")
-        #expect(SessionSettings.restoreEnabled(from: url))  // ファイルなし
+        #expect(SessionSettings.restoreEnabled(from: url))  // No file
         try "{}".write(to: url, atomically: true, encoding: .utf8)
         #expect(SessionSettings.restoreEnabled(from: url))
         try #"{"restoreSession": false}"#.write(to: url, atomically: true, encoding: .utf8)
         #expect(!SessionSettings.restoreEnabled(from: url))
         try #"{"restoreSession": "no"}"#.write(to: url, atomically: true, encoding: .utf8)
-        #expect(SessionSettings.restoreEnabled(from: url))  // 真偽値でなければ、既定のまま
+        #expect(SessionSettings.restoreEnabled(from: url))  // If not a Boolean, the default stays
     }
 }

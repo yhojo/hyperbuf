@@ -9,7 +9,7 @@ import Testing
 
 @Suite struct FileFingerprintTests {
     @Test func sha256IsHexOfTheBytes() {
-        // "abc" の SHA-256(標準のテストベクトル)
+        // SHA-256 of "abc" (the standard test vector)
         #expect(
             FileFingerprint.sha256Hex(Data("abc".utf8))
                 == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
@@ -32,7 +32,7 @@ import Testing
         #expect(first.sha256 == FileFingerprint.sha256Hex(Data("one\n".utf8)))
         #expect(first.size == 4)
 
-        // ファイルが変わっても、読み直すまでは、「ビューアが描画した版」の識別情報のまま
+        // Even if the file changes, until it is re-read the identity stays that of "the version the viewer rendered"
         try t.write("a.md", "two!\n")
         #expect(access.fingerprints.get(path) == first)
         _ = try access.readMarkdown(file)
@@ -45,7 +45,7 @@ import Testing
         let t = try TempProject()
         let state = try TempProject()
         defer { removeAll(t, state) }
-        let bytes = Data([0x23, 0x20, 0xFF, 0xFE, 0x0A])  // 不正な UTF-8 を含む
+        let bytes = Data([0x23, 0x20, 0xFF, 0xFE, 0x0A])  // Contains invalid UTF-8
         try bytes.write(to: t.url.appendingPathComponent("raw.md"))
         let access = FileAccess(
             policy: PathPolicy(home: t.real, warn: [], allow: []),
@@ -53,7 +53,7 @@ import Testing
         let file = t.url.path + "/raw.md"
         _ = try access.readMarkdown(file)
         let path = try access.canonical(file)
-        // 文字列に直す前の、ディスク上のバイト列のハッシュ(エディタが、ディスクのファイルと比べるもの)
+        // The hash of the on-disk bytes before conversion to a string (what the editor compares with the file on disk)
         #expect(access.fingerprints.get(path)?.sha256 == FileFingerprint.sha256Hex(bytes))
     }
 }

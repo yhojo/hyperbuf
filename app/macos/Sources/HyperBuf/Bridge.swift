@@ -7,14 +7,14 @@ import HyperBufProtocol
 import OSLog
 import WebKit
 
-/// Web コアの `window.hyperbufHost`(core/src/host.ts の契約)の、macOS での実体。1 フレームに 1 つ。
-/// ファイルアクセスは、すべて `FileAccess`(許可パス / 警告パス)を通る。
+/// The macOS implementation of the Web core's `window.hyperbufHost` (the contract in core/src/host.ts). One per frame.
+/// All file access goes through `FileAccess` (allow paths / warn paths).
 @MainActor
 final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
     static let handlerName = "host"
     private static let logger = Logger(subsystem: "com.yhojo.hyperbuf", category: "bridge")
 
-    /// ページの開始時に注入する。契約の関数を、ネイティブへのメッセージとして実装する。
+    /// Injected when the page starts. Implements the contract's functions as messages to the native side.
     static func script(home: String) -> String {
         let homeJSON = (try? String(data: JSONEncoder().encode(home), encoding: .utf8)) ?? "\"/\""
         return """
@@ -53,7 +53,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
                 forgetSite: (origin) => call({ op: "forget-site", origin }),
                 watch: (paths) => { call({ op: "watch", paths }); },
                 onFileChanged: (cb) => { changeListeners.push(cb); },
-                // 判定はシェルが、読み込みのたびに行う(警告パスの画像は、404 になる)
+                // The shell judges on every load (an image under a warn path gets a 404)
                 resolveResource: (path) => "\(ContentSecurityPolicy.scheme)://file" + encode(path),
                 search: (dir, query, options = {}) => call({ op: "search", path: dir, query, limit: options.limit }),
                 onOpen: (cb) => { openListeners.push(cb); },
@@ -73,7 +73,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
 
     private let frame: FrameSession
     private let model: AppModel
-    /// Web コアの準備前に届いた「開く」要求などのために、準備ができたときの処理。テストハーネスが使う。
+    /// Handler run once the Web core is ready, for "open" requests etc. that arrived before it was. Used by the test harness.
     var onReady: (() -> Void)?
 
     init(frame: FrameSession, model: AppModel) {
@@ -94,7 +94,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
         let home = access.home
         switch op {
         case "config":
-            // 利用者の設定のうち、Web コアが使うもの(検証は、Web コアが行う)
+            // The user settings the Web core uses (the Web core validates them)
             let settings = UserSettings.load()
             replyHandler(
                 [
@@ -115,7 +115,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
                 return replyHandler(nil, "bad request")
             }
             let hidden = body["hidden"] as? Bool ?? false
-            // 数千ファイルでもメインスレッドを塞がないよう、別のスレッドで列挙する
+            // Enumerate on another thread so thousands of files do not block the main thread
             Task {
                 let listing = await Task.detached { DirectoryLister.list(path, hidden: hidden) }.value
                 replyHandler(Bridge.listingJSON(listing), nil)
@@ -157,7 +157,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
             guard let paths = body["paths"] as? [String] else { return replyHandler(nil, "bad request") }
             replyHandler(paths.map { frame.judge($0) }, nil)
         case "allow":
-            // 承認できるのは、アプリが提案したものだけ。Web 側から、任意のパスは記憶させられない
+            // Only what the app proposed can be approved. The Web side cannot make us remember an arbitrary path
             guard let remember = body["remember"] as? String else { return replyHandler(false, nil) }
             replyHandler(frame.acceptProposal(remember), nil)
         case "list-remembered":
@@ -228,7 +228,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
     }
 
     #if DEBUG
-        /// 統合テスト用: `HYPERBUF_TEST_LOG` のファイルに、Web コアの診断ログを追記する。
+        /// For integration tests: appends the Web core's diagnostic log to the file named by `HYPERBUF_TEST_LOG`.
         private static func appendTestLog(_ text: String) {
             guard let path = ProcessInfo.processInfo.environment["HYPERBUF_TEST_LOG"] else { return }
             let line = "\(Int(Date().timeIntervalSince1970 * 1000)) \(text)\n"
@@ -242,7 +242,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
         }
     #endif
 
-    /// Web コアには、内部の事情を漏らさず、短い理由だけを返す。
+    /// Returns only a short reason to the Web core, without leaking internals.
     private static func describe(_ error: Error) -> String {
         switch error as? AccessError {
         case .invalidPath: "invalid path"

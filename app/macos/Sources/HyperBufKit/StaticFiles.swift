@@ -3,7 +3,7 @@
 
 import Foundation
 
-/// アプリに同梱した Web コア(`core/dist`)を配る。ルートの内側のファイルだけを返す。
+/// Serves the Web core (`core/dist`) bundled with the app. Returns only files inside the root.
 public struct StaticFiles: Sendable {
     public let root: URL
 
@@ -12,7 +12,7 @@ public struct StaticFiles: Sendable {
             fileURLWithPath: PathUtil.canonicalPath(root.path) ?? root.standardizedFileURL.path, isDirectory: true)
     }
 
-    /// 空のパスは `index.html`。
+    /// An empty path is `index.html`.
     public func read(_ relative: String) throws -> (data: Data, mime: String) {
         let path = relative.isEmpty ? "index.html" : relative
         guard !path.contains("\0"), !path.split(separator: "/").contains("..") else { throw AccessError.invalidPath }

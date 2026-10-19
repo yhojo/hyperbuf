@@ -3,9 +3,9 @@
 
 import Foundation
 
-/// 同梱した Web コア(`core/dist`)の置き場所。
+/// Where the bundled Web core (`core/dist`) lives.
 enum WebRoot {
-    /// 優先順: 環境変数 `HYPERBUF_WEB_ROOT` → アプリのバンドル(`Contents/Resources/web`)→ (デバッグビルドのみ)`core/dist`。
+    /// Priority: the env var `HYPERBUF_WEB_ROOT` -> the app bundle (`Contents/Resources/web`) -> (debug builds only) `core/dist`.
     static func locate() -> URL? {
         let fm = FileManager.default
         var candidates: [URL] = []
@@ -16,7 +16,7 @@ enum WebRoot {
             candidates.append(resources.appendingPathComponent("web"))
         }
         #if DEBUG
-            // app/macos/Sources/HyperBuf/WebRoot.swift から、リポジトリの core/dist へ
+            // From app/macos/Sources/HyperBuf/WebRoot.swift to the repository's core/dist
             candidates.append(
                 URL(fileURLWithPath: #filePath)
                     .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()

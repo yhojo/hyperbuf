@@ -6,7 +6,7 @@ import Testing
 
 @testable import HyperBufKit
 
-/// 通知を受け取って、一定時間待つ。通知は、メインキューで届く。
+/// Receives a notification and waits a fixed time. Notifications arrive on the main queue.
 @MainActor
 private final class Collector {
     var events: [(String, FileWatcher.State)] = []
@@ -47,7 +47,7 @@ private final class Collector {
     }
 
     @Test func reportsAtomicReplacementRepeatedly() async throws {
-        // 一時ファイルに書いて置き換える保存方式(inode が変わる)を、2 回続けて検知する(張り直しの確認)
+        // Detects, twice in a row, the save method that writes a temporary file and replaces (the inode changes) (checks re-attachment)
         let t = try TempProject(files: ["a.md": "one"])
         defer { t.remove() }
         let path = t.real + "/a.md"
@@ -55,7 +55,7 @@ private final class Collector {
         let watcher = makeWatcher(c)
         watcher.setPaths([path])
         try await Task.sleep(for: .milliseconds(100))
-        try t.write("a.md", "two")  // atomically: true → 置き換え
+        try t.write("a.md", "two")  // atomically: true -> replace
         #expect(await c.wait(for: path, .changed))
         let first = c.count(path)
         try await Task.sleep(for: .milliseconds(150))
@@ -78,7 +78,7 @@ private final class Collector {
         #expect(await c.wait(for: path, .deleted))
         c.events.removeAll()
         try t.write("a.md", "back")
-        #expect(await c.wait(for: path, .changed))  // 再作成は、changed
+        #expect(await c.wait(for: path, .changed))  // Recreation is changed
         withExtendedLifetime(watcher) {}
     }
 

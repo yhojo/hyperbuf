@@ -41,7 +41,7 @@ import Testing
         #expect(!csp.contains("*"))
         #expect(!csp.contains("'unsafe-eval'"))
         #expect(csp.contains("'wasm-unsafe-eval'"))
-        // script-src に 'unsafe-inline' は許さない(style-src だけ、Markdown の数式・図のために必要)
+        // script-src does not allow 'unsafe-inline' (only style-src needs it, for Markdown math and diagrams)
         let script = csp.split(separator: ";").first { $0.contains("script-src") } ?? ""
         #expect(!script.contains("unsafe-inline"))
     }

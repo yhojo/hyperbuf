@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 表示されているテキストの、行・単語・文字の数(`count-words`)。DOM に依存しない純粋な関数。
+// Counts of lines, words and characters of the displayed text (`count-words`). A pure function with no DOM dependency.
 //
-// 数える対象は、元の Markdown ではなく、表示されているテキスト(描画後)。ビューアなので、見た目を優先する。
-// 元の Markdown の数は、Emacs の `count-words` で測る。
+// What is counted is the displayed (rendered) text, not the original Markdown. This is a viewer, so appearance comes first.
+// Measure the original Markdown with Emacs's `count-words`.
 
 export interface Counts {
-  /** 空でない行の数(段落・リスト項目・表の行・コードの行が、それぞれ 1 行)。 */
+  /** Number of non-empty lines (a paragraph, list item, table row or code line counts as one line each). */
   lines: number;
-  /** 単語の数。日本語などの空白で区切らない言語は、辞書による単語分割で数える。 */
+  /** Number of words. Languages that do not separate words with spaces, such as Japanese, are counted by dictionary-based word segmentation. */
   words: number;
-  /** 文字の数(コードポイント)。行の区切りの改行は 1 つとして含み、空行は含めない。 */
+  /** Number of characters (code points). A line-separating newline counts as one; empty lines are not included. */
   characters: number;
-  /** 空白(改行を含む)を除いた文字の数。 */
+  /** Number of characters excluding whitespace (including newlines). */
   nonWhitespace: number;
 }
 
 const segmenter = new Intl.Segmenter(undefined, { granularity: "word" });
 
 export function countText(text: string): Counts {
-  // 描画上の改行(ブロックの間の空行など)は、数えない。空でない行だけを、改行 1 つでつないだものを、文字数の対象にする
+  // Rendering newlines (blank lines between blocks, etc.) are not counted. Only non-empty lines joined by a single newline form the text whose characters are counted
   const lines = text
     .split(/\r\n|\r|\n/)
     .map((line) => line.trim())
@@ -38,7 +38,7 @@ export function countText(text: string): Counts {
 
 const plural = (n: number, noun: string): string => `${n} ${noun}${n === 1 ? "" : "s"}`;
 
-/** Emacs の体裁のメッセージ。例: `Region has 3 lines, 42 words, 210 characters (180 without whitespace)`。 */
+/** Emacs-style message. Example: `Region has 3 lines, 42 words, 210 characters (180 without whitespace)`. */
 export function formatCounts(scope: "Region" | "Buffer", c: Counts): string {
   return (
     `${scope} has ${plural(c.lines, "line")}, ${plural(c.words, "word")}, ` +

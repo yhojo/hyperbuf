@@ -75,8 +75,8 @@ body {
   flex-direction: column;
   border: 1px solid var(--line);
 }
-/* モードライン: Emacs と同じく、各 window の下。選択中の window は、濃いグレーに反転し、それ以外は薄いグレー。
-   選択中の window を示す囲みは、使わない(window が 1 つのときも、出さない) */
+/* Mode line: below each window, as in Emacs. The selected window is inverted to dark gray, the others are light gray.
+   No outline marks the selected window (not shown when there is a single window either) */
 .mode-line {
   display: flex;
   gap: 1.6em;
@@ -110,8 +110,8 @@ body {
 .content {
   flex: 1;
   overflow: auto;
-  /* 下の余白(末尾の見出しを画面の上まで送れるように)は、ここではなく .markdown-body::after に置く。
-     ここに vh の padding を置くと、window の最小の高さになってしまい、小さい画面の分割で、はみ出す */
+  /* The bottom margin (so the last heading can be scrolled to the top of the screen) is placed on .markdown-body::after, not here.
+     A vh padding here would become the window's minimum height and overflow when splitting on a small screen */
   padding: 8px 20px 0;
   position: relative;
 }
@@ -165,7 +165,7 @@ body {
   min-height: 1.6em;
 }
 #status {
-  /* 画面が狭くても折り返さない(行数が変わって、気が散らないように)。右側は、見切れてよい */
+  /* Do not wrap even if the screen is narrow (so the line count does not change and distract). The right side may be cut off */
   white-space: nowrap;
   overflow: hidden;
   color: var(--muted);
@@ -203,7 +203,7 @@ body {
 #prompt-count {
   color: var(--muted);
 }
-/* 文書内検索(C-s)の一致。CSS Custom Highlight API(Safari 17.2 以降)。非対応なら、現在の一致だけが、選択状態になる */
+/* Matches of in-document search (C-s). CSS Custom Highlight API (Safari 17.2+). If unsupported, only the current match is shown as the selection */
 ::highlight(hb-search) {
   background-color: #ffd33d80;
 }
@@ -222,7 +222,7 @@ body {
   color: #888;
 }
 
-/* 外部更新への追従: 最初に変わった場所を、一瞬、目立たせる */
+/* Following external updates: briefly highlight the first changed place */
 .changed-flash {
   animation: changed-flash 1.6s ease-out;
 }

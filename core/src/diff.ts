@@ -2,8 +2,8 @@
 // Copyright 2026 Yasuo Hojo
 
 /**
- * 2 つのテキストを比べて、最初に違う行(1 始まり)を返す。同じなら null。
- * 末尾に足されただけなら、足された最初の行になる(外部更新への追従: docs/user/configuration.md の followUpdates)。
+ * Compares two texts and returns the first differing line (1-based), or null if they are the same.
+ * If text was only appended, it is the first appended line (following external updates: followUpdates in docs/user/configuration.md).
  */
 export function firstChangedLine(before: string, after: string): number | null {
   if (before === after) return null;

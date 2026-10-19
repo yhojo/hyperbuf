@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// outline-mode 風の見出し移動の判断(docs/dev/interaction-model.md)。DOM に依存しない純粋な関数。
-// 「いまの位置」は、画面の上端(scrollTop)。見出しは、文書の先頭から順に並ぶ(tops は、各見出しの上端の位置)。
+// Decisions for outline-mode-style heading navigation (docs/dev/interaction-model.md). Pure functions with no DOM dependency.
+// "The current position" is the top edge of the screen (scrollTop). Headings are in order from the start of the document (tops holds each heading's top).
 //
-//   C-c C-n  次の見出し        C-c C-p  前の見出し
-//   C-c C-f  同じレベルの、次   C-c C-b  同じレベルの、前       C-c C-u  上のレベルの見出しへ
+//   C-c C-n  next heading            C-c C-p  previous heading
+//   C-c C-f  next at the same level  C-c C-b  previous at the same level   C-c C-u  up to the parent-level heading
 //
-// 画面の上端が、見出しの上端に(ほぼ)あるときは、「その見出しにいる」とみなす(EPS の範囲)。
+// When the top of the screen is at (almost) the top of a heading, we consider "being at that heading" (the EPS range).
 
-/** 見出しの上端が、画面の上端と同じとみなす誤差(px)。 */
+/** Tolerance (px) within which a heading's top counts as equal to the top of the screen. */
 export const EPS = 8;
 
-/** いま、どの見出しの節の中にいるか(最後の、上端が画面の上端以前の見出し)。なければ -1。 */
+/** The heading whose section we are in (the last heading whose top is at or above the top of the screen). -1 if none. */
 export function currentIndex(tops: readonly number[], scrollTop: number): number {
   let current = -1;
   for (let i = 0; i < tops.length; i++) {
@@ -22,13 +22,13 @@ export function currentIndex(tops: readonly number[], scrollTop: number): number
   return current;
 }
 
-/** 次の見出し: 上端が、画面の上端より下にある、最初の見出し。 */
+/** Next heading: the first heading whose top is below the top of the screen. */
 export function nextIndex(tops: readonly number[], scrollTop: number): number | null {
   const i = tops.findIndex((t) => t > scrollTop + EPS);
   return i < 0 ? null : i;
 }
 
-/** 前の見出し: 上端が、画面の上端より上にある、最後の見出し。 */
+/** Previous heading: the last heading whose top is above the top of the screen. */
 export function previousIndex(tops: readonly number[], scrollTop: number): number | null {
   for (let i = tops.length - 1; i >= 0; i--) {
     if ((tops[i] ?? Infinity) < scrollTop - EPS) return i;
@@ -36,7 +36,7 @@ export function previousIndex(tops: readonly number[], scrollTop: number): numbe
   return null;
 }
 
-/** 上のレベルの見出し: いまの節の見出しより前で、レベルが小さい、最も近い見出し。 */
+/** Parent-level heading: the nearest heading before the current section's heading with a smaller level. */
 export function upIndex(levels: readonly number[], current: number): number | null {
   const level = levels[current];
   if (level === undefined) return null;
@@ -46,7 +46,7 @@ export function upIndex(levels: readonly number[], current: number): number | nu
   return null;
 }
 
-/** 同じレベルの、次の見出し。上のレベルの見出しをまたがない(同じ親の、兄弟だけ)。 */
+/** Next heading at the same level. Does not cross a parent-level heading (siblings under the same parent only). */
 export function sameLevelForward(levels: readonly number[], current: number): number | null {
   const level = levels[current];
   if (level === undefined) return null;
@@ -58,7 +58,7 @@ export function sameLevelForward(levels: readonly number[], current: number): nu
   return null;
 }
 
-/** 同じレベルの、前の見出し。上のレベルの見出しをまたがない。 */
+/** Previous heading at the same level. Does not cross a parent-level heading. */
 export function sameLevelBackward(levels: readonly number[], current: number): number | null {
   const level = levels[current];
   if (level === undefined) return null;

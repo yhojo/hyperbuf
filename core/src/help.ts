@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// `describe-bindings`(C-h b)の内容。仮想 buffer に、Markdown として出す。DOM に依存しない純粋な関数。
+// Contents of `describe-bindings` (C-h b). Shown as Markdown in a virtual buffer. A pure function with no DOM dependency.
 
 import { keysByCommand } from "./keybindings.ts";
 
 export interface HelpInput {
-  /** コマンド名 → 説明(全コマンド)。 */
+  /** Command name -> description (all commands). */
   docs: Readonly<Record<string, string>>;
   bindings: Readonly<Record<string, string>>;
   problems: readonly string[];
 }
 
-/** Markdown の表の中に置く文字列(`|` と改行を、壊さない形にする)。 */
+/** A string to place inside a Markdown table (makes `|` and newlines safe). */
 const cell = (s: string): string => s.replace(/\|/g, "\\|").replace(/\n/g, " ");
 
 export function renderBindingsHelp({ docs, bindings, problems }: HelpInput): string {

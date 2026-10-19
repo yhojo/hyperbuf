@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 文書内のインクリメンタル検索(C-s / C-r)。画面に表示された文書(DOM)の、文字列を検索する。
-// 検索の判断は、../isearch.ts(純粋な関数)。ここは、文字列の索引・範囲・ハイライト・スクロール。
+// Incremental search within a document (C-s / C-r). Searches the text of the displayed document (DOM).
+// Search decisions live in ../isearch.ts (pure functions). This file handles the text index, ranges, highlighting and scrolling.
 //
-//  - 入力のたびに、一致を数え直し、基準の位置以降の最初の一致を選ぶ
-//  - C-s で次、C-r で前(端で、反対の端へ。"Wrapped")。検索語が空のときの C-s は、前回の検索語を使う
-//  - RET: その位置にとどまる(一致は、選択状態で残る)。C-g / ESC: 検索を始めた位置に戻る
-//  - 大文字を含む検索語は、大文字小文字を区別する(それ以外は、区別しない)
+//  - On every input, recount matches and select the first match at or after the reference position
+//  - C-s goes next, C-r previous (at an end, wraps to the opposite end: "Wrapped"). C-s with an empty query uses the previous query
+//  - RET: stay at that position (the match stays selected). C-g / ESC: return to where the search started
+//  - A query containing uppercase is case-sensitive (otherwise case-insensitive)
 
 import { findAll, firstMatch, isCaseSensitive, step } from "../isearch.ts";
 import type { AppContext } from "./context.ts";
@@ -17,11 +17,11 @@ export interface TextIndex {
   nodes: { node: Text; start: number }[];
 }
 
-/** 検索の対象にしない場所(数式の MathML の複製、図、スクリプト)。 */
+/** Places excluded from search (the MathML copy of math, diagrams, scripts). */
 const SKIP = ".katex-mathml, svg, script, style";
-/** ブロックをまたぐ一致を作らないための、区切り。 */
+/** Separator, so that matches never span blocks. */
 const BLOCKS = "p,li,h1,h2,h3,h4,h5,h6,pre,td,th,blockquote,summary,dt,dd,div";
-/** ハイライトする一致の上限(件数が多すぎると、重くなる)。 */
+/** Upper limit of highlighted matches (too many makes it slow). */
 const HIGHLIGHT_LIMIT = 2000;
 
 export function buildIndex(root: HTMLElement): TextIndex {
@@ -44,7 +44,7 @@ export function buildIndex(root: HTMLElement): TextIndex {
   return { text, nodes };
 }
 
-/** `offset` を含む(または、末尾が `offset` に等しい)テキストノード。 */
+/** The text node containing `offset` (or whose end equals `offset`). */
 function nodeAt(index: TextIndex, offset: number): { node: Text; start: number } | null {
   let lo = 0;
   let hi = index.nodes.length - 1;
@@ -66,7 +66,7 @@ export function rangeFor(index: TextIndex, start: number, end: number): Range | 
   return range;
 }
 
-/** 画面の上端に、最初に見えているテキストの位置(検索を始める基準)。 */
+/** Position of the first text visible at the top of the screen (the reference for starting a search). */
 function firstVisibleOffset(index: TextIndex, content: HTMLElement): number {
   const top = content.getBoundingClientRect().top;
   for (const { node, start } of index.nodes) {
@@ -98,7 +98,7 @@ function revealRange(content: HTMLElement, range: Range): void {
 
 let lastQuery = "";
 
-/** 文書内のインクリメンタル検索を始める。確定または取消まで、終わらない。 */
+/** Starts incremental search within a document. Does not end until confirmed or cancelled. */
 export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<void> {
   const { minibuffer, views, echo } = ctx;
   const content = views.selected().content;
@@ -108,8 +108,8 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
   let matches: number[] = [];
   let current: number | null = null;
   let query = "";
-  // 入力が変わったときに、探し直す基準の位置: 最後に選んだ一致(なければ、検索を始めた位置)。
-  // 検索語が一時的に空になっても(日本語入力の確定では、いったん消して、入れ直す)、消えない
+  // Reference position to search again from when the input changes: the last selected match (or the position where the search started).
+  // Not lost even if the query becomes temporarily empty (confirming Japanese input clears it once and re-enters it)
   let anchor = origin.from;
 
   const labelOf = (): string => (dir === 1 ? "I-search: " : "I-search backward: ");
@@ -117,17 +117,17 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
   const select = (): void => {
     clearHighlights();
     const selection = window.getSelection();
-    // ハイライトが使えるときは、選択に触れない(入力欄にフォーカスがあるときに選択を操作すると、
-    // WKWebView は、入力欄のフォーカスを外す)
+    // When highlighting is available, do not touch the selection (manipulating the selection while the input field has focus
+    // makes WKWebView drop the input field's focus)
     if (!highlights()) selection?.removeAllRanges();
     if (current === null) return;
     const start = matches[current];
     const range = start === undefined ? null : rangeFor(index, start, start + query.length);
     if (!range) return;
     const registry = highlights();
-    // 文書に選択を作ると、WKWebView は、ミニバッファの入力欄からフォーカスを奪い、以後のキー入力が
-    // 届かなくなる。入力中は、ハイライトだけで示し、選択は、確定のあとに作る(ハイライトが使えない
-    // 場合に限り、選択で代用する)
+    // Creating a selection in the document makes WKWebView take focus from the minibuffer's input field, and later key input
+    // no longer arrives. While typing, show matches only by highlighting and make the selection after confirming (use the selection
+    // as a substitute only when highlighting is unavailable)
     if (!registry) selection?.addRange(range);
     revealRange(content, range);
     if (registry) {
@@ -156,8 +156,8 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
     if (current !== null) anchor = matches[current] ?? anchor;
   };
 
-  // composing: 日本語入力の変換中は、基準の位置を動かさない(「さ」「さん」…と途中の一致に引きずられず、
-  // 確定した語を、変換を始めた位置から探す)
+  // composing: during Japanese input conversion, do not move the reference position (do not get dragged by intermediate matches such as "さ", "さん"...,
+  // and search for the confirmed word from where the conversion started)
   const search = (text: string, from: number, composing = false): void => {
     query = text;
     matches = findAll(index.text, query, isCaseSensitive(query));
@@ -169,16 +169,16 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
 
   const session = minibuffer.live(labelOf(), {
     onInput(text, composing) {
-      // 検索語が変わっていない入力(日本語入力の確定など)では、探し直さない(選んだ一致が動いてしまう)
+      // For input that does not change the query (e.g. confirming Japanese input), do not search again (the selected match would move)
       if (text === query && current !== null) return;
-      // 入力が変わったら、基準の位置から探し直す
+      // When the input changes, search again from the reference position
       search(text, anchor, composing);
     },
     onKey(name) {
       if (name !== "C-s" && name !== "C-r") return false;
       dir = name === "C-s" ? 1 : -1;
       if (!query && lastQuery) {
-        // 検索語が空のときは、前回の検索語を使う
+        // When the query is empty, use the previous query
         session.setText(lastQuery);
         search(lastQuery, anchor);
         return true;
@@ -193,11 +193,11 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
 
   const accepted = await session.done;
   clearHighlights();
-  // Emacs と同じく、取り消して(C-g)抜けたときも、検索語を覚える(次の C-s C-s で使える)
+  // As in Emacs, remember the query even when leaving by cancelling (C-g) (usable with the next C-s C-s)
   if (query) lastQuery = query;
   if (accepted && query) {
-    // 一致は、選択状態で残す(そのまま、「エディタで編集」の対象にもなる)。ミニバッファの入力欄が、
-    // フォーカスを失うときに、文書の選択を解除してしまう WebView があるので、閉じたあとで、選択し直す
+    // Leave the match selected (it also becomes the target of "edit in editor" as is). Some WebViews clear the document's selection when the minibuffer's input field
+    // loses focus, so select again after closing
     const start = current === null ? undefined : matches[current];
     const range = start === undefined ? null : rangeFor(index, start, start + query.length);
     if (range) {

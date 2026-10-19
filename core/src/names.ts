@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// バッファの名前(画面に出す名前)。識別は絶対パスで、名前は、Emacs の uniquify と同じ考え方で決める
-// (docs/dev/buffer-model.md §3): 基本はファイル名。同じ名前が複数あるときだけ、親ディレクトリを足す。
-// 形式は `post-forward-angle-brackets`(`README.md<docs>`)。
+// Buffer names (the names shown on screen). Identity is the absolute path; names are decided with the same idea as Emacs's uniquify
+// (docs/dev/buffer-model.md §3): basically the file name. Only when several share a name, the parent directory is added.
+// The form is `post-forward-angle-brackets` (`README.md<docs>`).
 
 import { abbreviateHome, basename } from "./paths.ts";
 
 /**
- * 仮想バッファ(ファイルに対応しない)の識別。`*種類: 名前 @ 起点のディレクトリ*`。
- * 起点があるもの(検索結果)は、基準のディレクトリ(`default-directory`)を持つ。
+ * Identity of a virtual buffer (not tied to a file): `*kind: name @ origin directory*`.
+ * One with an origin (search results) has a base directory (`default-directory`).
  */
 export function virtualPath(label: string, dir?: string): string {
   return dir ? `*${label} @ ${dir}*` : `*${label}*`;
 }
 
 export interface VirtualParts {
-  /** `*` を除いた、見出し(例: `search: foo`)。 */
+  /** The title without the `*` (for example `search: foo`). */
   label: string;
-  /** 起点のディレクトリ(なければ undefined)。 */
+  /** The origin directory (undefined if none). */
   dir?: string;
 }
 
@@ -28,19 +28,19 @@ export function parseVirtualPath(path: string): VirtualParts {
   return at < 0 ? { label: inner } : { label: inner.slice(0, at), dir: inner.slice(at + 3) };
 }
 
-/** 識別から、そのまま表示できる基本の名前(重複の区別は、まだ付けない)。 */
+/** From an identity, the basic name that can be shown as is (duplicates are not yet disambiguated). */
 function baseName(path: string): string {
   if (!path.startsWith("*")) return basename(path);
   return `*${parseVirtualPath(path).label}*`;
 }
 
-/** 区別の元になるディレクトリ(ファイルは親、仮想バッファは起点)。なければ、null。 */
+/** The directory that serves as the basis for disambiguation (the parent for a file, the origin for a virtual buffer). null if none. */
 function directoryOf(path: string): string | null {
   if (path.startsWith("*")) return parseVirtualPath(path).dir ?? null;
   return path.slice(0, Math.max(path.lastIndexOf("/"), 0)) || "/";
 }
 
-/** ディレクトリの末尾から `count` 階層を取る(`/a/b/c` の 2 階層は `b/c`)。ホストのディレクトリは `~`。 */
+/** Takes `count` levels from the end of a directory (2 levels of `/a/b/c` is `b/c`). The host's directory is `~`. */
 function suffix(dir: string, count: number, home: string): string {
   const abbreviated = abbreviateHome(dir, home);
   const parts = abbreviated.split("/").filter((p, i) => p !== "" || i === 0);
@@ -49,9 +49,9 @@ function suffix(dir: string, count: number, home: string): string {
 }
 
 /**
- * すべての(開いている)バッファの識別から、表示名を求める。
- * 同じ基本の名前が複数あるものは、区別がつく最小の階層まで、ディレクトリの末尾側を足す。
- * 仮想バッファで起点があるものは、衝突しなくても、起点を足す(`*search: foo*<docs>`)。
+ * Computes display names from the identities of all (open) buffers.
+ * When several share the same basic name, the directory's trailing part is added down to the smallest level that tells them apart.
+ * A virtual buffer with an origin gets the origin added even without a collision (`*search: foo*<docs>`).
  */
 export function uniquifyNames(paths: readonly string[], home: string): Map<string, string> {
   const result = new Map<string, string>();
@@ -68,7 +68,7 @@ export function uniquifyNames(paths: readonly string[], home: string): Map<strin
         result.set(path, base);
         continue;
       }
-      // 同じ名前の他のバッファの接尾辞と、重ならない最小の階層を探す
+      // Find the smallest level that does not overlap with the suffixes of other buffers with the same name
       const others = members.filter((m) => m !== path).map(directoryOf);
       let count = 1;
       const max = dir.split("/").length;

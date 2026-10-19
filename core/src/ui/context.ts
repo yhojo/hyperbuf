@@ -8,15 +8,15 @@ import type { Echo } from "./echo.ts";
 import type { Minibuffer } from "./minibuffer.ts";
 import type { Views } from "./windows.ts";
 
-/** UI の各部が共有する、アプリの状態と部品。 */
+/** App state and components shared by each part of the UI. */
 export interface AppContext {
   host: HyperbufHost;
   model: Model;
   views: Views;
   echo: Echo;
   minibuffer: Minibuffer;
-  /** いまのキー割り当てと、設定の問題(標準 + 利用者の設定)。describe-bindings が使う。 */
+  /** Current key bindings and config problems (defaults + user settings). Used by describe-bindings. */
   bindings: BindingsResult;
-  /** シェルが見つけた設定の問題(許可パス / 警告パスなど)。 */
+  /** Config problems found by the shell (allow paths / warn paths, etc.). */
   problems: readonly string[];
 }

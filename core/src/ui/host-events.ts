@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// ホストからのイベント(外部更新、外部からの「開く」要求、位置の問い合わせ)の受け口。
+// Entry point for events from the host (external updates, external "open" requests, position queries).
 
 import type { OpenRequest } from "../host.ts";
 import { currentEntry, jump, openBuffer, selectedWindow } from "../model.ts";
@@ -13,7 +13,7 @@ import { ensureBuffer, errorMessage } from "./navigation.ts";
 export function wireHostEvents(ctx: AppContext, commands: Commands): void {
   const { host, model, views, echo, minibuffer } = ctx;
 
-  // 表示中のファイルの変更・削除。変更なら読み直し(位置の維持は Views が行う)、削除なら残して知らせる
+  // Change or deletion of a displayed file. On change, re-read (Views keeps the position); on deletion, keep the buffer and notify
   host.onFileChanged(async (path, state) => {
     const buf = model.buffers.get(path);
     if (!buf) return;
@@ -27,15 +27,15 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
       views.refresh();
       echo.message(`Reverted: ${abbreviateHome(path, host.home)}`);
     } catch (err) {
-      // 読めない = 消えた(または、置換の途中)。バッファは残して、知らせる
+      // Unreadable = gone (or in the middle of a replace). Keep the buffer and notify
       buf.missing = true;
       views.refresh();
       echo.message(`Cannot revert: ${abbreviateHome(path, host.home)} (${errorMessage(err)})`);
     }
   });
 
-  // 確認待ちの要求の id。期限切れで取り消されたら、その確認だけを閉じる。
-  // 取り消された確認は、利用者の「拒否」ではない(シェルは、期限切れとして、すでに応答している)
+  // Id of the request awaiting confirmation. If it is cancelled by expiry, close only that confirmation.
+  // A cancelled confirmation is not the user's "deny" (the shell has already responded with expiry)
   let confirming: string | null = null;
   let timedOut: string | null = null;
   host.onOpenCancel?.((id) => {
@@ -45,7 +45,7 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
     echo.message("Integration: request timed out");
   });
 
-  // 外部(CLI・Emacs 連携)からの「開く」要求。docs/dev/integration-protocol.md
+  // "Open" request from outside (CLI / Emacs integration). docs/dev/integration-protocol.md
   host.onOpen?.(async (req: OpenRequest) => {
     const respond = (result: unknown): void => {
       if (req.id) host.respond?.(req.id, result);
@@ -57,8 +57,8 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
     };
     if (req.error) return fail("bad-request", req.error);
     if (req.confirm) {
-      // 警告パスのファイルは、ダイアログではなくミニバッファで確認する(docs/dev/file-access.md)。
-      // 承認されたら、シェルが提案したパスが記憶される(永続化される)。
+      // Files under a warn path are confirmed in the minibuffer, not a dialog (docs/dev/file-access.md).
+      // When approved, the path the shell proposed is remembered (persisted).
       const where = req.remember ? `Remember ${abbreviateHome(req.remember, host.home)} and ` : "";
       confirming = req.id ?? null;
       const answer = await minibuffer.prompt(
@@ -68,13 +68,13 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
       );
       confirming = null;
       if (req.id && timedOut === req.id) {
-        // 期限切れで閉じられた。応答も、メッセージ(request timed out)も、すでに出ている
+        // Closed by expiry. The response and the message (request timed out) have already been shown
         timedOut = null;
         host.log?.(`CONFIRM ${req.path} timed out`);
         return;
       }
       host.log?.(`CONFIRM ${req.path} answer=${answer}`);
-      // 回答は、承認でも拒否でも、シェルに伝える(承認が受理されたときだけ、読めるようになる)
+      // Tell the shell the answer, whether approved or denied (the file becomes readable only when the approval is accepted)
       const granted = (await host.confirmOpen?.(req.id ?? "", answer === "yes")) ?? false;
       if (answer !== "yes" || !granted) {
         return fail("outside-project", "Not opened because it is a warn path");
@@ -94,12 +94,12 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
     }
   });
 
-  // シェルから「エディタで編集」(右クリックメニュー)が選ばれた
+  // "Edit in editor" (right-click menu) was chosen from the shell
   host.onEdit?.(() => {
     void Promise.resolve(commands["edit-in-editor"]()).then(() => views.refresh());
   });
 
-  // いまの表示の問い合わせ(`get-view`)。編集位置(`get-location`)は、シェルが保持する
+  // Query for the current view (`get-view`). The edit location (`get-location`) is held by the shell
   host.onQuery?.(async (op) => {
     if (op !== "get-view") return null;
     const win = selectedWindow(model);
@@ -113,6 +113,6 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
     };
   });
 
-  // 準備ができた合図。これ以前に届いていた要求が、ここで渡される。
+  // Ready signal. Requests that arrived before this are handed over here.
   host.ready?.();
 }

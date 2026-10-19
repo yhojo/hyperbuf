@@ -2,38 +2,38 @@
 // Copyright 2026 Yasuo Hojo
 
 /**
- * シェル(macOS アプリなど)と Web コアの境界。シェルは `window.hyperbufHost` として注入する。
- * Web コアは、これ以外の方法でシェルの機能を使わない。
- * 契約の詳細: docs/dev/integration-protocol.md、docs/history/poc-navigation-results.md
+ * The boundary between the shell (the macOS app, etc.) and the Web core. The shell injects it as `window.hyperbufHost`.
+ * The Web core uses no shell functionality other than through this.
+ * Contract details: docs/dev/integration-protocol.md, docs/history/poc-navigation-results.md
  */
 import type { SourceLocation } from "./locate.ts";
 
-/** `markLocation` の結果。 */
+/** Result of `markLocation`. */
 export interface MarkResult {
   ok: boolean;
-  /** エディタを呼び出したか(設定されたコマンドを実行したか)。 */
+  /** Whether the editor was invoked (whether the configured command was run). */
   triggered: boolean;
-  /** 利用者に見せる説明。 */
+  /** A description to show to the user. */
   message: string;
 }
 
-/** 利用者の設定(config.json)のうち、Web コアが使うもの。 */
+/** The part of the user's settings (config.json) that the Web core uses. */
 export interface HostConfig {
-  /** キー列 → コマンド名(`null` は、標準の割り当てを外す)。 */
+  /** Key sequence -> command name (`null` removes the default binding). */
   keybindings?: Record<string, string | null>;
-  /** 前回の状態(window の配置・履歴・閲覧位置)を復元し、保存するか(既定は true)。 */
+  /** Whether to restore and save the previous state (window layout, history, reading positions) (default true). */
   restoreSession?: boolean;
-  /** 数式の中の `\_` を `_` に戻す(Marked 2 などとの互換。既定は true)。 */
+  /** Turn `\_` in math back into `_` (compatibility with Marked 2 and others; default true). */
   mathUnescapeUnderscore?: boolean;
-  /** ファイルが外部で更新されたとき、変更箇所の先頭へスクロールする(既定は false。`toggle-follow-updates` で切り替える)。 */
+  /** When a file is updated externally, scroll to the start of the changed part (default false; toggled with `toggle-follow-updates`). */
   followUpdates?: boolean;
-  /** モードラインに、Git のブランチ名を出す(既定は true。docs/dev/buffer-model.md §6.9)。 */
+  /** Show the Git branch name in the mode line (default true; docs/dev/buffer-model.md §6.9). */
   modeLineVcsBranch?: boolean;
-  /** シェルが見つけた設定の問題(許可パス / 警告パスなど)。`C-h b` の「設定の問題」に出す。 */
+  /** Config problems the shell found (allow paths / warn paths, etc.). Shown under "config problems" in `C-h b`. */
   problems?: string[];
 }
 
-/** ディレクトリの 1 階層分の一覧の 1 件(`.md` のファイルとサブディレクトリだけ)。 */
+/** One entry of a one-level directory listing (only `.md` files and subdirectories). */
 export interface DirEntry {
   name: string;
   dir: boolean;
@@ -41,123 +41,123 @@ export interface DirEntry {
 
 export interface DirectoryListing {
   entries: DirEntry[];
-  /** 件数の上限で打ち切った。 */
+  /** Cut off at the entry limit. */
   truncated: boolean;
-  /** 読めなかった・存在しないときの理由。 */
+  /** Reason if it could not be read or does not exist. */
   error?: string;
 }
 
-/** ディレクトリ以下の `.md` を再帰でたどった一覧(`C-x p f`)。 */
+/** A recursive listing of `.md` files under a directory (`C-x p f`). */
 export interface TreeListing {
-  /** 起点からの相対パス(昇順)。 */
+  /** Paths relative to the origin (ascending). */
   files: string[];
-  /** ファイル数・時間の上限で打ち切った。 */
+  /** Cut off at the file count or time limit. */
   truncated: boolean;
-  /** 再帰しなかった理由(起点が `~` や `/` のとき、など)。 */
+  /** Reason it did not recurse (when the origin is `~` or `/`, etc.). */
   refused?: string;
   error?: string;
 }
 
 /**
- * ファイルへのアクセスの判定(docs/dev/file-access.md)。
- *  - allow: そのまま読める
- *  - confirm: 警告パスのファイル。利用者の確認が要る(承認されたら `remember` のパスを記憶する)
+ * Judgment of file access (docs/dev/file-access.md).
+ *  - allow: can be read as is
+ *  - confirm: a file under a warn path. Needs user confirmation (if approved, the `remember` path is remembered)
  */
 export type Access = { access: "allow" } | { access: "confirm"; remember: string };
 
 /**
- * 文書のリンク(外部の URL)の判定(docs/user/configuration.md の `trustedUrls`)。
- *  - open: そのまま、ブラウザで開いてよい(`trustedUrls` に合う、または、記憶したサイト)
- *  - confirm: 利用者に確認する。`origin` は、「always」で記憶する単位(mailto では、ない)
- *  - deny: 開かない(`http` / `https` / `mailto` 以外、ユーザー名・パスワードを含む URL など)
+ * Judgment of document links (external URLs) (`trustedUrls` in docs/user/configuration.md).
+ *  - open: may be opened in the browser as is (matches `trustedUrls`, or is a remembered site)
+ *  - confirm: ask the user. `origin` is the unit remembered by "always" (not for mailto)
+ *  - deny: not opened (other than `http` / `https` / `mailto`, URLs containing a user name or password, etc.)
  */
 export type UrlDecision =
   { action: "open" } | { action: "confirm"; origin?: string } | { action: "deny"; reason: string };
 
 export interface HyperbufHost {
-  /** 利用者のホストディレクトリ(絶対パス)。`~` の展開と、表示の短縮に使う。 */
+  /** The user's home directory (absolute path). Used to expand `~` and shorten display. */
   readonly home: string;
   /**
-   * このフレームの、前回のセッション(`SessionSnapshot`)。なければ null。
-   * 内容は信頼しない(Web コアが検証する)。保存先はシェルが決める。
+   * This frame's previous session (`SessionSnapshot`). null if none.
+   * The contents are untrusted (the Web core validates them). The shell decides where it is stored.
    */
   loadSession?(): Promise<unknown>;
-  /** セッションを保存する。シェルは、大きさを制限する。 */
+  /** Saves the session. The shell limits the size. */
   saveSession?(snapshot: unknown): Promise<void>;
-  /** 利用者の設定。なければ、標準のまま。 */
+  /** The user's settings. Defaults if absent. */
   getConfig?(): Promise<HostConfig>;
-  /** シェルの識別名(診断用)。 */
+  /** The shell's identifier (for diagnostics). */
   readonly name: string;
-  /** ディレクトリの 1 階層(隠しファイルは、`hidden` のときだけ含める)。入力欄の補完に使う。 */
+  /** One level of a directory (hidden files are included only with `hidden`). Used for input completion. */
   listDirectory(dir: string, options?: { hidden?: boolean }): Promise<DirectoryListing>;
-  /** ディレクトリ以下の `.md` の再帰の一覧(隠しファイルと node_modules を除く)。守りはシェルが行う。 */
+  /** Recursive listing of `.md` files under a directory (excluding hidden files and node_modules). The shell enforces the guard. */
   listTree(dir: string): Promise<TreeListing>;
   /**
-   * `dir` のプロジェクト・ルート(VCS の目印をさかのぼって求める。なければ `dir` 自身。docs/dev/buffer-model.md §6)。
-   * ない(古いシェル、開発サーバー)ときは、`dir` をルートとして扱う。
+   * The project root of `dir` (found by ascending to VCS markers; `dir` itself if none; docs/dev/buffer-model.md §6).
+   * When absent (old shell, dev server), `dir` is treated as the root.
    */
   projectRoot?(dir: string): Promise<string>;
   /**
-   * `dir` が属する Git リポジトリの、ブランチ名(detached HEAD は短縮ハッシュ)。Git のルートがなければ null。
-   * 外部コマンドは使わず、シェルが `HEAD` を直接読む(docs/dev/buffer-model.md §6.9)。ない(古いシェル)ときは、出さない。
+   * The Git branch name of the repository `dir` belongs to (a short hash for detached HEAD). null if there is no Git root.
+   * No external command is used; the shell reads `HEAD` directly (docs/dev/buffer-model.md §6.9). When absent (old shell), nothing is shown.
    */
   vcsBranch?(dir: string): Promise<string | null>;
   /**
-   * Markdown を読む(絶対パス、`.md` のみ)。アクセスの判定はしない
-   * (利用者が打った・選んだパス、判定済みの外部要求、復元されたセッション)。
+   * Reads Markdown (absolute path, `.md` only). Does not judge access
+   * (paths the user typed or chose, already-judged external requests, restored sessions).
    */
   readFile(path: string): Promise<string>;
-  /** リンクやリソースが指すファイルの判定。警告パスなら、確認が要る。 */
+  /** Judgment of a file that a link or resource points to. A warn path needs confirmation. */
   checkAccess?(paths: string[]): Promise<Access[]>;
-  /** 確認を承認した: `remember` のパスを、記憶する(永続化)。シェルが提案したものだけが記憶される。 */
+  /** Confirmation approved: remember the `remember` path (persisted). Only paths the shell proposed are remembered. */
   allow?(remember: string): Promise<boolean>;
-  /** 記憶したパスの一覧と、取り消し(`forget-remembered-path`)。 */
+  /** List of remembered paths, and revocation (`forget-remembered-path`). */
   listRemembered?(): Promise<string[]>;
   forget?(path: string): Promise<boolean>;
-  /** 外部の URL の判定と、既定のブラウザで開く(判定は、開くときに、シェルがもう一度行う)。 */
+  /** Judgment of an external URL, and opening it in the default browser (the shell judges again when opening). */
   checkUrl?(url: string): Promise<UrlDecision>;
   openExternal?(url: string): Promise<boolean>;
-  /** 「always」: そのサイトを記憶する(確認が要ると答えた URL のオリジンだけ)。 */
+  /** "always": remember that site (only the origin of a URL that was answered as needing confirmation). */
   rememberSite?(url: string): Promise<boolean>;
-  /** 記憶したサイトの一覧と、取り消し(`forget-remembered-site`)。 */
+  /** List of remembered sites, and revocation (`forget-remembered-site`). */
   listRememberedSites?(): Promise<string[]>;
   forgetSite?(origin: string): Promise<boolean>;
-  /** フレーム(macOS のウィンドウ)の操作(`C-x 5 …`)。 */
+  /** Frame (macOS window) operations (`C-x 5 …`). */
   frame?(action: "make" | "delete" | "other" | "delete-others"): Promise<void>;
-  /** 表示中のファイル(絶対パス)の一覧。シェルは、これだけを監視する。 */
+  /** List of files being displayed (absolute paths). The shell watches only these. */
   watch?(paths: string[]): void;
-  /** 表示中のファイルの変更(`changed`)・削除(`deleted`)の通知。 */
+  /** Notifications of changes (`changed`) and deletions (`deleted`) of displayed files. */
   onFileChanged(callback: (path: string, state: "changed" | "deleted") => void): void;
-  /** 文書から参照されるローカル画像の URL(絶対パス → 読み込める URL)。判定はシェルが、読み込み時に行う。 */
+  /** URLs of local images referenced by a document (absolute path -> loadable URL). The shell judges at load time. */
   resolveResource?(path: string): string;
-  /** `dir` 以下の全文検索。エンジンはシェルが選ぶ。結果のパスは絶対パス。 */
+  /** Full-text search under `dir`. The shell chooses the engine. Result paths are absolute. */
   search?(dir: string, query: string, options?: SearchOptions): Promise<SearchResult>;
-  /** 外部(CLI・Emacs 連携)からの「開く」要求。 */
+  /** "Open" requests from outside (CLI / Emacs integration). */
   onOpen?(callback: (request: OpenRequest) => void): void;
-  /** 「開く」要求が期限切れなどで取り消された(確認待ちのミニバッファを閉じる)。 */
+  /** An "open" request was cancelled, e.g. by expiry (closes the minibuffer awaiting confirmation). */
   onOpenCancel?(callback: (id: string) => void): void;
   /**
-   * ビューアで指した場所(元の位置)を、エディタ連携のために記録する(「Emacs で編集」)。
-   * シェルが、ファイルの識別情報(ハッシュ等)を添えて保持し、エディタが `get-location` で取りに来る。
-   * 設定されていれば、シェルが、利用者の設定した固定のコマンドで、エディタを呼び出す。
+   * Records the place pointed at in the viewer (the original position) for editor integration ("Edit in Emacs").
+   * The shell keeps it with the file's identity information (hash, etc.), and the editor fetches it with `get-location`.
+   * If configured, the shell invokes the editor with a fixed command the user configured.
    */
   markLocation?(location: SourceLocation): Promise<MarkResult>;
-  /** シェルから、「エディタで編集」の操作(右クリックメニューなど)が選ばれた。 */
+  /** The shell reports that an "edit in editor" action (context menu, etc.) was chosen. */
   onEdit?(callback: () => void): void;
-  /** 位置の問い合わせ(`get-view`: いまの表示)への応答を登録する。 */
+  /** Registers a response to location queries (`get-view`: the current view). */
   onQuery?(callback: (op: string) => Promise<unknown>): void;
-  /** 「開く」要求への結果を返す(確認待ちを含む)。 */
+  /** Returns the result of an "open" request (including awaiting confirmation). */
   respond?(id: string, result: unknown): void;
   /**
-   * 警告パスのファイルを開く要求を、利用者が承認(または拒否)した。
-   * 承認されると、シェルが提案したパス(`OpenRequest.remember`)が記憶される。
-   * Web 側から、任意のパスを記憶させることはできない(承認できるのは、シェルが提案した要求の id だけ)。
-   * @returns 承認が受理されたか(受理されれば、読める)
+   * The user approved (or rejected) a request to open a file under a warn path.
+   * If approved, the path the shell proposed (`OpenRequest.remember`) is remembered.
+   * The Web side cannot make it remember an arbitrary path (it can only approve the id of a request the shell proposed).
+   * @returns whether the approval was accepted (if accepted, it can be read)
    */
   confirmOpen?(id: string, accepted: boolean): Promise<boolean>;
-  /** Web コアの準備ができた合図。これ以前に届いた要求は、この後に渡される。 */
+  /** Signal that the Web core is ready. Requests that arrived before this are delivered after it. */
   ready?(): void;
-  /** 診断ログ(開発用)。 */
+  /** Diagnostic log (for development). */
   log?(text: string): void;
 }
 
@@ -176,18 +176,18 @@ export interface SearchResult {
   results: SearchHit[];
   total: number;
   truncated: boolean;
-  /** 検索しなかった理由(起点が `~` や `/` のとき、など)。 */
+  /** Reason it did not search (when the origin is `~` or `/`, etc.). */
   refused?: string;
   error?: string;
 }
 
 export interface OpenRequest {
   id?: string;
-  /** 絶対パス。 */
+  /** Absolute path. */
   path: string;
-  /** 警告パスのファイルで、確認が要る。 */
+  /** A file under a warn path; needs confirmation. */
   confirm?: boolean;
-  /** 確認が承認されたら記憶するパス(シェルが提案する)。 */
+  /** Path to remember if the confirmation is approved (proposed by the shell). */
   remember?: string;
   line?: number;
   anchor?: string;

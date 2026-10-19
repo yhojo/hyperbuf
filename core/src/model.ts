@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 操作モデル(docs/dev/interaction-model.md)。DOM やシェルに依存しない純粋なロジック。
+// Operation model (docs/dev/interaction-model.md). Pure logic with no DOM or shell dependency.
 
 import { parseVirtualPath } from "./names.ts";
 import { dirname, joinPath } from "./paths.ts";
@@ -9,9 +9,9 @@ import { dirname, joinPath } from "./paths.ts";
 export interface Buffer {
   readonly path: string;
   text: string;
-  /** 内容が更新されるたびに増える。描画のやり直しの判定に使う。 */
+  /** Increases every time the content is updated. Used to decide whether to re-render. */
   version: number;
-  /** ファイルが削除された(または移動された)。バッファは残し、ヘッダに知らせる。 */
+  /** The file was deleted (or moved). The buffer is kept and the header says so. */
   missing?: boolean;
 }
 
@@ -35,13 +35,13 @@ export type LayoutNode =
       type: "split";
       dir: SplitDirection;
       children: [LayoutNode, LayoutNode];
-      /** 最初の子が占める割合(省略は 0.5)。 */
+      /** Fraction occupied by the first child (default 0.5 if omitted). */
       ratio?: number;
     };
 
 export interface Model {
   buffers: Map<string, Buffer>;
-  /** 最近使った順の buffer のパス。参照履歴とは別に管理する。 */
+  /** Buffer paths in most-recently-used order. Managed separately from the reference history. */
   mru: string[];
   winSeq: number;
   root: LayoutNode;
@@ -54,8 +54,8 @@ export interface LinkTarget {
 }
 
 /**
- * href を現在の文書(絶対パス)からの相対で解決して、絶対パスにする。外部 URL は null。
- * `/` で始まる href は、ファイルシステムの絶対パスとして扱う(プロジェクトという単位がないため)。
+ * Resolves an href relative to the current document (absolute path) into an absolute path. null for external URLs.
+ * An href starting with `/` is treated as an absolute file system path (there is no unit called a project).
  */
 export function resolveLink(fromPath: string, href: string): LinkTarget | null {
   if (/^[a-z][a-z0-9+.-]*:/i.test(href)) return null;
@@ -63,21 +63,21 @@ export function resolveLink(fromPath: string, href: string): LinkTarget | null {
   const pathPart = hash < 0 ? href : href.slice(0, hash);
   const anchor = hash < 0 ? null : href.slice(hash + 1);
   if (pathPart === "") return { path: fromPath, anchor };
-  // リンクの URL は、パーセントエンコードされている(日本語のファイル名など)ので、戻す
+  // Link URLs are percent-encoded (Japanese file names, etc.), so decode them
   let decoded = pathPart;
   try {
     decoded = decodeURIComponent(pathPart);
   } catch {
-    // 不正なエンコードは、そのまま使う
+    // Use an invalid encoding as is
   }
-  // 仮想 buffer(検索結果など)からの相対リンクは、起点のディレクトリ(なければ `/`)からとする
+  // A relative link from a virtual buffer (search results, etc.) is based on the origin directory (`/` if none)
   const base = isVirtualPath(fromPath)
     ? (parseVirtualPath(fromPath).dir ?? "/")
     : dirname(fromPath);
   return { path: joinPath(base, decoded), anchor };
 }
 
-/** ファイルに対応しない buffer(`*search: …*` など)のパスか。実在の `.md` のパスは、`*` で終わらない。 */
+/** Whether this is the path of a buffer that does not correspond to a file (such as `*search: …*`). A real `.md` path does not end with `*`. */
 export function isVirtualPath(path: string): boolean {
   return path.length >= 2 && path.startsWith("*") && path.endsWith("*");
 }
@@ -130,7 +130,7 @@ function touch(model: Model, path: string): void {
   model.mru = [path, ...model.mru.filter((p) => p !== path)];
 }
 
-/** buffer 切替(C-x b)・リンク・見出しジャンプはすべて履歴に積む。 */
+/** Buffer switches (C-x b), links and heading jumps are all pushed onto the history. */
 export function visit(model: Model, win: Win, path: string, anchor: string | null = null): void {
   const cur = currentEntry(win);
   if (cur && cur.path === path && cur.anchor === anchor) return;
@@ -141,8 +141,8 @@ export function visit(model: Model, win: Win, path: string, anchor: string | nul
 }
 
 /**
- * 外部(エディタ連携)から、位置つきで開く。表示中の文書と同じなら、履歴を積まずに、位置だけを置き換える
- * (Emacs で `goto-line` するのと同じ。開くたびに履歴が積み上がらない)。
+ * Opens from outside (editor integration) with a position. If it is the same as the displayed document, replaces only the position without pushing history
+ * (like `goto-line` in Emacs; history does not pile up with every open).
  */
 export function jump(model: Model, win: Win, path: string, anchor: string | null = null): void {
   const cur = currentEntry(win);
@@ -170,7 +170,7 @@ export function forward(model: Model, win: Win): boolean {
   return true;
 }
 
-/** 履歴の先頭へ移る(`C-a`)。すでに先頭なら false。 */
+/** Moves to the start of the history (`C-a`). false if already at the start. */
 export function backToStart(model: Model, win: Win): boolean {
   if (win.index <= 0) return false;
   win.index = 0;
@@ -179,7 +179,7 @@ export function backToStart(model: Model, win: Win): boolean {
   return true;
 }
 
-/** 履歴の最後へ移る(`C-e`)。すでに最後なら false。 */
+/** Moves to the end of the history (`C-e`). false if already at the end. */
 export function forwardToEnd(model: Model, win: Win): boolean {
   const last = win.history.length - 1;
   if (win.index >= last) return false;
@@ -226,8 +226,8 @@ function replaceChild(parent: LayoutNode, old: LayoutNode, next: LayoutNode): vo
 }
 
 /**
- * dir: "col"(上下に並べる = C-x 2) / "row"(左右に並べる = C-x 3)。
- * 新しい window には分割元の履歴を複製する。選択は分割元のまま。
+ * dir: "col" (stack vertically = C-x 2) / "row" (side by side = C-x 3).
+ * The new window gets a copy of the history of the window it was split from. The selection stays with the original.
  */
 export function split(model: Model, dir: SplitDirection): Win {
   const win = selectedWindow(model);
@@ -243,7 +243,7 @@ export function split(model: Model, dir: SplitDirection): Win {
 export const MIN_RATIO = 0.1;
 export const MAX_RATIO = 0.9;
 
-/** `win` を含む、`dir` の向きの分割のうち、最も内側のもの(`win` が最初の子の側か、も返す)。 */
+/** The innermost split in direction `dir` that contains `win` (also returns whether `win` is on the first child's side). */
 export function resizableSplit(
   model: Model,
   win: Win,
@@ -261,8 +261,8 @@ export function resizableSplit(
 }
 
 /**
- * `win` を、`dir` の向きに、分割全体の割合 `delta` だけ広げる(負なら狭める)。
- * 隣は、その分だけ縮む。広げる向きに分割がなければ false。
+ * Grows `win` in direction `dir` by `delta` of the whole split (shrinks if negative).
+ * The neighbor shrinks by that amount. false if there is no split in the growing direction.
  */
 export function resizeWindow(model: Model, win: Win, dir: SplitDirection, delta: number): boolean {
   const found = resizableSplit(model, win, dir);
@@ -273,8 +273,8 @@ export function resizeWindow(model: Model, win: Win, dir: SplitDirection, delta:
 }
 
 /**
- * `win` の下端(`col`)・右端(`row`)にある境界を持つ分割。`win` が画面の端なら null。
- * 内側の分割から順に、`win` を含む側が「上(左)」になっている最初のものを探す(モードラインのドラッグで動かす境界)。
+ * The split that has the boundary at the bottom (`col`) or right (`row`) edge of `win`. null if `win` is at the edge of the screen.
+ * Searching from the inner splits, finds the first one where the side containing `win` is "top (left)" (the boundary moved by dragging the mode line).
  */
 function boundaryAfter(
   model: Model,
@@ -292,10 +292,10 @@ function boundaryAfter(
   return null;
 }
 
-/** モードラインの下の境界(上下の分割)。 */
+/** The boundary below the mode line (vertical split). */
 export const boundaryBelow = (model: Model, win: Win) => boundaryAfter(model, win, "col");
 
-/** window の右の境界(左右の分割)。モードラインの右端のドラッグで動かす。 */
+/** The boundary at the right of a window (horizontal split). Moved by dragging the right end of the mode line. */
 export const boundaryRight = (model: Model, win: Win) => boundaryAfter(model, win, "row");
 
 export function clampRatio(r: number): number {
@@ -306,7 +306,7 @@ export function deleteWindow(model: Model): boolean {
   return removeWindow(model, selectedWindow(model));
 }
 
-/** window を取り除き、分割をたたむ。唯一の window は取り除けない(false)。選択中のものなら、隣に移る。 */
+/** Removes a window and collapses the split. The only window cannot be removed (false). If it was selected, selection moves to the neighbor. */
 export function removeWindow(model: Model, win: Win): boolean {
   const node = nodeOf(model, win);
   const parent = findParent(model.root, node);
@@ -324,17 +324,17 @@ export function deleteOthers(model: Model): void {
 }
 
 /**
- * buffer を閉じる。どの window の履歴からも、その buffer への参照を取り除く
- * (閉じた buffer を、Back / Forward で表示できなくなる、という状態を作らない)。
- * 閉じた buffer を表示していた window は、履歴の、ひとつ前の参照を表示する。
- * @returns 履歴が空になった window(表示するものがないので、呼び出し側が、別の buffer を開く)。
+ * Closes a buffer. Removes references to that buffer from every window's history
+ * (so it never creates a state where a closed buffer can be shown by Back / Forward).
+ * A window that was showing the closed buffer shows the previous reference in its history.
+ * @returns windows whose history became empty (nothing to show, so the caller opens another buffer).
  */
 export function killBuffer(model: Model, path: string): Win[] {
   model.buffers.delete(path);
   model.mru = model.mru.filter((p) => p !== path);
   const empty: Win[] = [];
   for (const win of windows(model)) {
-    // 現在位置(index)より前に残る参照の数から、新しい index を求める
+    // Compute the new index from the number of references remaining before the current position (index)
     let kept = 0;
     let newIndex = -1;
     const history: HistoryEntry[] = [];

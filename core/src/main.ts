@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// ブラウザ(WebView)でのエントリ。シェルが注入した `window.hyperbufHost` を使う。
-// 無ければ、開発サーバーの HTTP API を使う(開発用)。
+// Entry point in the browser (WebView). Uses the `window.hyperbufHost` injected by the shell.
+// If absent, uses the dev server's HTTP API (for development).
 
 import "github-markdown-css/github-markdown.css";
 import "katex/dist/katex.min.css";
@@ -17,18 +17,18 @@ import type { AppHandle } from "./ui/app.ts";
 
 declare global {
   interface Window {
-    /** シェルが注入する。 */
+    /** Injected by the shell. */
     hyperbufHost?: HyperbufHost;
-    /** 自動検証(統合テスト・ヘッドレス)用の入口。利用者向けの API ではない。 */
+    /** Entry point for automated verification (integration tests, headless). Not an API for users. */
     __hyperbuf?: AppHandle;
   }
 }
 
 const host = window.hyperbufHost ?? (await createDevHost());
-// starry-night は既定で外部 CDN から WASM を取得するため、同梱したファイルを指す(local first)
+// starry-night fetches WASM from an external CDN by default, so point it at the bundled file (local first)
 const renderer = await createRenderer({ onigUrl: new URL(onigWasm, import.meta.url) });
 window.__hyperbuf = await startApp({
-  // 文書を読んだら、描画の前に、そのコードブロックが使う大きな文法を用意する
+  // After reading the document, prepare the large grammars its code blocks use, before rendering
   host: {
     ...host,
     readFile: async (path: string) => {

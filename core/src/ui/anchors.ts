@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 描画された文書の中のアンカー(見出し・行・脚注)を探す。
+// Finds anchors (headings, lines, footnotes) in a rendered document.
 
-/** sanitize が id に付ける接頭辞。アプリの DOM との衝突を防ぐため、外してはならない。 */
+/** Prefix that sanitize adds to ids. Must not be removed, to avoid clashes with the app's DOM. */
 export const ID_PREFIX = "user-content-";
 
-/** "line:N" は、元の Markdown の N 行目(以前で最も近いブロック)を指す。 */
+/** "line:N" points to line N of the source Markdown (the nearest preceding block). */
 export function findAnchor(root: HTMLElement, anchor: string): HTMLElement | null {
   const m = /^line:(\d+)$/.exec(anchor);
   if (m) {
@@ -24,7 +24,7 @@ export function findAnchor(root: HTMLElement, anchor: string): HTMLElement | nul
   );
 }
 
-/** 画面の上端にあるブロックの、元の Markdown の行番号(モードラインの `L40`)。なければ null。 */
+/** Source Markdown line number of the block at the top of the screen (`L40` in the mode line). null if none. */
 export function topSourceLine(content: HTMLElement): number | null {
   let line: number | null = null;
   for (const el of content.querySelectorAll<HTMLElement>("[data-source-line]")) {
@@ -36,11 +36,11 @@ export function topSourceLine(content: HTMLElement): number | null {
 
 export interface VisibleAnchor {
   id: string;
-  /** 画面の上端が、その要素の上端から何 px 下か。 */
+  /** How many px the top of the screen is below the top of that element. */
   delta: number;
 }
 
-/** 画面の上端にいちばん近い(上側の) id つきの要素。外部更新後の位置の復元に使う。 */
+/** The (upper) element with an id closest to the top of the screen. Used to restore the position after an external update. */
 export function visibleAnchor(content: HTMLElement): VisibleAnchor | null {
   let best: VisibleAnchor | null = null;
   for (const el of content.querySelectorAll<HTMLElement>("[id]")) {
@@ -54,11 +54,11 @@ export function visibleAnchor(content: HTMLElement): VisibleAnchor | null {
 export interface HeadingElement {
   el: HTMLElement;
   level: number;
-  /** 文書(スクロールする要素)の中での、上端の位置。 */
+  /** Position of the top edge within the document (the scrolling element). */
   top: number;
 }
 
-/** 文書内の見出し要素を、先頭から順に。outline 風の移動に使う。 */
+/** Heading elements in the document, in order from the start. Used for outline-style navigation. */
 export function headingElements(content: HTMLElement): HeadingElement[] {
   return [...content.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,h6")].map((el) => ({
     el,
@@ -70,11 +70,11 @@ export function headingElements(content: HTMLElement): HeadingElement[] {
 export interface HeadingInfo {
   level: number;
   text: string;
-  /** 接頭辞を除いたアンカー(`path#id` のリンクで使う)。 */
+  /** The anchor without the prefix (used in `path#id` links). */
   id: string;
 }
 
-/** 見出しは描画後の DOM から取る(id は GitHub 方式で付くので、正規表現による解析とはずれ得る)。 */
+/** Headings are taken from the rendered DOM (ids follow the GitHub scheme, so they may differ from regex-based parsing). */
 export function headingsOf(content: HTMLElement): HeadingInfo[] {
   return [...content.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,h6")].map((h) => ({
     level: Number(h.tagName.slice(1)),

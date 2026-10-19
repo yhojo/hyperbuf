@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// セッションの保存(変更のたびに、少し待ってから書く)と、起動時の復元。
+// Saving the session (written after a short wait on each change) and restoring it at startup.
 
 import { createModel, killBuffer, removeWindow, windows } from "../model.ts";
 import {
@@ -16,13 +16,13 @@ import type { AppContext } from "./context.ts";
 import { ensureBuffer } from "./navigation.ts";
 import { captureSelection } from "./selection-state.ts";
 
-/** 変更から保存までの待ち(スクロールのたびに書かない)。docs/dev/session-restore.md §4 の表と同じ値にする。 */
+/** Wait from a change to saving (do not write on every scroll). Use the same value as the table in docs/dev/session-restore.md §4. */
 export const SAVE_DELAY_MS = 1000;
 
 export interface SessionSaver {
-  /** 変更があった。少し待って、保存する。 */
+  /** A change occurred. Wait a little, then save. */
   schedule(): void;
-  /** いますぐ保存する(終了の直前)。 */
+  /** Save right now (just before quitting). */
   flush(): Promise<void>;
 }
 
@@ -39,7 +39,7 @@ export function createSessionSaver(ctx: AppContext): SessionSaver {
     try {
       await ctx.host.saveSession?.(snapshot);
     } catch {
-      last = ""; // 保存できなかったので、次の機会に、もう一度書く
+      last = ""; // could not save, so write again next time
     }
   };
   return {
@@ -52,9 +52,9 @@ export function createSessionSaver(ctx: AppContext): SessionSaver {
 }
 
 /**
- * 前回のセッションを復元する。復元できたら、戻す選択範囲(なければ null)を返す(model を置き換え、
- * 文書を読み込んである。選択範囲は、描画のあとに、呼び出し側が戻す)。
- * 保存がない・壊れている・文書がすべてなくなった、のときは null(model は、そのまま)。
+ * Restores the previous session. If restored, returns the selection to put back (null if none) (replaces the model
+ * and has loaded the documents. The caller restores the selection after rendering).
+ * Returns null (model unchanged) when there is no saved data, it is broken, or all documents are gone.
  */
 export async function restoreSession(
   ctx: AppContext,
@@ -62,7 +62,7 @@ export async function restoreSession(
   const saved = await ctx.host.loadSession?.().catch(() => null);
   const snapshot = parseSnapshot(saved);
   if (!snapshot) return null;
-  // 文書が存在するかは、読んでみて分かる(読めなかったものは、下で履歴から外す)
+  // Whether a document exists is known by trying to read it (those that could not be read are removed from the history below)
   const restored = restoreModel(snapshot, () => true);
   if (!restored) return null;
   Object.assign(ctx.model, restored);
@@ -70,10 +70,10 @@ export async function restoreSession(
     try {
       await ensureBuffer(ctx, path);
     } catch {
-      killBuffer(ctx.model, path); // 読めなくなった文書は、履歴から外す
+      killBuffer(ctx.model, path); // a document that became unreadable is removed from the history
     }
   }
-  // 表示できる文書が残らなかった window は、取り除く(分割をたたむ)。すべてなくなれば、通常の起動
+  // Windows with no displayable document left are removed (collapsing the split). If none remain, a normal startup
   for (const win of windows(ctx.model)) {
     if (win.index < 0 && !removeWindow(ctx.model, win)) {
       Object.assign(ctx.model, createModel());

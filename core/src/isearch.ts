@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 文書内のインクリメンタル検索(C-s / C-r)の、検索の部分。DOM に依存しない純粋な関数。
+// The search part of incremental search in a document (C-s / C-r). A pure function with no DOM dependency.
 
-/** 検索語に大文字が含まれるときだけ、大文字小文字を区別する(Emacs の既定の動作)。 */
+/** Case-sensitive only when the query contains an uppercase letter (Emacs's default behavior). */
 export function isCaseSensitive(query: string): boolean {
   return query !== query.toLowerCase();
 }
 
-/** すべての一致の開始位置(重ならない一致。一致の末尾から、次を探す)。 */
+/** Start positions of all matches (non-overlapping; the next search continues from the end of a match). */
 export function findAll(text: string, query: string, caseSensitive: boolean): number[] {
   if (!query) return [];
   const haystack = caseSensitive ? text : text.toLowerCase();
@@ -24,15 +24,15 @@ export function findAll(text: string, query: string, caseSensitive: boolean): nu
 }
 
 export interface Step {
-  /** 選ぶ一致の、`matches` の中での番号。一致がなければ null。 */
+  /** Index in `matches` of the match to select. null if there are no matches. */
   index: number | null;
-  /** 端まで行って、反対の端に戻ったか(Emacs の "Wrapped")。 */
+  /** Whether the search reached an end and wrapped to the opposite end (Emacs's "Wrapped"). */
   wrapped: boolean;
 }
 
 /**
- * 次(direction = 1)または前(-1)の一致。`current` は、いま選んでいる一致の番号(なければ null)。
- * 端に着いたら、反対の端に戻る。
+ * The next (direction = 1) or previous (-1) match. `current` is the index of the currently selected match (null if none).
+ * On reaching an end, wraps to the opposite end.
  */
 export function step(count: number, current: number | null, direction: 1 | -1): Step {
   if (count === 0) return { index: null, wrapped: false };
@@ -44,8 +44,8 @@ export function step(count: number, current: number | null, direction: 1 | -1): 
 }
 
 /**
- * 入力が変わったとき(または、検索を始めたとき)に、最初に選ぶ一致: 基準の位置(`from`)以降の、最初の一致。
- * なければ、反対の端に戻る(wrapped)。方向が後ろ向きなら、`from` 以前の、最後の一致。
+ * The match to select first when the input changes (or when the search starts): the first match at or after the base position (`from`).
+ * If none, wraps to the opposite end (wrapped). If the direction is backward, the last match at or before `from`.
  */
 export function firstMatch(matches: readonly number[], from: number, direction: 1 | -1): Step {
   if (matches.length === 0) return { index: null, wrapped: false };

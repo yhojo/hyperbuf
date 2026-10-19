@@ -34,7 +34,7 @@ import Testing
             let name = item["name"] as? String ?? "?"
             // Those that cannot be read as the type (invalid precision, missing file) are unreadable. Value ranges
             // (line being 0, etc.) are checked by the schema
-            guard ["precision が不正", "file がない"].contains(name) else { continue }
+            guard ["invalid precision", "missing file"].contains(name) else { continue }
             let data = try JSONSerialization.data(withJSONObject: try #require(item["location"]))
             #expect(throws: (any Error).self, "\(name)") { try JSONDecoder().decode(LocationPayload.self, from: data) }
         }

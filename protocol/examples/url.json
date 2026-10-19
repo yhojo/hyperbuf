@@ -1,6 +1,6 @@
 [
   {
-    "name": "最小",
+    "name": "Minimal",
     "url": "hyperbuf://open?v=1&path=%2FUsers%2Fme%2Fa.md",
     "request": {
       "v": 1,
@@ -9,7 +9,7 @@
     }
   },
   {
-    "name": "行つき",
+    "name": "With a line",
     "url": "hyperbuf://open?v=1&path=%2FUsers%2Fme%2Fa.md&line=30",
     "request": {
       "v": 1,
@@ -19,7 +19,7 @@
     }
   },
   {
-    "name": "日本語のアンカー",
+    "name": "Japanese anchor",
     "url": "hyperbuf://open?v=1&path=%2FUsers%2Fme%2Fa.md&anchor=%E5%8F%82%E7%85%A7%E5%B1%A5%E6%AD%B4",
     "request": {
       "v": 1,
@@ -29,7 +29,7 @@
     }
   },
   {
-    "name": "特殊文字(& = # % +)を含むパス",
+    "name": "Path with special characters (& = # % +)",
     "url": "hyperbuf://open?v=1&path=%2FUsers%2Fme%2Fa%26b%3Dc%23d%25e%2Bf.md",
     "request": {
       "v": 1,
@@ -38,29 +38,29 @@
     }
   },
   {
-    "name": "ping(起動用)",
+    "name": "ping (for launching)",
     "url": "hyperbuf://ping",
     "request": {
       "op": "ping"
     }
   },
   {
-    "name": "v が数字でない",
+    "name": "v is not a number",
     "url": "hyperbuf://open?v=x&path=%2Fa.md",
     "error": "bad-request"
   },
   {
-    "name": "line が数字でない",
+    "name": "line is not a number",
     "url": "hyperbuf://open?v=1&path=%2Fa.md&line=abc",
     "error": "bad-request"
   },
   {
-    "name": "未知の操作",
+    "name": "Unknown operation",
     "url": "hyperbuf://delete?path=%2Ftmp%2Fx.md",
     "error": "unknown-op"
   },
   {
-    "name": "別のスキーム",
+    "name": "Another scheme",
     "url": "https://example.com/",
     "error": "bad-request"
   }

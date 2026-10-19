@@ -1,6 +1,6 @@
 [
   {
-    "name": "絶対パスと行(file:line)",
+    "name": "Absolute path and line (file:line)",
     "files": ["docs/a.md"],
     "cwd": "${TMP}",
     "args": ["${TMP}/docs/a.md:12"],
@@ -11,7 +11,7 @@
     }
   },
   {
-    "name": "相対パス(cwd から解決)",
+    "name": "Relative path (resolved from the cwd)",
     "files": ["docs/a.md"],
     "cwd": "${TMP}",
     "args": ["docs/a.md"],
@@ -21,7 +21,7 @@
     }
   },
   {
-    "name": "相対パス(. と .. を字句的に解決)",
+    "name": "Relative path (. and .. resolved lexically)",
     "files": ["docs/a.md"],
     "cwd": "${TMP}/docs",
     "args": ["../docs/./a.md"],
@@ -31,7 +31,7 @@
     }
   },
   {
-    "name": "file:line:col(桁は無視)",
+    "name": "file:line:col (the column is ignored)",
     "files": ["docs/a.md"],
     "cwd": "${TMP}",
     "args": ["docs/a.md:12:5"],
@@ -53,7 +53,7 @@
     }
   },
   {
-    "name": "--anchor(日本語)",
+    "name": "--anchor (Japanese)",
     "files": ["docs/a.md"],
     "cwd": "${TMP}",
     "args": ["--anchor", "参照履歴", "docs/a.md"],
@@ -75,7 +75,7 @@
     }
   },
   {
-    "name": "日本語のパスとスペース",
+    "name": "Japanese path and spaces",
     "files": ["文書/ハイパー バッファ.md"],
     "cwd": "${TMP}",
     "args": ["文書/ハイパー バッファ.md:3"],
@@ -86,7 +86,7 @@
     }
   },
   {
-    "name": "-- のあとは、ファイル名",
+    "name": "After --, file names",
     "files": ["docs/a.md"],
     "cwd": "${TMP}",
     "args": ["--", "docs/a.md"],
@@ -96,63 +96,63 @@
     }
   },
   {
-    "name": "引数なし",
+    "name": "No arguments",
     "files": [],
     "cwd": "${TMP}",
     "args": [],
     "exit": 1
   },
   {
-    "name": "未知のオプション",
+    "name": "Unknown option",
     "files": ["docs/a.md"],
     "cwd": "${TMP}",
     "args": ["--nope", "docs/a.md"],
     "exit": 1
   },
   {
-    "name": "--line が 0",
+    "name": "--line is 0",
     "files": ["docs/a.md"],
     "cwd": "${TMP}",
     "args": ["--line", "0", "docs/a.md"],
     "exit": 1
   },
   {
-    "name": "--line に値がない",
+    "name": "--line has no value",
     "files": ["docs/a.md"],
     "cwd": "${TMP}",
     "args": ["docs/a.md", "--line"],
     "exit": 1
   },
   {
-    "name": "--target が不正",
+    "name": "--target is invalid",
     "files": ["docs/a.md"],
     "cwd": "${TMP}",
     "args": ["--target", "bogus", "docs/a.md"],
     "exit": 1
   },
   {
-    "name": "複数ファイルに --line",
+    "name": "--line with several files",
     "files": ["docs/a.md", "docs/b.md"],
     "cwd": "${TMP}",
     "args": ["--line", "3", "docs/a.md", "docs/b.md"],
     "exit": 1
   },
   {
-    "name": "ファイルがない",
+    "name": "File does not exist",
     "files": [],
     "cwd": "${TMP}",
     "args": ["docs/missing.md"],
     "exit": 2
   },
   {
-    "name": ".md 以外",
+    "name": "Not .md",
     "files": ["docs/a.txt"],
     "cwd": "${TMP}",
     "args": ["docs/a.txt"],
     "exit": 2
   },
   {
-    "name": "ディレクトリ",
+    "name": "Directory",
     "files": ["docs/a.md"],
     "cwd": "${TMP}",
     "args": ["docs"],

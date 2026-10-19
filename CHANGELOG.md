@@ -12,6 +12,8 @@ Versions are not yet strictly semantic: 0.x releases may change behavior between
 - `C-x p g` (`project-find-regexp`): search all files under the project root (plain text for now; `.gitignore` is not read). `M-s g` still searches under the buffer's directory.
 - `C-x p b` (`project-switch-to-buffer`) and `C-x p k` (`project-kill-buffers`): switch to, or kill after confirming, the buffers of the current frame that belong to the same project root.
 
+- The mode line shows the current Git branch (the short hash for a detached HEAD) to the right of `[History N/M]` when the buffer's project root is a Git repository. It reads `.git/HEAD` directly and runs no external command, so the file's modification state is not shown. Set `modeLineVcsBranch` to `false` to hide it.
+
 ### Changed
 
 - The `THIRD-PARTY-NOTICES.txt` shown by `Show Third-Party Licenses` is now written in English, including its header and notes, in line with the rule that all text the app itself shows is English.

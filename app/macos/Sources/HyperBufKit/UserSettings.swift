@@ -39,6 +39,8 @@ public struct UserSettings: Sendable, Equatable {
     public var mathUnescapeUnderscore = true
     /// ファイルが外部で更新されたとき、変更箇所の先頭へスクロールするか。
     public var followUpdates = false
+    /// モードラインに、Git のブランチ名を出すか。docs/dev/buffer-model.md §6.9。
+    public var modeLineVcsBranch = true
     /// 外観(ライト / ダーク)。既定は、OS に従う。
     public var appearance = Appearance.system
     /// フレームの透明度(既定は、透過なし)。
@@ -69,6 +71,7 @@ public struct UserSettings: Sendable, Equatable {
         settings.restoreSession = flag("restoreSession", settings.restoreSession)
         settings.mathUnescapeUnderscore = flag("mathUnescapeUnderscore", settings.mathUnescapeUnderscore)
         settings.followUpdates = flag("followUpdates", settings.followUpdates)
+        settings.modeLineVcsBranch = flag("modeLineVcsBranch", settings.modeLineVcsBranch)
         if let raw = object["appearance"] {
             if let name = raw as? String, let value = Appearance(rawValue: name) {
                 settings.appearance = value

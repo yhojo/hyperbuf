@@ -53,6 +53,7 @@ export async function startApp(options: {
     renderer,
     resolveResource: host.resolveResource?.bind(host) ?? ((path) => path),
     home: host.home,
+    vcsBranch: host.vcsBranch?.bind(host),
     onSelect: (win) => {
       model.selected = win.id;
       views.refresh();
@@ -97,6 +98,7 @@ export async function startApp(options: {
   const config: HostConfig | undefined = await host.getConfig?.().catch(() => undefined);
   renderer.configure({ mathUnescapeUnderscore: config?.mathUnescapeUnderscore !== false });
   views.followUpdates = config?.followUpdates === true;
+  views.showVcsBranch = config?.modeLineVcsBranch !== false;
   const bindings = resolveBindings(config?.keybindings);
   const ctx: AppContext = {
     host,
@@ -128,6 +130,7 @@ export async function startApp(options: {
   // アプリがアクティブになったときに、表示中のファイルを照合する(監視で拾えない場合の保険)
   window.addEventListener("focus", () => {
     for (const path of watched) void revalidate(path);
+    views.refreshBranches();
   });
   // 復元の前に保存すると、前回の状態を消してしまう。復元(または、初期表示)のあとに始める
   if (useSession) {

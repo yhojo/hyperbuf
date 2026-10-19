@@ -59,10 +59,10 @@ import Testing
     }
 
     @Test func anchorLengthCountsCodePointsNotGraphemes() {
-        // 家族の絵文字は、書記素 1 つでも、コードポイントは 5 つ。41 個で 205 になり、200 を超えて拒否される
+        // A family emoji is one grapheme but five code points. 41 of them make 205, which exceeds 200 and is rejected
         let family = "👨‍👩‍👧"
         #expect(family.count == 1 && family.unicodeScalars.count == 5)
-        let longAnchor = String(repeating: family, count: 41)  // 書記素 41 個、コードポイント 205
+        let longAnchor = String(repeating: family, count: 41)  // 41 graphemes, 205 code points
         guard
             case .failure(let error) = OpenRequestValidator.validate(
                 path: "/a.md", line: nil, anchor: longAnchor, version: nil)

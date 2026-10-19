@@ -6,7 +6,8 @@ import Testing
 
 @testable import HyperBufProtocol
 
-/// protocol/examples/ の例を読む。同じ例を、Swift・CLI・Emacs・Node(JSON Schema)が共有する。
+/// Reads the examples in protocol/examples/. The same examples are shared by Swift, the CLI, Emacs and Node (JSON
+/// Schema).
 private func example(_ name: String) throws -> [[String: Any]] {
     let url = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
@@ -56,7 +57,7 @@ private func decodeRequest(_ object: [String: Any]) throws -> Request {
                 #expect(parsed.path == expected.path, "\(name)")
                 #expect(parsed.line == expected.line, "\(name)")
                 #expect(parsed.anchor == expected.anchor, "\(name)")
-                // 作った URL を、もう一度読むと、同じ要求になる
+                // Reading the built URL again yields the same request
                 if expected.op == RequestOperation.open.rawValue {
                     let rebuilt = try #require(OpenURL.make(expected), "\(name)")
                     guard case .success(let again) = OpenURL.parse(rebuilt) else {

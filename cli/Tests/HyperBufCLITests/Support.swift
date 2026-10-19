@@ -23,7 +23,7 @@ final class TempDir {
     func remove() { try? FileManager.default.removeItem(atPath: path) }
 }
 
-/// 標準出力・標準エラーの記録と、起動の記録。
+/// Records of stdout/stderr and of launches.
 final class Output: @unchecked Sendable {
     private let lock = NSLock()
     private var outLines: [String] = []
@@ -47,7 +47,7 @@ final class Output: @unchecked Sendable {
     fileprivate func recordLaunch(_ url: URL) { lock.withLock { launches.append(url) } }
 }
 
-/// 実際には起動せずに、起動の要求を記録する。
+/// Records the launch request instead of actually launching.
 struct RecordingLauncher: AppLauncher {
     let output: Output
     func launch(url: URL, activate: Bool) throws { output.recordLaunch(url) }

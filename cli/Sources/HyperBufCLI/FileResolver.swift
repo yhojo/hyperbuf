@@ -3,7 +3,7 @@
 
 import Foundation
 
-/// 引数の `FILE[:LINE[:COL]]` を、絶対パスと行に直す。ファイルの存在と、`.md` であることを確かめる。
+/// Turns the argument `FILE[:LINE[:COL]]` into an absolute path and a line. Checks the file exists and is `.md`.
 public enum FileResolver {
     public struct Resolved: Equatable, Sendable {
         public let path: String
@@ -14,12 +14,12 @@ public enum FileResolver {
         public let message: String
     }
 
-    /// `FILE:LINE:COL` の桁は、無視する(多くのツールの出力に合わせる)。
+    /// The column of `FILE:LINE:COL` is ignored (to match the output of many tools).
     private static let lineSuffix = try! NSRegularExpression(pattern: #"^(.+?):(\d+)(?::\d+)?$"#)
 
     public static func resolve(_ argument: String, cwd: String) -> Result<Resolved, Failure> {
         let fm = FileManager.default
-        // 名前そのものが、存在するファイルなら、それを優先する(a:12.md のような名前を壊さない)
+        // A file whose name itself exists takes priority (do not break names such as a:12.md)
         var raw = argument
         var line: Int?
         if !fm.fileExists(atPath: absolute(raw, cwd: cwd)) {
@@ -37,7 +37,7 @@ public enum FileResolver {
             return .failure(Failure(message: "No such file: \(argument)"))
         }
         if isDirectory.boolValue {
-            // ディレクトリは、その中の index.md、なければ README.md を開く(docs/dev/buffer-model.md §5.1)
+            // A directory opens its index.md, or README.md if absent (docs/dev/buffer-model.md §5.1)
             guard line == nil,
                 let index = ["index.md", "README.md"].map({ path + "/" + $0 }).first(where: {
                     var inner: ObjCBool = false
@@ -53,7 +53,7 @@ public enum FileResolver {
         return .success(Resolved(path: path, line: line))
     }
 
-    /// 相対パスを、cwd からの絶対パスにする。`.` と `..` は字句的に解決し、シンボリックリンクは解決しない。
+    /// Turns a relative path into an absolute path from cwd. `.` and `..` are resolved lexically; symlinks are not.
     static func absolute(_ path: String, cwd: String) -> String {
         let expanded = (path as NSString).expandingTildeInPath
         let url =

@@ -20,7 +20,7 @@ import Testing
     @Test func existingFileNamedLikeALineSuffixWins() throws {
         let t = try TempDir()
         defer { t.remove() }
-        try t.write("weird:12.md", "x")  // 名前そのものが存在するファイル
+        try t.write("weird:12.md", "x")  // a file whose name itself exists
         let r = try FileResolver.resolve("weird:12.md", cwd: t.path).get()
         #expect(r.path == t.path + "/weird:12.md")
         #expect(r.line == nil)
@@ -61,7 +61,7 @@ import Testing
         try t.write("real/a.md", "x")
         try FileManager.default.createSymbolicLink(
             atPath: t.path + "/link", withDestinationPath: t.path + "/real")
-        // シンボリックリンクは、解決しない(アプリ側が、解決後の位置で、範囲を判定する)
+        // Symlinks are not resolved (the app judges the scope at the resolved location)
         let r = try FileResolver.resolve("link/a.md", cwd: t.path).get()
         #expect(r.path == t.path + "/link/a.md")
     }

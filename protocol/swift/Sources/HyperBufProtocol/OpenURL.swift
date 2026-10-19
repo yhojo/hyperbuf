@@ -8,7 +8,7 @@ public enum OpenURL {
     public static func make(_ request: Request) -> URL? {
         var components = URLComponents()
         components.scheme = HyperBufProtocol.urlScheme
-        // ping は、アプリの起動だけ(CLI の初回起動)。ファイルは、ソケットで送る
+        // ping only launches the app (first launch of the CLI). Files are sent over the socket
         components.host = request.op == RequestOperation.ping.rawValue ? "ping" : "open"
         var items = [URLQueryItem(name: "v", value: String(request.v ?? HyperBufProtocol.version))]
         if let path = request.path { items.append(URLQueryItem(name: "path", value: path)) }
@@ -20,7 +20,8 @@ public enum OpenURL {
         return components.url
     }
 
-    /// URL から要求を作る。操作が `open` でない URL(ping を除く)は、未知の操作として扱う。
+    /// Builds a request from a URL. A URL whose operation is not `open` (except ping) is treated as an unknown
+    /// operation.
     public static func parse(_ url: URL) -> Result<Request, ProtocolError> {
         guard url.scheme == HyperBufProtocol.urlScheme else {
             return .failure(ProtocolError(.badRequest, "Unsupported URL"))

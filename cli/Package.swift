@@ -7,11 +7,11 @@ let package = Package(
     name: "hyperbuf-cli",
     platforms: [.macOS(.v14)],
     dependencies: [
-        // アプリと共有するプロトコルの型・検証と、ソケットのクライアント
+        // Protocol types and validation shared with the app, and the socket client
         .package(path: "../protocol/swift")
     ],
     targets: [
-        // 引数の解釈・要求の組み立て・アプリへの依頼。単体テストの対象。
+        // Argument parsing, request building and handing requests to the app. Covered by unit tests.
         .target(
             name: "HyperBufCLI",
             dependencies: [

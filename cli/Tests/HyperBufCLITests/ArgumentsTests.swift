@@ -16,7 +16,7 @@ import Testing
         #expect(Arguments.parse(["--help"]) == .success(.help))
         #expect(Arguments.parse(["-h"]) == .success(.help))
         #expect(Arguments.parse(["--version"]) == .success(.version))
-        // ファイルの指定がなくても、--help は使える
+        // --help works even without a file argument
         #expect(Arguments.parse(["a.md", "--help"]) == .success(.help))
     }
 

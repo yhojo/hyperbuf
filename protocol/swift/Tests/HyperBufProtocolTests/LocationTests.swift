@@ -14,7 +14,8 @@ import Testing
         return try #require(try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [[String: Any]])
     }
 
-    /// スキーマに合う例は、型として読める。合わない例の一部(型が違うもの)は、読めない。
+    /// Examples that match the schema can be read as the type. Some examples that do not match (wrong types) cannot be
+    /// read.
     @Test func validExamplesDecodeAndRoundTrip() throws {
         var decoded = 0
         for item in try examples() where item["valid"] as? Bool == true {
@@ -31,7 +32,8 @@ import Testing
     @Test func invalidExamplesWithWrongShapesDoNotDecode() throws {
         for item in try examples() where item["valid"] as? Bool == false {
             let name = item["name"] as? String ?? "?"
-            // 型として読めないもの(不正な precision、欠けた file)は、読めない。値の範囲(line が 0 など)は、スキーマ側の検査
+            // Those that cannot be read as the type (invalid precision, missing file) are unreadable. Value ranges
+            // (line being 0, etc.) are checked by the schema
             guard ["precision が不正", "file がない"].contains(name) else { continue }
             let data = try JSONSerialization.data(withJSONObject: try #require(item["location"]))
             #expect(throws: (any Error).self, "\(name)") { try JSONDecoder().decode(LocationPayload.self, from: data) }

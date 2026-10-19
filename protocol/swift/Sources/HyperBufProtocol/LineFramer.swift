@@ -3,7 +3,7 @@
 
 import Foundation
 
-/// 受け取ったバイト列を、JSON Lines の 1 行ごとに切り出す。1 行の上限を超えたら、エラーにする。
+/// Cuts the received bytes into JSON Lines, one line at a time. Fails with an error if the one-line limit is exceeded.
 public struct LineFramer: Sendable {
     public enum FramingError: Error, Equatable { case lineTooLong }
 
@@ -14,7 +14,7 @@ public struct LineFramer: Sendable {
         self.maxLineBytes = maxLineBytes
     }
 
-    /// バイト列を足して、完成した行(改行を除く)を返す。
+    /// Appends bytes and returns the completed lines (without the newline).
     public mutating func append(_ data: Data) throws -> [Data] {
         buffer.append(data)
         var lines: [Data] = []

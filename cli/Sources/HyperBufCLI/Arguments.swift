@@ -55,7 +55,7 @@ public enum Arguments {
           --line <N>         Position by line number (or use <file>:<line>)
           --anchor <ID>      Position by anchor, such as a heading
           --target <T>       Where to show: current (default) | split-right | split-below | new-frame
-          --wait             Wait up to 60 seconds for confirmation in the app (e.g. files outside the project) (default: 3)
+          --wait             Wait up to 60 seconds for confirmation in the app (e.g. files under a warn path) (default: 3)
           --no-activate      Do not bring the app to the front when launching it
           --print-url        Print the hyperbuf:// URL instead of opening it
           --version          Print the version

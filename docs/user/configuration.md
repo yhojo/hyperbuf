@@ -152,7 +152,7 @@
 - `editorCommand` がなければ、エディタは呼び出さず、位置を記録するだけです(メニューは `Record Location for Editor`。エディタで `M-x hyperbuf-visit-location`)。
 - 不正なコマンド(相対パス、存在しない、実行できない、配列でない、など)は、無視します(エディタは、呼び出しません)。
 
-連携の仕組みは [integration-protocol.md](../dev/integration-protocol.md) §15、Emacs 側は [`emacs/README.md`](../../emacs/README.md) にあります。
+連携の仕組みは [edit-location.md](../dev/edit-location.md)、Emacs 側は [`emacs/README.md`](../../emacs/README.md) にあります。
 
 ## キー割り当て(`keybindings`)
 

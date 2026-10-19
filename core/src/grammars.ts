@@ -2,7 +2,7 @@
 // Copyright 2026 Yasuo Hojo
 
 // シンタックスハイライトの文法(starry-night。GitHub と同じ TextMate の文法)の一覧。
-// 対応する言語・コードブロックの指定・拡張子の一覧は、docs/syntax-highlighting.md(`npm run languages` で、
+// 対応する言語・コードブロックの指定・拡張子の一覧は、docs/user/syntax-highlighting.md(`npm run languages` で、
 // ここから自動生成する)。
 //
 //  - EAGER: いつも含める。starry-night の `common`(34 言語)に、小さな文法を足したもの

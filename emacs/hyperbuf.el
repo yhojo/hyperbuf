@@ -38,7 +38,7 @@
 ;;   `hyperbuf-open-other-window' Same, in another viewer window (split)
 ;;   `hyperbuf-open-project-file' Pick a Markdown file of the project to open
 ;;
-;; Specification: docs/integration-protocol.md
+;; Specification: docs/dev/integration-protocol.md
 ;; Shared examples: protocol/examples/
 
 ;;; Code:
@@ -134,8 +134,8 @@ When visiting an older location, say so in the echo area."
 (defun hyperbuf--validate-open (path &optional line anchor version)
   "Validate the input of an `open' request.
 Return nil if valid, otherwise (CODE . MESSAGE).
-The rules are the same as the server's (docs/integration-protocol.md
-section 6)."
+The rules are the same as the server's (docs/dev/integration-protocol.md
+section 4.2)."
   (cond
    ((and version (/= version hyperbuf--protocol-version))
     (cons "unsupported-version" (format "Unsupported version (v=%s)" version)))
@@ -338,7 +338,7 @@ With WAIT (the prefix argument), wait longer for confirmation in the app."
 ;;    (`*hyperbuf-mismatch*').
 ;;  - After moving, the range is highlighted briefly and the text the viewer
 ;;    pointed at is shown.
-;; Specification: docs/integration-protocol.md section 10.
+;; Specification: docs/dev/edit-location.md section 6.
 ;; Shared examples: protocol/examples/location-check.json
 
 (defun hyperbuf--file-sha256 (path)

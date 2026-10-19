@@ -5,7 +5,7 @@ import Darwin
 import Foundation
 import HyperBufProtocol
 
-/// Unix ドメインソケットのサーバー(docs/integration-protocol.md §11)。
+/// Unix ドメインソケットのサーバー(docs/dev/integration-protocol.md §3)。
 ///  - ディレクトリ 0700 / ソケット 0600。接続ごとに、相手のユーザー ID が、アプリと同じかを確認する
 ///  - UTF-8 の JSON Lines(1 行 1 メッセージ、上限 1 MiB)。1 つの接続で複数の要求を、並行して処理できる
 ///  - 起動時、既存のソケットに接続できれば「すでに起動中」、できなければ古いソケットとして作り直す

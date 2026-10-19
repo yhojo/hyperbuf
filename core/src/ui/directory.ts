@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 基準のディレクトリ(Emacs の `default-directory`)と、バッファの名前。docs/buffer-model.md §3・§4。
+// 基準のディレクトリ(Emacs の `default-directory`)と、バッファの名前。docs/dev/buffer-model.md §3・§4。
 
 import { currentEntry, isVirtualPath, selectedWindow } from "../model.ts";
 import { parseVirtualPath, uniquifyNames } from "../names.ts";

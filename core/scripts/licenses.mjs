@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 同梱するサードパーティのライセンスの洗い出し(docs/migration-plan.md の M8)。
+// 同梱するサードパーティのライセンスの洗い出し(docs/history/migration-plan.md の M8)。
 //
 // 使い方:
-//   node scripts/licenses.mjs summary          docs/third-party-licenses.md を出力する(一覧)
+//   node scripts/licenses.mjs summary          docs/user/third-party-licenses.md を出力する(一覧)
 //   node scripts/licenses.mjs notices <出力先>   アプリに同梱する THIRD-PARTY-NOTICES(全文つき)を出力する
 //   node scripts/licenses.mjs check            許可するライセンスだけか、ライセンス文があるか、一覧が最新かを検査する
 //
@@ -148,7 +148,7 @@ async function collect() {
       const template = readFileSync(join(repo, "legal/MIT-template.txt"), "utf8");
       last.files = [
         {
-          file: "(補った MIT の文面)",
+          file: "(MIT license text supplied by HyperBuf)",
           text: template.replace("{{COPYRIGHT}}", override.copyright).trim(),
         },
       ];
@@ -181,12 +181,13 @@ function summary(data) {
   const gcounts = new Map();
   for (const g of data.grammars) gcounts.set(g.spdx, (gcounts.get(g.spdx) ?? 0) + g.files.length);
   const lines = [
-    "# サードパーティのライセンス(自動生成)",
+    "<!-- 自動生成: core/scripts/licenses.mjs。直接編集しない(`npm run licenses` で再生成する。`npm run check` が、最新かを検査する)。アプリに同梱する全文つきの `THIRD-PARTY-NOTICES.txt` は、`app/macos/scripts/make-app.sh` が、同じスクリプト(`notices`)で生成する -->",
     "",
-    "`node core/scripts/licenses.mjs summary` で生成する。**手で編集しない**(`npm run check` が、最新かを検査する)。",
-    "アプリに同梱する全文つきの `THIRD-PARTY-NOTICES` は、`app/macos/scripts/make-app.sh` が、同じスクリプトで生成する。",
+    "# サードパーティのライセンス",
     "",
-    "対象は、Web コア(`core/dist`)のバンドルに実際に入るもの。Swift 側(アプリ・CLI・プロトコル)は、サードパーティの依存を持たない。",
+    "HyperBuf が同梱している、サードパーティのソフトウェアのライセンスの一覧です。著作権表示とライセンスの全文は、アプリメニューの `Show Third-Party Licenses` で開く `THIRD-PARTY-NOTICES.txt`(アプリに同梱)で読めます。",
+    "",
+    "対象は、Web コア(`core/dist`)のバンドルに実際に入るものです。Swift 側(アプリ・CLI・プロトコル)は、サードパーティの依存を持ちません。",
     "",
     `## 集計(npm のパッケージ ${data.packages.length} 件)`,
     "",
@@ -227,11 +228,11 @@ function summary(data) {
 function notices(data) {
   const bar = "=".repeat(80);
   const out = [
-    "HyperBuf が同梱している、サードパーティのソフトウェアの著作権表示とライセンス",
+    "Copyright notices and licenses of the third-party software bundled with HyperBuf",
     "(THIRD-PARTY NOTICES)",
     "",
-    "HyperBuf は、下に挙げるソフトウェアを含んでいます。それぞれのライセンスの条件に従って、",
-    "著作権表示とライセンス文を、以下に再掲します。",
+    "HyperBuf includes the software listed below. In accordance with the terms of each",
+    "license, the copyright notices and license texts are reproduced below.",
     "",
   ];
   for (const p of data.packages) {
@@ -247,7 +248,7 @@ function notices(data) {
   }
   out.push(
     bar,
-    "starry-night の文法(TextMate grammars): バンドルに入ったものだけ",
+    "starry-night grammars (TextMate grammars): only those included in the bundle",
     "Source: https://github.com/wooorm/starry-night",
     "",
   );
@@ -282,7 +283,7 @@ function notices(data) {
 
 const [mode, target] = process.argv.slice(2);
 const data = await collect();
-const summaryFile = join(repo, "docs/third-party-licenses.md");
+const summaryFile = join(repo, "docs/user/third-party-licenses.md");
 
 if (mode === "summary") {
   writeFileSync(summaryFile, summary(data));
@@ -297,7 +298,7 @@ if (mode === "summary") {
   const current = existsSync(summaryFile) ? readFileSync(summaryFile, "utf8") : "";
   if (current !== summary(data))
     found.push(
-      "docs/third-party-licenses.md が古い(node scripts/licenses.mjs summary で生成し直す)",
+      "docs/user/third-party-licenses.md が古い(node scripts/licenses.mjs summary で生成し直す)",
     );
   for (const r of reviews) console.warn(`注意: ${r}`);
   if (found.length) {

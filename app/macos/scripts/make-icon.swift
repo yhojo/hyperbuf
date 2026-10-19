@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 // 代替のアイコン「分割した 2 つの window」(app/macos/Resources/alternatives/split-windows/)を、CoreGraphics で描いて生成する。
-// 既定のアイコンは、icon-from-image.swift が、元の画像(Resources/source/)から作る(docs/release.md)。
+// 既定のアイコンは、icon-from-image.swift が、元の画像(Resources/source/)から作る(docs/dev/release.md)。
 // 使い方: swift app/macos/scripts/make-icon.swift [出力のディレクトリ]   (既定: app/macos/Resources/alternatives/split-windows)
 //   → AppIcon.iconset/(各サイズの PNG)と AppIcon.icns を出力する。`iconutil` を使う(macOS 標準)。
 // 意匠: 暗い角丸の板の上に、分割した 2 つの window(buffer)。左は文書(見出しと本文、選択した一節とカーソル)、

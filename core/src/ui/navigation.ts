@@ -25,7 +25,7 @@ export async function openAt(
 }
 
 /**
- * リンクやリソースが指すファイルへのアクセスを確かめる(docs/file-access.md)。
+ * リンクやリソースが指すファイルへのアクセスを確かめる(docs/dev/file-access.md)。
  * 警告パスのファイルなら、ミニバッファで確認し、承認されたら、シェルに記憶させる。
  * @returns 開いてよいか
  */

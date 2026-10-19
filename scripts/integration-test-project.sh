@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Yasuo Hojo
 # 統合テスト(プロジェクト・ルート): 実際の HyperBuf.app(デバッグビルド、WKWebView)で、
-#   C-x p f / C-x p g / C-x p b / C-x p k と、M-s g(基準のディレクトリ)を検査する。docs/buffer-model.md §6。
+#   C-x p f / C-x p g / C-x p b / C-x p k と、M-s g(基準のディレクトリ)を検査する。docs/dev/buffer-model.md §6。
 #   VCS の目印のさかのぼり(.git ディレクトリ・.git ファイル)、目印がないときの default-directory、
 #   projectIgnorePaths、プロジェクトごとのバッファの切替・一括 kill。
 # キー入力は、ページ内で KeyboardEvent を発行する。GUI セッションが要る。

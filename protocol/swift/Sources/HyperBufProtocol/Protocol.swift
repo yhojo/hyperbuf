@@ -3,7 +3,7 @@
 
 import Foundation
 
-/// HyperBuf の連携プロトコル(docs/integration-protocol.md §4・§11)。
+/// HyperBuf の連携プロトコル(docs/dev/integration-protocol.md §3・§4)。
 public enum HyperBufProtocol {
     /// プロトコルのバージョン。要求の `v` が省略されたときは、これとみなす。
     public static let version = 1

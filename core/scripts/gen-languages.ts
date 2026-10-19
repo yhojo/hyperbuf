@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// docs/syntax-highlighting.md を、文法の一覧(src/grammars.ts)から生成する。
+// docs/user/syntax-highlighting.md を、文法の一覧(src/grammars.ts)から生成する。
 // 使い方: node scripts/gen-languages.ts          生成して、書き込む
 //         node scripts/gen-languages.ts --check  最新か、検査する(違えば、終了コード 1)
 
@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import type { Grammar } from "@wooorm/starry-night";
 import { EAGER, LAZY } from "../src/grammars.ts";
 
-const target = new URL("../../docs/syntax-highlighting.md", import.meta.url);
+const target = new URL("../../docs/user/syntax-highlighting.md", import.meta.url);
 
 const lazyGrammars = await Promise.all(LAZY.map((g) => g.load()));
 const lazyScopes = new Set(lazyGrammars.map((g) => g.scopeName));
@@ -33,12 +33,12 @@ const generated = `<!-- 自動生成: core/scripts/gen-languages.ts。直接編�
 
 # シンタックスハイライト
 
-コードブロックの言語の指定(\` \`\`\`elisp \`)で、GitHub と同じ文法(starry-night)で着色します。
+コードブロックの言語の指定(\` \`\`\`elisp \`)で、GitHub と同じ文法(starry-night)で着色します。${rows.length} 言語に対応しています。
 指定には、下の「指定できる名前」のどれか(大文字小文字は区別しない)か、拡張子(\` \`\`\`.el \`)を使えます。
 言語の指定がない、または一覧にない場合は、着色しません(文書は、そのまま表示されます)。
 \`mermaid\` は着色ではなく、図として描画します。
 
-「必要時に読込」の言語は、文法が大きいため、その言語のコードブロックがある文書を開いたときだけ読み込みます。
+「文法の読込」は、文法をいつ読み込むかを表します。「必要時に読込」の言語は、文法が大きいため、その言語のコードブロックがある文書を開いたときだけ読み込みます(初めて開くときに、わずかに時間がかかることがあります)。
 
 | 指定できる名前 | 拡張子 | 文法の読込 |
 | --- | --- | --- |
@@ -55,7 +55,7 @@ if (process.argv.includes("--check")) {
   })();
   if (current !== generated) {
     console.error(
-      "docs/syntax-highlighting.md が、コードと食い違っています。node scripts/gen-languages.ts で、再生成してください。",
+      "docs/user/syntax-highlighting.md が、コードと食い違っています。node scripts/gen-languages.ts で、再生成してください。",
     );
     process.exit(1);
   }

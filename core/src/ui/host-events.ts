@@ -42,7 +42,7 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
     echo.message("Integration: request timed out");
   });
 
-  // 外部(CLI・Emacs 連携)からの「開く」要求。docs/integration-protocol.md
+  // 外部(CLI・Emacs 連携)からの「開く」要求。docs/dev/integration-protocol.md
   host.onOpen?.(async (req: OpenRequest) => {
     const respond = (result: unknown): void => {
       if (req.id) host.respond?.(req.id, result);
@@ -54,7 +54,7 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
     };
     if (req.error) return fail("bad-request", req.error);
     if (req.confirm) {
-      // 警告パスのファイルは、ダイアログではなくミニバッファで確認する(docs/file-access.md)。
+      // 警告パスのファイルは、ダイアログではなくミニバッファで確認する(docs/dev/file-access.md)。
       // 承認されたら、シェルが提案したパスが記憶される(永続化される)。
       const where = req.remember ? `Remember ${abbreviateHome(req.remember, host.home)} and ` : "";
       confirming = req.id ?? null;

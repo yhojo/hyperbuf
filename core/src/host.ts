@@ -4,7 +4,7 @@
 /**
  * シェル(macOS アプリなど)と Web コアの境界。シェルは `window.hyperbufHost` として注入する。
  * Web コアは、これ以外の方法でシェルの機能を使わない。
- * 契約の詳細: docs/integration-protocol.md、docs/poc-navigation-results.md
+ * 契約の詳細: docs/dev/integration-protocol.md、docs/history/poc-navigation-results.md
  */
 import type { SourceLocation } from "./locate.ts";
 
@@ -57,14 +57,14 @@ export interface TreeListing {
 }
 
 /**
- * ファイルへのアクセスの判定(docs/file-access.md)。
+ * ファイルへのアクセスの判定(docs/dev/file-access.md)。
  *  - allow: そのまま読める
  *  - confirm: 警告パスのファイル。利用者の確認が要る(承認されたら `remember` のパスを記憶する)
  */
 export type Access = { access: "allow" } | { access: "confirm"; remember: string };
 
 /**
- * 文書のリンク(外部の URL)の判定(docs/configuration.md の `trustedUrls`)。
+ * 文書のリンク(外部の URL)の判定(docs/user/configuration.md の `trustedUrls`)。
  *  - open: そのまま、ブラウザで開いてよい(`trustedUrls` に合う、または、記憶したサイト)
  *  - confirm: 利用者に確認する。`origin` は、「always」で記憶する単位(mailto では、ない)
  *  - deny: 開かない(`http` / `https` / `mailto` 以外、ユーザー名・パスワードを含む URL など)
@@ -91,7 +91,7 @@ export interface HyperbufHost {
   /** ディレクトリ以下の `.md` の再帰の一覧(隠しファイルと node_modules を除く)。守りはシェルが行う。 */
   listTree(dir: string): Promise<TreeListing>;
   /**
-   * `dir` のプロジェクト・ルート(VCS の目印をさかのぼって求める。なければ `dir` 自身。docs/buffer-model.md §6)。
+   * `dir` のプロジェクト・ルート(VCS の目印をさかのぼって求める。なければ `dir` 自身。docs/dev/buffer-model.md §6)。
    * ない(古いシェル、開発サーバー)ときは、`dir` をルートとして扱う。
    */
   projectRoot?(dir: string): Promise<string>;

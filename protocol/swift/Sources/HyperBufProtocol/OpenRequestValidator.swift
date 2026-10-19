@@ -10,7 +10,7 @@ public struct ValidatedOpen: Sendable, Equatable {
     public let anchor: String?
 }
 
-/// `open` 要求の入力検証。URL 経由とソケット経由で、同じ規則を使う(docs/integration-protocol.md §6・§11.6)。
+/// `open` 要求の入力検証。URL 経由とソケット経由で、同じ規則を使う(docs/dev/integration-protocol.md §4.2・§3.6)。
 public enum OpenRequestValidator {
     public static func validate(
         path: String?, line: Int?, anchor: String?, version: Int?

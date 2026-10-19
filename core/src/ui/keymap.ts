@@ -8,7 +8,7 @@ import type { BindingsResult, Overrides } from "../keybindings.ts";
 import { COMMAND_NAMES } from "./commands.ts";
 import type { CommandName } from "./commands.ts";
 
-/** 標準のキー割り当て。docs/interaction-model.md。利用者の設定での上書きは M3。 */
+/** 標準のキー割り当て。docs/dev/interaction-model.md。利用者の設定での上書きは M3。 */
 export const DEFAULT_BINDINGS: Readonly<Record<string, CommandName>> = {
   "C-x 2": "split-below",
   "C-x 3": "split-right",

@@ -6,7 +6,7 @@ import HyperBufCLI
 import HyperBufIPC
 import HyperBufProtocol
 
-// hyperbuf コマンド。仕様: docs/integration-protocol.md
+// hyperbuf コマンド。仕様: docs/dev/integration-protocol.md
 let environment = ProcessInfo.processInfo.environment
 
 // 開発・テスト用の差し替え: HYPERBUF_SOCKET_PATH(ソケット)、HYPERBUF_APP(.app のパス)

@@ -3,7 +3,7 @@
 
 import Foundation
 
-/// 終了コード(docs/integration-protocol.md §11.4)。
+/// 終了コード(docs/dev/integration-protocol.md §6.1)。
 public enum ExitCode: Int32, Sendable {
     case success = 0
     /// 使い方の誤り。

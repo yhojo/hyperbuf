@@ -5,7 +5,7 @@ import AppKit
 import HyperBufKit
 import HyperBufProtocol
 
-/// 外部(ソケット・URL スキーム)からの「開く」要求の流れ。docs/integration-protocol.md、docs/file-access.md §2。
+/// 外部(ソケット・URL スキーム)からの「開く」要求の流れ。docs/dev/integration-protocol.md、docs/dev/file-access.md §2。
 ///
 ///  1. 入力を検証する(`OpenRequestValidator`)
 ///  2. ファイルシステムと判定(許可 / 警告パス)に照らして分類する。URL スキーム経由は、起点を特定できないので、

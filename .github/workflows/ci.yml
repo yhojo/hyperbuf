@@ -16,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: scripts/check.sh license
+      - run: scripts/check.sh version
 
   core:
     runs-on: ubuntu-latest

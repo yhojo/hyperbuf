@@ -8,7 +8,7 @@ import HyperBufProtocol
 import WebKit
 
 /// 1 つのフレーム(macOS のウィンドウ)の状態。ファイルアクセス、ファイルの監視、Web コアとのやり取りを持つ。
-/// 各フレームは、独立した作業場(自分のバッファ・履歴・分割を、Web コアの中に持つ)。docs/buffer-model.md §7。
+/// 各フレームは、独立した作業場(自分のバッファ・履歴・分割を、Web コアの中に持つ)。docs/dev/buffer-model.md §7。
 @MainActor
 final class FrameSession: Identifiable {
     let id = UUID()

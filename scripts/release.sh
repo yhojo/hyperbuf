@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Yasuo Hojo
 # リリースの成果物を作る: Developer ID 署名 → 公証 → ステープル → .zip / .dmg → チェックサム。
-# 手順と前提: docs/release.md
+# 手順と前提: docs/dev/release.md
 #
 # 使い方:
 #   scripts/release.sh --dry-run   ad-hoc 署名で、組み立てとパッケージ化だけを試す(公証しない。配布しない)
@@ -47,7 +47,7 @@ else
     identity="$found"
   fi
   [ -n "${HYPERBUF_NOTARY_PROFILE:-}" ] \
-    || die "HYPERBUF_NOTARY_PROFILE がありません(公証の認証情報の保存名。docs/release.md の手順 2)"
+    || die "HYPERBUF_NOTARY_PROFILE がありません(公証の認証情報の保存名。docs/dev/release.md の手順 2)"
   xcrun notarytool history --keychain-profile "$HYPERBUF_NOTARY_PROFILE" >/dev/null 2>&1 \
     || die "公証のプロファイル「$HYPERBUF_NOTARY_PROFILE」を使えません(xcrun notarytool store-credentials で作ります)"
   timestamp="--timestamp"
@@ -55,8 +55,9 @@ fi
 echo "バージョン: $version / 署名: $identity / 出力: $out"
 
 # --- 検査と組み立て ---------------------------------------------------------------------------------
-step "検査(ライセンス表記・ライセンスの一覧)"
+step "検査(ライセンス表記・バージョンの表記・ライセンスの一覧)"
 scripts/check.sh license
+scripts/check.sh version
 (cd core && npm ci --silent && node scripts/licenses.mjs check)
 
 step "組み立て(release ビルド)"
@@ -108,7 +109,7 @@ ln -s /Applications "$stage/Applications"
 cp LICENSE "$stage/LICENSE.txt"
 cp NOTICE "$stage/NOTICE.txt"
 cp CHANGELOG.md "$stage/CHANGELOG.md"
-cp app/macos/Resources/dmg/README.md "$stage/README.md"
+cp docs/user/getting-started.md "$stage/README.md"
 # Emacs 連携(GPL-3.0-or-later。アプリとは別のプログラムとして、ライセンスを添えて同梱する)
 mkdir "$stage/emacs"
 cp emacs/hyperbuf.el emacs/README.md emacs/LICENSE "$stage/emacs/"

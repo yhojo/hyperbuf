@@ -1,5 +1,7 @@
 # Interaction PoC 結果
 
+> **当時の記録(Interaction PoC)。** 書き換えない。現行の操作モデルは [interaction-model.md](../dev/interaction-model.md)、構成は [architecture.md](../dev/architecture.md)。文書名と節番号の対応は [README.md](README.md)。
+
 状態: **結果報告・決定済み** — 実施日 2026-10-08。macOS 向けシェルは **SwiftUI + WKWebView** に決定(§6)。
 
 ## 1. 目的と範囲

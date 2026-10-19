@@ -3,7 +3,7 @@
 
 /**
  * 2 つのテキストを比べて、最初に違う行(1 始まり)を返す。同じなら null。
- * 末尾に足されただけなら、足された最初の行になる(外部更新への追従: docs/configuration.md の followUpdates)。
+ * 末尾に足されただけなら、足された最初の行になる(外部更新への追従: docs/user/configuration.md の followUpdates)。
  */
 export function firstChangedLine(before: string, after: string): number | null {
   if (before === after) return null;

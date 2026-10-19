@@ -1,6 +1,6 @@
 # ファイルのアクセス判定
 
-HyperBuf が、どのファイルを確認なしで開き、どのファイルを確認してから開くかの規則。バッファの概念は [buffer-model.md](buffer-model.md)、設定キーの一覧は [configuration.md](configuration.md)、外部連携(ソケット・URL スキーム)の契約は [integration-protocol.md](integration-protocol.md)。
+HyperBuf が、どのファイルを確認なしで開き、どのファイルを確認してから開くかの規則。バッファの概念は [buffer-model.md](buffer-model.md)、設定キーの一覧は [configuration.md](../user/configuration.md)、外部連携(ソケット・URL スキーム)の契約は [integration-protocol.md](integration-protocol.md)。
 
 ## 1. 方針
 
@@ -27,7 +27,7 @@ HyperBuf は、ビューアとして**任意の場所の Markdown を読める**
 | リンクのクリック、リソース                         | パスの規則(§3)だけで判定する                                           |
 | `C-x C-f`、ミニバッファで打ったパス                | 判定しない(利用者の意思)                                               |
 
-**注: CLI の初回起動。** CLI は、アプリが起動していないとき、`hyperbuf://ping`(起動だけ)でアプリを起動し、ソケットが現れるまで待ってから、ソケットで「開く」要求を送る。CLI と Emacs の要求は、すべてソケットを通る。URL スキームは、アプリの起動と、外部リンクからの「開く」だけに使う。最初のファイルを URL で渡して起動する方式にすると、起動のたびに URL スキームの確認が出てしまうため、この形にしている。
+**注: CLI の初回起動。** CLI は、アプリが起動していないとき、`hyperbuf://ping`(起動だけ)でアプリを起動し、ソケットが現れるまで待ってから、ソケットで「開く」要求を送る。CLI の要求は、すべてソケットを通る。URL スキームは、アプリの起動と、外部リンクからの「開く」に使う(Emacs 連携は、アプリが未起動のときに限り、開く要求の URL で起動する。[integration-protocol.md](integration-protocol.md) §7)。最初のファイルを URL で渡して起動する方式にすると、起動のたびに URL スキームの確認が出てしまうため、この形にしている。
 
 確認は、**行き先のフレーム**のミニバッファに出る(外部からの「開く」の行き先は、最後にアクティブだったフレーム。[buffer-model.md](buffer-model.md) §7)。
 
@@ -89,4 +89,4 @@ HyperBuf は、ビューアとして**任意の場所の Markdown を読める**
 
 - `warnPaths` は、書いたら既定の一覧を**置き換える**。`[]` で警告なし。`allowPaths` も同じ。
 - `~` は展開する。絶対パスでないもの、型が違うものは、無視して理由を `C-h b` の「設定の問題」に出す。
-- キーの一覧は [configuration.md](configuration.md)。
+- キーの一覧は [configuration.md](../user/configuration.md)。

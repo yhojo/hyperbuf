@@ -3,7 +3,7 @@
 
 import Foundation
 
-/// 文書のリンク(外部の URL)を、ブラウザで開くかの判定(docs/configuration.md の `trustedUrls`)。
+/// 文書のリンク(外部の URL)を、ブラウザで開くかの判定(docs/user/configuration.md の `trustedUrls`)。
 ///
 /// 段階的に緩める設計:
 ///  1. 既定は、確認する(URL 全体をミニバッファに出して、利用者が yes / no / always を選ぶ)

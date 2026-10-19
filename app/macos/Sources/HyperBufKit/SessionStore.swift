@@ -3,7 +3,7 @@
 
 import Foundation
 
-/// セッション(フレームの並び。docs/buffer-model.md §9)の保存先。全体で 1 つのファイル。
+/// セッション(フレームの並び。docs/dev/buffer-model.md §9)の保存先。全体で 1 つのファイル。
 ///
 /// 守ること:
 ///  - 保存するのは、Web コアが作った、パスと位置だけのデータ(文書の内容は含まない)。大きさを制限する
@@ -11,9 +11,9 @@ import Foundation
 ///  - 保存先は 0600、置き場所のディレクトリは 0700(利用者の作業の記録なので)
 ///  - 書き込みは、一時ファイルに書いてから置き換える(途中の状態を見せない)
 public struct SessionStore: Sendable {
-    /// 保存するデータの最大の大きさ(バイト)。
+    /// 保存するデータの最大の大きさ(バイト)。docs/dev/session-restore.md §4 の表と同じ値にする。
     public static let maxBytes = 4_000_000
-    /// フレームの数の上限(`Cmd-1` … `Cmd-9`)。
+    /// フレームの数の上限(`Cmd-1` … `Cmd-9`)。docs/dev/session-restore.md §4 の表と同じ値にする。
     public static let maxFrames = 9
 
     public static func standardDirectory() -> URL {

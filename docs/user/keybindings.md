@@ -1,0 +1,115 @@
+<!-- 自動生成: core/scripts/gen-keybindings.ts。直接編集しない(コードの変更に合わせて、再生成する) -->
+
+# Key bindings
+
+The default key bindings of HyperBuf, grouped by function. `C-h b` in the app shows the same commands (in alphabetical order, with any configuration problems).
+Every command can also be run by name with `M-x`.
+
+Bindings can be changed with `keybindings` in `config.json` (`null` removes a default binding); see [configuration.md](configuration.md).
+For an introduction to the basic operations, see [getting-started.md](getting-started.md).
+
+## Files and buffers
+
+| Key | Command | Description |
+| --- | --- | --- |
+| `C-x C-f` | `find-file` | Visit a file (path completion starting at the base directory; RET enters a directory; ~/, ../ and absolute paths also work) |
+| `C-x p f` | `project-find-file` | Visit a Markdown file from a recursive list under the base directory (../, ~/ and absolute paths change the base) |
+| `C-x b` | `switch-buffer` | Switch to a buffer chosen from the open buffers (most recently used first) |
+| `C-x k` | `kill-buffer` | Kill a buffer (its references are removed from every window's history) |
+| `C-x p b` | `project-switch-to-buffer` | Switch to a buffer of the current project (same project root; most recently used first) |
+| `C-x p k` | `project-kill-buffers` | Kill all buffers of the current project (same project root) after confirming |
+
+## Reference history and links
+
+| Key | Command | Description |
+| --- | --- | --- |
+| `C-b`, `left`, `s-[` | `back` | Go back in reference history |
+| `C-f`, `right`, `s-]` | `forward` | Go forward in reference history |
+| `TAB` | `next-link` | Select the next link |
+| `S-TAB` | `prev-link` | Select the previous link |
+| `RET` | `follow-link` | Follow the selected link |
+
+## Scrolling and position
+
+| Key | Command | Description |
+| --- | --- | --- |
+| `C-n` | `scroll-line-down` | Scroll down one line |
+| `C-p` | `scroll-line-up` | Scroll up one line |
+| `C-v`, `SPC` | `scroll-page-down` | Scroll down one screen |
+| `DEL`, `M-v`, `S-SPC` | `scroll-page-up` | Scroll up one screen |
+| `M-<` | `beginning-of-document` | Go to the beginning of the document |
+| `M->` | `end-of-document` | Go to the end of the document |
+| `M-g g` | `goto-line` | Go to a line number of the source Markdown |
+
+## Headings
+
+| Key | Command | Description |
+| --- | --- | --- |
+| `C-c C-n` | `next-heading` | Go to the next heading (not pushed onto reference history) |
+| `C-c C-p` | `previous-heading` | Go to the previous heading (the current section's heading if in the middle of one) |
+| `C-c C-u` | `up-heading` | Go up to the parent heading |
+| `C-c C-f` | `forward-same-level` | Go to the next heading at the same level (does not cross parents) |
+| `C-c C-b` | `backward-same-level` | Go to the previous heading at the same level (does not cross parents) |
+| `C-c j` | `goto-heading` | Go to a heading chosen from a list |
+
+## Search
+
+| Key | Command | Description |
+| --- | --- | --- |
+| `C-s` | `isearch-forward` | Search the document incrementally (C-s next, C-r previous, RET accept, C-g cancel) |
+| `C-r` | `isearch-backward` | Search the document incrementally, backward |
+| `M-s g` | `search-project` | Search all files under the base directory and show the results in a virtual buffer |
+| `C-x p g` | `project-find-regexp` | Search all files under the project root (the nearest ancestor with .git/.hg/…, or the base directory) and show the results in a virtual buffer (plain text, case-insensitive for ASCII; .gitignore is not read) |
+
+## Windows
+
+| Key | Command | Description |
+| --- | --- | --- |
+| `C-x 2` | `split-below` | Split the window above and below (history is copied) |
+| `C-x 3` | `split-right` | Split the window side by side (history is copied) |
+| `C-x 0` | `delete-window` | Delete the selected window |
+| `C-x 1` | `delete-other-windows` | Make the selected window fill the frame |
+| `C-x o` | `other-window` | Select the next window |
+| `C-x ^` | `enlarge-window` | Make the selected window taller (its neighbour shrinks) |
+| `C-x -` | `shrink-window-if-larger-than-buffer` | Shrink the selected window to fit its document if it is taller than the document |
+| `C-x }` | `enlarge-window-horizontally` | Make the selected window wider (its neighbour shrinks) |
+| `C-x {` | `shrink-window-horizontally` | Make the selected window narrower (its neighbour grows) |
+
+## Frames
+
+| Key | Command | Description |
+| --- | --- | --- |
+| `C-x 5 2` | `make-frame` | Make a new frame (a macOS window), numbered with the smallest free number (Cmd-1...) |
+| `C-x 5 0` | `delete-frame` | Delete this frame (quits the app if it is the last one) |
+| `C-x 5 o` | `other-frame` | Select the next frame |
+| `C-x 5 1` | `delete-other-frames` | Delete all other frames |
+
+## Document tools
+
+| Key | Command | Description |
+| --- | --- | --- |
+| `M-=` | `count-words` | Count the lines, words and characters of the selected text (or of the whole document) as displayed |
+| `C-x x u` | `toggle-follow-updates` | Toggle jumping to the first changed place when a file is updated externally (off by default; [Follow] in the mode line) |
+| `C-c e` | `edit-in-editor` | Record the location at point (selection, right-click or top of the screen) for editing in the editor |
+
+## Remembered locations
+
+| Key | Command | Description |
+| --- | --- | --- |
+| (unbound; use `M-x`) | `forget-remembered-path` | Forget a location approved and remembered under a warn path (it will be confirmed again) |
+| (unbound; use `M-x`) | `forget-remembered-site` | Forget a site remembered with "always" for opening in the browser (it will be confirmed again) |
+
+## Commands and help
+
+| Key | Command | Description |
+| --- | --- | --- |
+| `M-x` | `execute-command` | Execute a command chosen by name |
+| `C-h b` | `describe-bindings` | Show the list of key bindings (and configuration problems) |
+| `C-g` | `keyboard-quit` | Cancel the key sequence in progress |
+
+## Key notation
+
+- `C-x`: hold Control and press x. `M-x`: hold Meta (Option on macOS) and press x. `s-[`: hold Command and press `[`. `S-TAB`: Shift + Tab.
+- `C-x 2`: press `C-x`, then `2` (a prefix key).
+- Symbols are judged by the physical key (US layout). `M-<` is Option + Shift + `,`.
+- In an input field (the minibuffer), `C-f` / `C-b` / `C-a` / `C-e` move the cursor in the text again. Confirm with `RET`, cancel with `C-g`, choose a candidate with `C-n` / `C-p`, and recall the input history with `M-p` / `M-n`.

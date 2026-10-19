@@ -1,9 +1,15 @@
 # emacs/
 
-Open a document in HyperBuf (a Markdown viewer for macOS) from Emacs, at a given file and line.
-Specification: [`docs/integration-protocol.md`](../docs/integration-protocol.md) (in Japanese). Requires Emacs 29.1 or later.
+Emacs integration for HyperBuf (a keyboard-driven Markdown viewer for macOS). It works in both directions:
 
-## Usage
+- **Emacs → HyperBuf:** open the file you are editing in HyperBuf, at the current line.
+- **HyperBuf → Emacs:** mark a place in the viewer ("Edit in Emacs") and jump to exactly that place in Emacs, after verifying that it is the right one.
+
+Requires Emacs 29.1 or later. Specification (in Japanese): [`docs/dev/integration-protocol.md`](../docs/dev/integration-protocol.md) and [`docs/dev/edit-location.md`](../docs/dev/edit-location.md).
+
+## Installation
+
+The package is a single file, `hyperbuf.el`. Put it in a directory on your `load-path`. It is in this repository (`emacs/`) and also in the `emacs/` folder of the HyperBuf disk image.
 
 ```elisp
 (add-to-list 'load-path "/path/to/hyperbuf/emacs")
@@ -11,20 +17,20 @@ Specification: [`docs/integration-protocol.md`](../docs/integration-protocol.md)
 
 ;; Example key bindings (assign whatever you like)
 (global-set-key (kbd "C-c h o") #'hyperbuf-open-file)
-(global-set-key (kbd "C-c h O") #'hyperbuf-open-other-window)
 (global-set-key (kbd "C-c h p") #'hyperbuf-open-project-file)
 ```
+
+## Commands
 
 | Command | Action |
 | --- | --- |
 | `hyperbuf-open-file` | Open the current buffer's file in HyperBuf at the **current line** |
-| `hyperbuf-open-other-window` | Same, in another HyperBuf window (split right) |
-| `hyperbuf-open-project-file` | Pick a Markdown file of the project and open it |
-| `hyperbuf-open` | From Lisp: `(hyperbuf-open FILE &optional LINE ANCHOR TARGET WAIT)` |
+| `hyperbuf-open-project-file` | Pick a Markdown file of the current Emacs project (`project.el`) and open it |
+| `hyperbuf-open` | From Lisp: `(hyperbuf-open FILE &optional LINE ANCHOR TARGET WAIT)` (`TARGET` is reserved and has no effect yet) |
 | `hyperbuf-visit-location` | Move to the location marked with "Edit in Emacs" in the viewer (with verification; see below) |
 | `hyperbuf-edit-here` | Same, and also raise the Emacs frame (meant to be called from `emacsclient`) |
 
-With a prefix argument (`C-u`), wait longer for confirmation in the app (e.g. whether to open a warn-path file).
+With a prefix argument (`C-u`), wait longer for confirmation in the app (for example, whether to open a file under a warn path).
 The viewer reads the file on disk, so if the buffer has unsaved changes, Emacs asks whether to save before opening (`hyperbuf-save-before-open`).
 
 ## From the viewer to the edit location ("Edit in Emacs")
@@ -44,7 +50,8 @@ On success, the range is highlighted briefly and the text the viewer pointed at 
 Emacs moves to the start of the block and says that the location is ambiguous and the whole block is shown (it never moves on a guess).
 
 To let the viewer call Emacs, write a fixed command in `~/Library/Application Support/HyperBuf/config.json`
-(the document content and location are not passed as arguments; see `docs/integration-protocol.md` section 15, in Japanese).
+(the document content and location are not passed as arguments; see `docs/dev/edit-location.md` section 7, in Japanese).
+Emacs must be running a server (`(server-start)`).
 
 ```json
 {
@@ -61,14 +68,15 @@ To let the viewer call Emacs, write a fixed command in `~/Library/Application Su
 | `hyperbuf-executable` | `"hyperbuf"` | Command used when the transport is `cli` |
 | `hyperbuf-launch-if-needed` | `t` | If the app is not running, launch it with a `hyperbuf://` URL carrying the open request. If `nil`, just report it |
 | `hyperbuf-app` | `nil` | Path of the `.app` to launch (for development) |
-| `hyperbuf-default-target` | `nil` | Default place to show the document (e.g. `"split-right"`) |
-| `hyperbuf-timeout` / `hyperbuf-wait-timeout` | 3 / 60 | Seconds to wait for confirmation |
+| `hyperbuf-timeout` / `hyperbuf-wait-timeout` | 3 / 60 | Seconds to wait for confirmation (the second one with a prefix argument) |
+| `hyperbuf-save-before-open` | `ask` | Whether to save a modified buffer before opening it in the viewer: `ask`, `t` (save without asking) or `nil` |
+| `hyperbuf-location-max-age` | 600 | Age in seconds after which a location marked in the viewer is reported as old when you visit it |
 | `hyperbuf-socket-path` | `nil` | Path of the socket (else the `HYPERBUF_SOCKET_PATH` environment variable, else the default location) |
 
 ## Limitations
 
 - Remote files (TRAMP) cannot be opened (the viewer reads only local files).
-- If the app is not running, Emacs launches it and hands over the request, but the result appears in the app (it is not returned to Emacs).
+- If the app is not running, Emacs launches it with a URL that carries the open request. The result appears in the app and is not returned to Emacs, and a file outside the allowed paths asks for confirmation in the app (see `docs/dev/file-access.md`).
 - Files in encodings other than UTF-8 fail the viewer's verification and Emacs does not move (it never moves to a wrong place).
 
 ## Development
@@ -77,7 +85,7 @@ To let the viewer call Emacs, write a fixed command in `~/Library/Application Su
 scripts/check.sh emacs     # byte-compile (warnings as errors) and ERT
 ```
 
-The tests check the shared examples in `protocol/examples/` (`open-validation.json`, `url.json`) in the same way as the Swift side.
+The tests check the shared examples in `protocol/examples/` (`open-validation.json`, `url.json`, `location-check.json`) in the same way as the Swift side.
 
 ## License
 

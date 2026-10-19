@@ -29,7 +29,8 @@ public struct WindowAlpha: Sendable, Equatable {
     }
 }
 
-/// 設定ファイル(`config.json`)の、スカラーと一覧の設定。docs/configuration.md。
+/// 設定ファイル(`config.json`)の、スカラーと一覧の設定。docs/user/configuration.md。
+/// 設定のキーを足す・消すときは、docs/user/configuration.md の「設定キーの一覧」も直す(`ConfigDocsTests` が検査する)。
 /// 型が違うものは、既定のままにして、理由を `problems` に残す(`C-h b` の「設定の問題」に出る)。
 public struct UserSettings: Sendable, Equatable {
     /// 前回の状態を復元し、保存するか。
@@ -44,7 +45,7 @@ public struct UserSettings: Sendable, Equatable {
     public var alpha = WindowAlpha.opaque
     /// 確認なしにブラウザで開く URL のパターン(`*` は、任意の文字列)。
     public var trustedUrls: [String] = []
-    /// プロジェクト・ルートにしないディレクトリ(`~/…` または絶対パス。完全一致)。docs/buffer-model.md §6.4。
+    /// プロジェクト・ルートにしないディレクトリ(`~/…` または絶対パス。完全一致)。docs/dev/buffer-model.md §6.4。
     public var projectIgnorePaths: [String] = []
     public var problems: [String] = []
 

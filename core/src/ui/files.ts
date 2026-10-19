@@ -2,7 +2,7 @@
 // Copyright 2026 Yasuo Hojo
 
 // ファイルを開く入力欄。`C-x C-f`(基準のディレクトリから始まるパス補完)と、
-// `C-x p f`(基準のディレクトリ以下の再帰の一覧)。docs/buffer-model.md §5・§6。
+// `C-x p f`(基準のディレクトリ以下の再帰の一覧)。docs/dev/buffer-model.md §5・§6。
 
 import type { DirEntry, TreeListing } from "../host.ts";
 import { abbreviateHome, joinPath, resolveInput } from "../paths.ts";

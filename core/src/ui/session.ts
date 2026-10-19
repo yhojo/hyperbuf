@@ -16,8 +16,8 @@ import type { AppContext } from "./context.ts";
 import { ensureBuffer } from "./navigation.ts";
 import { captureSelection } from "./selection-state.ts";
 
-/** 変更から保存までの待ち(スクロールのたびに書かない)。 */
-const SAVE_DELAY_MS = 1000;
+/** 変更から保存までの待ち(スクロールのたびに書かない)。docs/dev/session-restore.md §4 の表と同じ値にする。 */
+export const SAVE_DELAY_MS = 1000;
 
 export interface SessionSaver {
   /** 変更があった。少し待って、保存する。 */

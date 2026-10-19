@@ -82,9 +82,16 @@ the default location."
   :group 'hyperbuf)
 
 (defcustom hyperbuf-launch-if-needed t
-  "Whether to launch the app with the open request URL if it is not running.
+  "Whether to launch the app if it is not running.
+The app is launched with the `hyperbuf://ping' URL, and the request is sent
+over the socket once it is listening, like the `hyperbuf' command does.
 If nil, just report that HyperBuf is not running."
   :type 'boolean
+  :group 'hyperbuf)
+
+(defcustom hyperbuf-launch-timeout 15
+  "Seconds to wait for a launched app to start listening on the socket."
+  :type 'number
   :group 'hyperbuf)
 
 (defcustom hyperbuf-app nil
@@ -194,26 +201,33 @@ Signal `hyperbuf-not-running' if the connection fails."
 
 ;;;; Launching (URL scheme)
 
-(defun hyperbuf--open-url (request)
-  "Build a `hyperbuf://open' URL from REQUEST (a plist).
-The keys of REQUEST are :path :line :anchor :project :target."
-  (let ((params `(("v" . ,(number-to-string hyperbuf--protocol-version))
-                  ("path" . ,(plist-get request :path))
-                  ("line" . ,(and (plist-get request :line) (number-to-string (plist-get request :line))))
-                  ("anchor" . ,(plist-get request :anchor))
-                  ("project" . ,(plist-get request :project))
-                  ("target" . ,(plist-get request :target)))))
-    (concat "hyperbuf://open?"
-            (mapconcat (lambda (kv) (concat (car kv) "=" (url-hexify-string (cdr kv))))
-                       (cl-remove-if-not #'cdr params) "&"))))
+(defconst hyperbuf--ping-url "hyperbuf://ping"
+  "URL that only launches the app.
+The open request is sent over the socket afterwards.")
 
-(defun hyperbuf--launch (request)
-  "Launch the app with a URL that opens REQUEST.
-This launches the app and hands over the first request in one step."
+(defun hyperbuf--launch ()
+  "Launch the app with the ping URL, without handing over any request."
   (let ((args (append (and hyperbuf-app (list "-a" (expand-file-name hyperbuf-app)))
-                      (list (hyperbuf--open-url request)))))
+                      (list hyperbuf--ping-url))))
     (unless (zerop (apply #'call-process "open" nil nil nil args))
       (user-error "Cannot launch HyperBuf"))))
+
+(defun hyperbuf--socket-listening-p ()
+  "Return non-nil if something is listening on the socket."
+  (condition-case nil
+      (progn (delete-process (make-network-process
+                              :name "hyperbuf-probe" :family 'local
+                              :service (hyperbuf--socket-path) :noquery t))
+             t)
+    (file-error nil)))
+
+(defun hyperbuf--wait-for-socket ()
+  "Wait up to `hyperbuf-launch-timeout' seconds for the socket.
+Return non-nil if it is listening.  C-g interrupts the wait."
+  (let ((deadline (+ (float-time) hyperbuf-launch-timeout)))
+    (while (and (not (hyperbuf--socket-listening-p)) (< (float-time) deadline))
+      (sleep-for 0.05))
+    (hyperbuf--socket-listening-p)))
 
 ;;;; Requests
 
@@ -234,20 +248,31 @@ This launches the app and hands over the first request in one step."
   "Report ERROR (a plist with :code and :message) from the app to the user."
   (user-error "HyperBuf: %s (%s)" (plist-get error :message) (plist-get error :code)))
 
+(defun hyperbuf--send-open (request)
+  "Send the open REQUEST over the socket and return the reply (a plist).
+Signal `hyperbuf-not-running' if the connection fails."
+  (let ((response (hyperbuf--socket-request
+                   request (+ hyperbuf--reply-slack
+                              (/ (plist-get request :timeoutMs) 1000.0)))))
+    (when-let* ((error (plist-get response :error))) (hyperbuf--report-error error))
+    response))
+
 (defun hyperbuf--open-via-socket (request)
+  "Send the open REQUEST over the socket, launching the app first if needed."
   (condition-case nil
-      (let ((response (hyperbuf--socket-request
-                       request (+ hyperbuf--reply-slack
-                                  (/ (plist-get request :timeoutMs) 1000.0)))))
-        (when-let* ((error (plist-get response :error))) (hyperbuf--report-error error))
-        response)
+      (hyperbuf--send-open request)
     (hyperbuf-not-running
-     (cond
-      ((not hyperbuf-launch-if-needed)
+     (unless hyperbuf-launch-if-needed
        (user-error "HyperBuf is not running"))
-      (t (hyperbuf--launch request)
-         (message "Launched HyperBuf and handed over the open request (the result appears in the app)")
-         nil)))))
+     (hyperbuf--launch)
+     (message "Launching HyperBuf...")
+     (unless (hyperbuf--wait-for-socket)
+       (user-error "Cannot connect to the launched HyperBuf (waited %s seconds)"
+                   hyperbuf-launch-timeout))
+     (condition-case nil
+         (hyperbuf--send-open request)
+       (hyperbuf-not-running
+        (user-error "Cannot connect to the launched HyperBuf"))))))
 
 (defun hyperbuf--open-via-cli (request)
   (let* ((args (append (and (plist-get request :line) (list "--line" (number-to-string (plist-get request :line))))

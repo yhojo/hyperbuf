@@ -343,6 +343,43 @@ else:
     loc = call({"v": 1, "op": "get-view"})["result"]["view"]
     check("CLI 経由で開いた位置が、ビューアに出る", loc and loc["path"] == f"{project}/index.md" and loc["anchor"] == "line:4", loc)
 
+print("Emacs から、アプリを起動して開く(hyperbuf-launch-if-needed)")
+if shutil.which("emacs") is None:
+    print("  - emacs が見つからないので、省略")
+else:
+    # アプリを終了させる(ソケットのファイルは残る。クラッシュの後と同じ)。待つのは、接続できなくなるまで
+    subprocess.run(["pkill", "-f", f"{app}/Contents/MacOS/HyperBuf"])
+    def listening():
+        try:
+            c = socket.socket(socket.AF_UNIX)
+            c.settimeout(1)
+            c.connect(sock_path)
+            c.close()
+            return True
+        except OSError:
+            return False
+    deadline = time.time() + 10
+    while listening() and time.time() < deadline:
+        time.sleep(0.1)
+    check("アプリが終了して、ソケットに接続できなくなる", not listening())
+
+    # 起動だけは、テスト用の環境変数(ソケット・設定の隔離)つきの `open` に差し替える。
+    # 起動の URL(hyperbuf://ping)と、起動後にソケットで開く流れは、本物のまま
+    envs = [f"HYPERBUF_SOCKET_PATH={sock_path}", f"HYPERBUF_TRUSTED_ROOTS={trusted_path}",
+            f"HYPERBUF_SESSION_DIR={tmp}/sessions", f"HYPERBUF_TEST_LOG={test_log}",
+            f"HYPERBUF_CONFIG={tmp}/config.json"]
+    env_args = " ".join(f'"--env" "{e}"' for e in envs)
+    form = (f'(cl-letf (((symbol-function (quote hyperbuf--launch)) (lambda () '
+            f'(call-process "open" nil nil nil "-a" "{app}" {env_args} hyperbuf--ping-url)))) '
+            f'(hyperbuf-open "{project}/index.md" 9))')
+    r = subprocess.run(
+        ["emacs", "-Q", "--batch", "-L", os.path.join(os.environ["REPO_ROOT"], "emacs"), "-l", "cl-lib", "-l", "hyperbuf", "--eval", form],
+        capture_output=True, text=True, env={**os.environ, "HYPERBUF_SOCKET_PATH": sock_path, "LC_ALL": "en_US.UTF-8"}, timeout=90)
+    check("アプリが未起動でも、Emacs が起動して、ソケットで開ける", r.returncode == 0, (r.returncode, r.stderr[-300:]))
+    check("Emacs が「起動中」と知らせる", "Launching HyperBuf" in r.stderr, r.stderr[-300:])
+    loc = call({"v": 1, "op": "get-view"})["result"]["view"]
+    check("起動して開いた位置(行 9)が、ビューアに出る", loc and loc["path"] == f"{project}/index.md" and loc["anchor"] == "line:9", loc)
+
 if failures:
     print(f"\nNG: {len(failures)} 件")
     sys.exit(1)

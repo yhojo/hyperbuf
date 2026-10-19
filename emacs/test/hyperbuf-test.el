@@ -66,19 +66,14 @@
           (should (equal (list name expect) (list name (car problem)))))))))
 
 (ert-deftest hyperbuf-test-conformance-url ()
-  "protocol/examples/url.json: the same request yields the same URL."
+  "protocol/examples/url.json: the URL that launches the app is the ping URL."
   (let ((checked 0))
     (dolist (item (hyperbuf-test--example "url"))
       (let ((request (plist-get item :request)))
-        (when (and request (equal (plist-get request :op) "open"))
+        (when (and request (equal (plist-get request :op) "ping"))
           (cl-incf checked)
-          (should (equal (list (plist-get item :name) (plist-get item :url))
-                         (list (plist-get item :name)
-                               (hyperbuf--open-url
-                                (list :path (plist-get request :path)
-                                      :line (plist-get request :line)
-                                      :anchor (plist-get request :anchor)))))))))
-    (should (>= checked 4))))
+          (should (equal (plist-get item :url) hyperbuf--ping-url)))))
+    (should (= checked 1))))
 
 ;;;; Building requests
 
@@ -203,33 +198,90 @@
       (let ((err (should-error (hyperbuf-open file) :type 'user-error)))
         (should (string-match-p "not running" (cadr err)))))))
 
-(ert-deftest hyperbuf-test-launches-the-app-with-the-open-url ()
-  (hyperbuf-test--with-socket-dir _path
+(defmacro hyperbuf-test--with-launch (path received &rest body)
+  "Run BODY where `open' \"launches\" the app by starting a test server on PATH.
+The program and arguments of each `call-process' are collected in the
+variable `calls'.  The open request that the server receives is stored in
+RECEIVED.  The server replies with success."
+  (declare (indent 2))
+  `(let ((hyperbuf-launch-if-needed t)
+         (hyperbuf-launch-timeout 2)
+         (calls nil)
+         (server nil))
+     (unwind-protect
+         (cl-letf (((symbol-function 'call-process)
+                    (lambda (program &rest args)
+                      (push (cons program (nthcdr 3 args)) calls)
+                      (setq server
+                            (hyperbuf-test--server
+                             ,path
+                             (lambda (proc line)
+                               (setq ,received (json-parse-string (string-trim line)
+                                                                  :object-type 'plist))
+                               (hyperbuf-test--reply
+                                proc (list :v 1 :id (plist-get ,received :id) :ok t
+                                           :result (list :path "note.md"))))))
+                      0)))
+           ,@body)
+       (when server (delete-process server)))))
+
+(ert-deftest hyperbuf-test-launches-the-app-with-ping-and-sends-over-the-socket ()
+  (hyperbuf-test--with-socket-dir path
+    (hyperbuf-test--with-md-file file
+      (let ((received nil))
+        (hyperbuf-test--with-launch path received
+          (let ((response (hyperbuf-open file 7)))
+            ;; The app is launched with the ping URL only (no open request in the URL).
+            (should (equal (car calls) '("open" "hyperbuf://ping")))
+            (should (= (length calls) 1))
+            ;; The request goes over the socket, and the result comes back.
+            (should (equal (plist-get received :op) "open"))
+            (should (= (plist-get received :line) 7))
+            (should (equal (plist-get (plist-get response :result) :path) "note.md"))))))))
+
+(ert-deftest hyperbuf-test-launch-reports-the-result-after-launching ()
+  "A refusal by the launched app (e.g. a warn path) comes back to Emacs."
+  (hyperbuf-test--with-socket-dir path
     (hyperbuf-test--with-md-file file
       (let ((hyperbuf-launch-if-needed t)
-            (calls nil))
-        (cl-letf (((symbol-function 'call-process)
-                   (lambda (program &rest args)
-                     (push (cons program (nthcdr 3 args)) calls)
-                     0)))
-          (should-not (hyperbuf-open file 7))
-          (let ((call (car calls)))
-            (should (equal (car call) "open"))
-            (should (string-prefix-p "hyperbuf://open?v=1&path=" (car (last call))))
-            (should (string-suffix-p "&line=7" (car (last call))))))))))
+            (hyperbuf-launch-timeout 2)
+            (server nil))
+        (unwind-protect
+            (cl-letf (((symbol-function 'call-process)
+                       (lambda (&rest _)
+                         (setq server
+                               (hyperbuf-test--server
+                                path
+                                (lambda (proc _line)
+                                  (hyperbuf-test--reply
+                                   proc (list :v 1 :ok :false
+                                              :error (list :code "outside-project"
+                                                           :message "Not opened because it is a warn path"))))))
+                         0)))
+              (let ((err (should-error (hyperbuf-open file) :type 'user-error)))
+                (should (string-match-p "warn path" (cadr err)))))
+          (when server (delete-process server)))))))
 
 (ert-deftest hyperbuf-test-launch-with-app-path-and-failure ()
+  (hyperbuf-test--with-socket-dir path
+    (hyperbuf-test--with-md-file file
+      (let ((received nil)
+            (hyperbuf-app "/Applications/HyperBuf.app"))
+        (hyperbuf-test--with-launch path received
+          (hyperbuf-open file)
+          (should (equal (car calls) '("open" "-a" "/Applications/HyperBuf.app" "hyperbuf://ping")))))
+      (let ((hyperbuf-launch-if-needed t))
+        (cl-letf (((symbol-function 'call-process) (lambda (&rest _) 1)))
+          (should-error (hyperbuf-open file) :type 'user-error))))))
+
+(ert-deftest hyperbuf-test-launch-gives-up-when-the-socket-never-appears ()
   (hyperbuf-test--with-socket-dir _path
     (hyperbuf-test--with-md-file file
       (let ((hyperbuf-launch-if-needed t)
-            (hyperbuf-app "/Applications/HyperBuf.app")
-            (calls nil))
-        (cl-letf (((symbol-function 'call-process)
-                   (lambda (program &rest args) (push (cons program (nthcdr 3 args)) calls) 0)))
-          (hyperbuf-open file)
-          (should (equal (butlast (cdr (car calls))) '("-a" "/Applications/HyperBuf.app"))))
-        (cl-letf (((symbol-function 'call-process) (lambda (&rest _) 1)))
-          (should-error (hyperbuf-open file) :type 'user-error))))))
+            (hyperbuf-launch-timeout 0.2))
+        (cl-letf (((symbol-function 'call-process) (lambda (&rest _) 0)))
+          (let ((err (should-error (hyperbuf-open file) :type 'user-error)))
+            (should (string-match-p "Cannot connect to the launched" (cadr err)))))))))
 
 ;;;; Input validation (before connecting)
 

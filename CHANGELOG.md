@@ -25,14 +25,14 @@ Changes since 0.1.0, mostly from the feedback of the initial private distributio
 - Window resizing, as in Emacs: `C-x ^` (enlarge window), `C-x -` (`shrink-window-if-larger-than-buffer`), `C-x }` (enlarge window horizontally) and `C-x {` (shrink window horizontally). The sizes are saved in the session.
 - Dragging the mode line resizes windows: dragging the mode line moves the border below the window (vertical); dragging its right end moves the border on the right (horizontal).
 - The cursor keys `←` / `→` go back / forward in the reference history, in addition to `C-b` / `C-f`.
-- A new `appearance` setting in `config.json` (`"system"` by default, `"light"` or `"dark"`) fixes the app to light or dark regardless of the OS setting. See `docs/configuration.md`.
-- A new `alpha` setting in `config.json`, `[active, inactive]` in percent (for example `[80, 65]`), makes the whole frame translucent, like `(set-frame-parameter nil 'alpha '(80 65))` in Emacs. It is ignored while the macOS accessibility option Reduce Transparency is on. See `docs/configuration.md`.
+- A new `appearance` setting in `config.json` (`"system"` by default, `"light"` or `"dark"`) fixes the app to light or dark regardless of the OS setting. See `docs/user/configuration.md`.
+- A new `alpha` setting in `config.json`, `[active, inactive]` in percent (for example `[80, 65]`), makes the whole frame translucent, like `(set-frame-parameter nil 'alpha '(80 65))` in Emacs. It is ignored while the macOS accessibility option Reduce Transparency is on. See `docs/user/configuration.md`.
 - `M-x count-words` (`M-=`) counts the lines, words and characters of the selected text, or of the whole document, and shows them in the echo area (for example `Region has 3 lines, 42 words, 210 characters (180 without whitespace)`). It counts the displayed text, not the Markdown source. A live count in the mode line is intentionally not planned.
 
 ### Changed
 
 - The `.dmg` now includes `CHANGELOG.md`, so you can see what changed in each version.
-- **All UI text is now fixed to English** and is not localized: menus, mode line, echo area, minibuffer prompts, command descriptions (`M-x`, `C-h b`), error messages, `hyperbuf` CLI output, and the messages and docstrings of the Emacs package (`emacs/`). Documents, file names and input stay fully international. See `docs/interaction-model.md` §6b.
+- **All UI text is now fixed to English** and is not localized: menus, mode line, echo area, minibuffer prompts, command descriptions (`M-x`, `C-h b`), error messages, `hyperbuf` CLI output, and the messages and docstrings of the Emacs package (`emacs/`). Documents, file names and input stay fully international. See `docs/dev/interaction-model.md` §6b.
 - The separate Frame menu is merged into the Window menu, following macOS conventions. The Window menu lists the open frames as `HyperBuf [N]` with `Cmd-1`…`Cmd-9`, and the front one is checked. `Cmd-N` for a frame that is not open now does nothing; create a new frame with `File > New Frame` or `C-x 5 2`.
 - When the OS appearance (light / dark) changes while the app is running, Mermaid diagrams are now redrawn with the new theme. Before, they kept the old colors and could become unreadable. The reading position is kept.
 - The status line at the bottom of the frame no longer wraps; its right side is clipped on narrow windows.

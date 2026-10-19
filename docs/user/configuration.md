@@ -46,7 +46,7 @@
 | ---------------- | ------ | ------------------------------------------------------------------------- |
 | `restoreSession` | 真偽値 | 前回の状態を復元し、保存するか。**既定は `true`**(`false` のときだけ無効) |
 
-- 復元の範囲・保存先・壊れたデータの扱いは、[session-restore.md](session-restore.md)(複数フレームは [buffer-model.md](buffer-model.md) §7)。
+- 復元の範囲・保存先・壊れたデータの扱いは、[session-restore.md](../dev/session-restore.md)(複数フレームは [buffer-model.md](../dev/buffer-model.md) §7)。
 - `false` のあいだは、復元もしないし、保存もしない(それまでの保存は、そのまま残る)。
 
 ## 文書の表示(`mathUnescapeUnderscore`・`followUpdates`)
@@ -97,7 +97,7 @@
 
 ## プロジェクト・ルート(`projectIgnorePaths`)
 
-`C-x p f` / `C-x p g` / `C-x p b` / `C-x p k` は、いま見ているバッファのディレクトリから親へさかのぼり、最初に VCS の目印(`.git`・`.hg`・`.svn`・`.bzr`・`_darcs`・`.jj`)があるディレクトリを、プロジェクト・ルートにします。見つからなければ、バッファのディレクトリ(`default-directory`)自身です。`~` と `/` は、ルートにしません。フレームとの対応はなく、バッファごとに決まります(詳細: [buffer-model.md](buffer-model.md) §6)。
+`C-x p f` / `C-x p g` / `C-x p b` / `C-x p k` は、いま見ているバッファのディレクトリから親へさかのぼり、最初に VCS の目印(`.git`・`.hg`・`.svn`・`.bzr`・`_darcs`・`.jj`)があるディレクトリを、プロジェクト・ルートにします。見つからなければ、バッファのディレクトリ(`default-directory`)自身です。`~` と `/` は、ルートにしません。フレームとの対応はなく、バッファごとに決まります(詳細: [buffer-model.md](../dev/buffer-model.md) §6)。
 
 | キー                 | 型           | 意味                                                                                   |
 | -------------------- | ------------ | -------------------------------------------------------------------------------------- |
@@ -119,11 +119,11 @@
 - `editorCommand` がなければ、エディタは呼び出さず、位置を記録するだけ(メニューは `Record Location for Editor`。エディタで `M-x hyperbuf-visit-location`)。
 - 不正なコマンド(相対パス、存在しない、実行できない、配列でない、など)は、無視する(エディタは、呼び出さない)。
 
-詳細: [integration-protocol.md](integration-protocol.md) §15、Emacs 側は [`emacs/README.md`](../emacs/README.md)。
+詳細: [integration-protocol.md](../dev/integration-protocol.md) §15、Emacs 側は [`emacs/README.md`](../../emacs/README.md)。
 
 ## ファイルのアクセス(`warnPaths`・`allowPaths`)
 
-ファイルを開く範囲は、プロジェクトではなく、**警告パス**と**許可パス**で決める(判定の規則: [file-access.md](file-access.md))。
+ファイルを開く範囲は、プロジェクトではなく、**警告パス**と**許可パス**で決める(判定の規則: [file-access.md](../dev/file-access.md))。
 
 | キー         | 型           | 意味                                                                                                                                      |
 | ------------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |

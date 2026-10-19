@@ -1,6 +1,6 @@
 # ファイルのアクセス判定
 
-HyperBuf が、どのファイルを確認なしで開き、どのファイルを確認してから開くかの規則。バッファの概念は [buffer-model.md](buffer-model.md)、設定キーの一覧は [configuration.md](configuration.md)、外部連携(ソケット・URL スキーム)の契約は [integration-protocol.md](integration-protocol.md)。
+HyperBuf が、どのファイルを確認なしで開き、どのファイルを確認してから開くかの規則。バッファの概念は [buffer-model.md](buffer-model.md)、設定キーの一覧は [configuration.md](../user/configuration.md)、外部連携(ソケット・URL スキーム)の契約は [integration-protocol.md](integration-protocol.md)。
 
 ## 1. 方針
 
@@ -89,4 +89,4 @@ HyperBuf は、ビューアとして**任意の場所の Markdown を読める**
 
 - `warnPaths` は、書いたら既定の一覧を**置き換える**。`[]` で警告なし。`allowPaths` も同じ。
 - `~` は展開する。絶対パスでないもの、型が違うものは、無視して理由を `C-h b` の「設定の問題」に出す。
-- キーの一覧は [configuration.md](configuration.md)。
+- キーの一覧は [configuration.md](../user/configuration.md)。

@@ -21,7 +21,7 @@ public struct SearchResponse: Sendable, Equatable, Codable {
     public let scanMs: Double
 }
 
-/// ディレクトリ以下の全文検索(自前の並列走査)。docs/poc-navigation-results.md。
+/// ディレクトリ以下の全文検索(自前の並列走査)。docs/history/poc-navigation-results.md。
 ///
 /// 大文字小文字は ASCII だけ区別しない(日本語などは完全一致)。正規表現は未対応。
 /// 正規表現・除外規則が必要になったら、`host.search` の契約を保ったままエンジンを差し替える。

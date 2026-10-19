@@ -1,7 +1,7 @@
 # protocol/
 
 HyperBuf の連携プロトコル(Unix ドメインソケット・URL スキーム)の、機械可読な定義と、適合テスト用のデータ。
-仕様の本文は [`docs/integration-protocol.md`](../docs/integration-protocol.md)。
+仕様の本文は [`docs/dev/integration-protocol.md`](../docs/dev/integration-protocol.md)。
 
 | 場所        | 内容                                                                                                                                      |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
@@ -10,5 +10,5 @@ HyperBuf の連携プロトコル(Unix ドメインソケット・URL スキー�
 | `swift/`    | アプリ(サーバー)と `cli/`(クライアント)が共有する Swift のライブラリ `HyperBufProtocol`(型、`open` の検証、URL、切り出し、ソケットのパス) |
 | `test/`     | JSON Schema が、`examples/` と食い違っていないかの検査(Node + ajv)                                                                        |
 
-新しい操作・フィールドを足すときは、`schema/`・`examples/`・`docs/integration-protocol.md` を同時に更新する。
+新しい操作・フィールドを足すときは、`schema/`・`examples/`・`docs/dev/integration-protocol.md` を同時に更新する。
 検査: `scripts/check.sh protocol`

@@ -5,7 +5,7 @@ import Foundation
 
 /// 「エディタで編集」で指した位置(`get-location` の `result.location`)。
 /// 位置だけでなく、エディタが「ビューアが指していた場所と、同じ場所か」を確かめるための情報を持つ。
-/// docs/integration-protocol.md §10、protocol/schema/location.schema.json。
+/// docs/dev/integration-protocol.md §10、protocol/schema/location.schema.json。
 public struct LocationPayload: Sendable, Equatable, Codable {
     public struct Position: Sendable, Equatable, Codable {
         /// 1 始まり。

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 同梱するサードパーティのライセンスの洗い出し(docs/migration-plan.md の M8)。
+// 同梱するサードパーティのライセンスの洗い出し(docs/history/migration-plan.md の M8)。
 //
 // 使い方:
-//   node scripts/licenses.mjs summary          docs/third-party-licenses.md を出力する(一覧)
+//   node scripts/licenses.mjs summary          docs/user/third-party-licenses.md を出力する(一覧)
 //   node scripts/licenses.mjs notices <出力先>   アプリに同梱する THIRD-PARTY-NOTICES(全文つき)を出力する
 //   node scripts/licenses.mjs check            許可するライセンスだけか、ライセンス文があるか、一覧が最新かを検査する
 //
@@ -282,7 +282,7 @@ function notices(data) {
 
 const [mode, target] = process.argv.slice(2);
 const data = await collect();
-const summaryFile = join(repo, "docs/third-party-licenses.md");
+const summaryFile = join(repo, "docs/user/third-party-licenses.md");
 
 if (mode === "summary") {
   writeFileSync(summaryFile, summary(data));
@@ -297,7 +297,7 @@ if (mode === "summary") {
   const current = existsSync(summaryFile) ? readFileSync(summaryFile, "utf8") : "";
   if (current !== summary(data))
     found.push(
-      "docs/third-party-licenses.md が古い(node scripts/licenses.mjs summary で生成し直す)",
+      "docs/user/third-party-licenses.md が古い(node scripts/licenses.mjs summary で生成し直す)",
     );
   for (const r of reviews) console.warn(`注意: ${r}`);
   if (found.length) {

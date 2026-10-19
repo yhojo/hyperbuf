@@ -25,7 +25,7 @@
 
 ## 設定
 
-`config.json` の `restoreSession`(既定 `true`)。`false` のあいだは、復元も保存もしない([configuration.md](configuration.md))。
+`config.json` の `restoreSession`(既定 `true`)。`false` のあいだは、復元も保存もしない([configuration.md](../user/configuration.md))。
 
 プロジェクトという単位はなくなった(起動時は、前回の状態を復元する。引数のファイルは、復元した状態に開く)。
 

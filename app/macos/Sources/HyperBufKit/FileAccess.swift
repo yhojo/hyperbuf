@@ -15,7 +15,7 @@ public enum AccessError: Error, Equatable {
     case needsConfirmation
 }
 
-/// Web コアに許すファイルアクセス。パスはすべて絶対パス(docs/file-access.md)。
+/// Web コアに許すファイルアクセス。パスはすべて絶対パス(docs/dev/file-access.md)。
 ///
 ///  - `.md` と画像(拡張子で限る)だけを読む
 ///  - シンボリックリンクは解決したうえで判定する

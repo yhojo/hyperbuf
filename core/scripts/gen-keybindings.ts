@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// docs/keybindings.md を、コード(標準のキー割り当てと、コマンドの説明)から生成する。
+// docs/user/keybindings.md を、コード(標準のキー割り当てと、コマンドの説明)から生成する。
 // 使い方: node scripts/gen-keybindings.ts          生成して、書き込む
 //         node scripts/gen-keybindings.ts --check  最新か、検査する(違えば、終了コード 1)
 
@@ -10,7 +10,7 @@ import { renderBindingsHelp } from "../src/help.ts";
 import { COMMAND_DOCS } from "../src/ui/commands.ts";
 import { DEFAULT_BINDINGS } from "../src/ui/keymap.ts";
 
-const target = new URL("../../docs/keybindings.md", import.meta.url);
+const target = new URL("../../docs/user/keybindings.md", import.meta.url);
 
 const body = renderBindingsHelp({ docs: COMMAND_DOCS, bindings: DEFAULT_BINDINGS, problems: [] });
 const generated = `<!-- 自動生成: core/scripts/gen-keybindings.ts。直接編集しない(コードの変更に合わせて、再生成する) -->
@@ -36,11 +36,11 @@ if (process.argv.includes("--check")) {
   })();
   if (current !== generated) {
     console.error(
-      "docs/keybindings.md が、コードと食い違っています。node scripts/gen-keybindings.ts で、再生成してください。",
+      "docs/user/keybindings.md が、コードと食い違っています。node scripts/gen-keybindings.ts で、再生成してください。",
     );
     process.exit(1);
   }
 } else {
   writeFileSync(target, generated);
-  console.log("docs/keybindings.md を生成しました");
+  console.log("docs/user/keybindings.md を生成しました");
 }

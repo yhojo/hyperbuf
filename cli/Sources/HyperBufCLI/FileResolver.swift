@@ -37,7 +37,7 @@ public enum FileResolver {
             return .failure(Failure(message: "No such file: \(argument)"))
         }
         if isDirectory.boolValue {
-            // ディレクトリは、その中の index.md、なければ README.md を開く(docs/buffer-model.md §5.1)
+            // ディレクトリは、その中の index.md、なければ README.md を開く(docs/dev/buffer-model.md §5.1)
             guard line == nil,
                 let index = ["index.md", "README.md"].map({ path + "/" + $0 }).first(where: {
                     var inner: ObjCBool = false

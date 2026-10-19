@@ -7,7 +7,7 @@ import HyperBufKit
 import HyperBufProtocol
 import SwiftUI
 
-/// フレーム(macOS のウィンドウ)の一覧と、外部連携(ソケット・URL スキーム)。docs/buffer-model.md §7。
+/// フレーム(macOS のウィンドウ)の一覧と、外部連携(ソケット・URL スキーム)。docs/dev/buffer-model.md §7。
 /// 各フレームは、独立した作業場(`FrameSession`: 自分のバッファ・履歴・分割を持つ)。
 @MainActor
 final class AppModel: NSObject, NSWindowDelegate {
@@ -405,7 +405,7 @@ enum ConfigLocation {
     }
 }
 
-/// 起動の引数(ファイル、ディレクトリ)の解釈。docs/buffer-model.md §5.1。
+/// 起動の引数(ファイル、ディレクトリ)の解釈。docs/dev/buffer-model.md §5.1。
 enum Launch {
     /// 開くファイルの絶対パス。ディレクトリは `index.md`、なければ `README.md`(どちらもなければ、何もしない)。
     static func targets(from arguments: [String]) -> [String] {

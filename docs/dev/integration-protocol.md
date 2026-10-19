@@ -499,7 +499,7 @@ UTF-8 の JSON Lines(1 行 1 メッセージ)。1 つの接続で、要求と応
 
 - `path` は、**絶対パス**(従来どおり)。`project` と `--project` は、**受け取るが、使わない**(後方互換のため。プロジェクトの単位がない)。
 - 応答の `result.path` と `get-view` の `path` は、**絶対パス**(`realpath` の形)。`get-view` の `absolutePath` は、`path` と同じ値(互換のために残す)。
-- ファイルを開く範囲は、**プロジェクトではなく、許可パスと警告パスで決まる**。判定の規則と設定(`warnPaths` / `allowPaths`)は、[file-access.md](file-access.md) と [configuration.md](configuration.md)。
+- ファイルを開く範囲は、**プロジェクトではなく、許可パスと警告パスで決まる**。判定の規則と設定(`warnPaths` / `allowPaths`)は、[file-access.md](file-access.md) と [configuration.md](../user/configuration.md)。
 
 ### 16.2 経路による判定の違い
 

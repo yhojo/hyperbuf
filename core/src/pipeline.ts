@@ -9,7 +9,7 @@
 //    信頼できる出力を作るものに限る。
 //  - 外部画像は読み込まない(local first)。ローカル画像だけをホスト経由の URL に書き換える。
 //  - Mermaid は DOM が要るので、HTML 文字列化の後に、ui/diagrams.ts が描画する。
-// 検証の経緯: docs/poc-rendering-results.md
+// 検証の経緯: docs/history/poc-rendering-results.md
 
 import type { Element, ElementContent, Root as HastRoot } from "hast";
 import type { Root as MdastRoot } from "mdast";
@@ -159,7 +159,7 @@ const LINE_TAGS = new Set([
  * 元の Markdown の位置を、ブロック要素に残す。
  *  - data-source-line: 開始行(「N 行目を開く」用)
  *  - data-source-start / data-source-end: 開始・終了の文字オフセット(UTF-16)。ビューアから、編集位置を
- *    エディタへ渡すために、選択した範囲を、元の位置に対応づける(docs/integration-protocol.md §10)
+ *    エディタへ渡すために、選択した範囲を、元の位置に対応づける(docs/dev/integration-protocol.md §10)
  *  - data-source-end-line: 終了行
  */
 const rehypeSourceLines: Plugin<[], HastRoot> = () => (tree) => {

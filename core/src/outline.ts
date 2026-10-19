@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// outline-mode 風の見出し移動の判断(docs/interaction-model.md)。DOM に依存しない純粋な関数。
+// outline-mode 風の見出し移動の判断(docs/dev/interaction-model.md)。DOM に依存しない純粋な関数。
 // 「いまの位置」は、画面の上端(scrollTop)。見出しは、文書の先頭から順に並ぶ(tops は、各見出しの上端の位置)。
 //
 //   C-c C-n  次の見出し        C-c C-p  前の見出し

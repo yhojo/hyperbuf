@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// docs/syntax-highlighting.md を、文法の一覧(src/grammars.ts)から生成する。
+// docs/user/syntax-highlighting.md を、文法の一覧(src/grammars.ts)から生成する。
 // 使い方: node scripts/gen-languages.ts          生成して、書き込む
 //         node scripts/gen-languages.ts --check  最新か、検査する(違えば、終了コード 1)
 
@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import type { Grammar } from "@wooorm/starry-night";
 import { EAGER, LAZY } from "../src/grammars.ts";
 
-const target = new URL("../../docs/syntax-highlighting.md", import.meta.url);
+const target = new URL("../../docs/user/syntax-highlighting.md", import.meta.url);
 
 const lazyGrammars = await Promise.all(LAZY.map((g) => g.load()));
 const lazyScopes = new Set(lazyGrammars.map((g) => g.scopeName));
@@ -55,7 +55,7 @@ if (process.argv.includes("--check")) {
   })();
   if (current !== generated) {
     console.error(
-      "docs/syntax-highlighting.md が、コードと食い違っています。node scripts/gen-languages.ts で、再生成してください。",
+      "docs/user/syntax-highlighting.md が、コードと食い違っています。node scripts/gen-languages.ts で、再生成してください。",
     );
     process.exit(1);
   }

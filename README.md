@@ -30,13 +30,13 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 - **Render what engineers write.** — GFM、SVG、数式、図表、コードなど、実務で使われる表現への対応を重視する。
 - **Extensible by design.** — 拡張しやすく、設定や動作が理解できる構造を目指す。
 - **Local first.** — 基本的な閲覧はオフラインで完結し、意図しない外部通信を行わない。
-- **Mac outside, Emacs inside.** — メニューバーやダイアログは macOS の流儀、フレームの中（キー操作・モードライン・ミニバッファ）はEmacsの流儀で作る。アプリ自身の文言は英語に固定し（ローカライズしない）、扱う文書やファイル名は国際化されている。詳細は `docs/interaction-model.md` §6b。
+- **Mac outside, Emacs inside.** — メニューバーやダイアログは macOS の流儀、フレームの中（キー操作・モードライン・ミニバッファ）はEmacsの流儀で作る。アプリ自身の文言は英語に固定し（ローカライズしない）、扱う文書やファイル名は国際化されている。詳細は `docs/dev/interaction-model.md` §6b。
 
 ## Product goals
 
 ### 1. Project-oriented reading
 
-- 「プロジェクトを選ぶ」操作はない。バッファのファイルのディレクトリ（Emacsの `default-directory`）を基準に、ファイルを開き、そのディレクトリ以下を一覧・全文検索する。作業ごとにフレーム（ウィンドウ）を分けて、複数の文書群を並行して読める（`Cmd-1`、`Cmd-2`…で切り替え）。詳細は [docs/buffer-model.md](docs/buffer-model.md)。
+- 「プロジェクトを選ぶ」操作はない。バッファのファイルのディレクトリ（Emacsの `default-directory`）を基準に、ファイルを開き、そのディレクトリ以下を一覧・全文検索する。作業ごとにフレーム（ウィンドウ）を分けて、複数の文書群を並行して読める（`Cmd-1`、`Cmd-2`…で切り替え）。詳細は [docs/dev/buffer-model.md](docs/dev/buffer-model.md)。
 - ファイル一覧、ファイル名検索、見出しナビゲーション、全文検索を提供する。
 - 相対リンク、文書内アンカー、ローカル画像・図表を適切に解決する。
 - 多数のファイルを扱っても、閲覧の応答性を維持する。
@@ -64,7 +64,7 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 - Emacsやコーディングエージェントが更新したファイルを適切に再読み込みする。
 - 更新時には閲覧位置を可能な限り維持する。
 - 将来的に、CLIやEmacs側の小さな連携機能からファイル・行・見出しを指定して開けるようにする。
-- 分割配置、参照履歴、閲覧位置などのセッションを、フレーム（ウィンドウ）ごとに保存し、次回の起動で復元する（既定で有効。`config.json` の `restoreSession` で無効にできる。詳細は [docs/session-restore.md](docs/session-restore.md)）。
+- 分割配置、参照履歴、閲覧位置などのセッションを、フレーム（ウィンドウ）ごとに保存し、次回の起動で復元する（既定で有効。`config.json` の `restoreSession` で無効にできる。詳細は [docs/dev/session-restore.md](docs/dev/session-restore.md)）。
 
 ## Initial interaction sketch
 
@@ -93,7 +93,7 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 | Edit in editor | `C-c e` / 右クリック | 指した場所を、エディタで編集するために記録 |
 | Describe bindings | `C-h b` | キー割り当ての一覧（設定は `config.json` の `keybindings`） |
 
-*キー割り当ての全体は [docs/keybindings.md](docs/keybindings.md)（コードから自動生成）、設定の方法は [docs/configuration.md](docs/configuration.md)。*
+*キー割り当ての全体は [docs/user/keybindings.md](docs/user/keybindings.md)（コードから自動生成）、設定の方法は [docs/user/configuration.md](docs/user/configuration.md)。*
 
 ## Non-goals (initially)
 
@@ -109,14 +109,14 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 
 | Concern | Candidates to evaluate |
 | --- | --- |
-| macOS application shell | **SwiftUI + WKWebView（決定、`docs/poc-interaction-results.md`）**。比較対象: Tauri 2 / Rust、Electron |
+| macOS application shell | **SwiftUI + WKWebView（決定、`docs/history/poc-interaction-results.md`）**。比較対象: Tauri 2 / Rust、Electron |
 | UI implementation | React + TypeScript、ネイティブUIとの分担 |
-| Markdown pipeline | **unified / remark / rehype（決定、`docs/poc-rendering-results.md`）**。raw HTML は rehype-sanitize で無害化 |
+| Markdown pipeline | **unified / remark / rehype（決定、`docs/history/poc-rendering-results.md`）**。raw HTML は rehype-sanitize で無害化 |
 | GFM / appearance | **remark-gfm、github-markdown-css（決定）**。GitHub との差は小さな変換で吸収する（例: 通貨表記の `$`） |
 | Mathematics | **KaTeX（決定）**。Marked 2 との差は、描画ではなくエスケープの解釈（`\_`）だったため互換処理で解消。MathJax は必要になるまで採用しない |
 | Diagrams | **Mermaid（決定、遅延ロード・strictモード）**。Graphviz、PlantUML、WaveDrom、D2 は未評価（外部コマンドが絡むものは権限境界を先に決める） |
-| Syntax highlighting | **starry-night（決定）**。Shiki と比較し、速度・出力サイズ・GitHub互換で優位。対応言語の一覧は `docs/syntax-highlighting.md` |
-| Project search | **Swift 自前実装から開始（決定、`docs/poc-navigation-results.md`）**。`host.search` の契約でエンジンを差し替え可能にし、正規表現や除外規則が必要になった時点で ripgrep を再評価。インデックス方式は規模に応じて検討 |
+| Syntax highlighting | **starry-night（決定）**。Shiki と比較し、速度・出力サイズ・GitHub互換で優位。対応言語の一覧は `docs/user/syntax-highlighting.md` |
+| Project search | **Swift 自前実装から開始（決定、`docs/history/poc-navigation-results.md`）**。`host.search` の契約でエンジンを差し替え可能にし、正規表現や除外規則が必要になった時点で ripgrep を再評価。インデックス方式は規模に応じて検討 |
 | File monitoring | **FSEvents（決定）**。ポーリングは削除を検知できず、ファイル数に比例して重いため採用しない |
 | State / layout management | 明示的なbuffer・windowモデル、分割ツリーなど |
 
@@ -151,7 +151,7 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 - 図表プラグインをどの権限境界で実行するか。
 - 大きな文書の部分更新とスクロール位置維持をどう実現するか。
 - メモリ使用量の確認（プロジェクト後半にまとめて。描画バンドルで増加、リークの有無と内訳を調べる）。
-- Back / Forward の履歴粒度をどう設計するか。window分割時は履歴を複製する方針（詳細は `docs/interaction-model.md`）。
+- Back / Forward の履歴粒度をどう設計するか。window分割時は履歴を複製する方針（詳細は `docs/dev/interaction-model.md`）。
 
 ## Project status
 

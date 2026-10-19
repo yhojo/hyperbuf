@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Yasuo Hojo
 # HyperBuf.app を組み立てる(開発用)。Web コア(core/dist)を Contents/Resources/web に同梱する。
-# 署名は ad-hoc(ローカルで動かす用)。Developer ID 署名・公証・パッケージ化は scripts/release.sh(docs/release.md)。
+# 署名は ad-hoc(ローカルで動かす用)。Developer ID 署名・公証・パッケージ化は scripts/release.sh(docs/dev/release.md)。
 # 使い方: app/macos/scripts/make-app.sh [debug|release]   (既定: release)  → app/macos/.build/HyperBuf.app
 set -euo pipefail
 cd "$(dirname "$0")/../../.."   # リポジトリのルート
@@ -45,7 +45,7 @@ cp LICENSE "$app/Contents/Resources/LICENSE.txt"
 cp NOTICE "$app/Contents/Resources/NOTICE.txt"
 (cd core && node scripts/licenses.mjs notices "../$app/Contents/Resources/THIRD-PARTY-NOTICES.txt" >/dev/null)
 
-# Bundle ID は、所有するドメイン(yhojo.com)の逆順(docs/migration-plan.md §8)。
+# Bundle ID は、所有するドメイン(yhojo.com)の逆順(docs/history/migration-plan.md §8)。
 cat > "$app/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -64,7 +64,7 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
   <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSPrincipalClass</key><string>NSApplication</string>
-  <!-- hyperbuf:// : アプリの起動と、外部リンクからの「開く」(docs/integration-protocol.md §4.1) -->
+  <!-- hyperbuf:// : アプリの起動と、外部リンクからの「開く」(docs/dev/integration-protocol.md §4.1) -->
   <key>CFBundleURLTypes</key>
   <array>
     <dict>
@@ -73,7 +73,7 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
     </dict>
   </array>
   <!-- Finder の「このアプリケーションで開く」・Dock へのドラッグ&ドロップ(Markdown とフォルダ)。
-       既定のアプリにはならない(Alternate)。docs/buffer-model.md §5.1 -->
+       既定のアプリにはならない(Alternate)。docs/dev/buffer-model.md §5.1 -->
   <key>CFBundleDocumentTypes</key>
   <array>
     <dict>

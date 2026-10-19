@@ -6,7 +6,7 @@ HyperBuf の中心概念である**バッファ**の定義と、そこから導�
 
 - 操作モデル全体(window の分割、参照履歴、キー): [interaction-model.md](interaction-model.md)
 - ファイルを開くときのアクセス判定(許可パス・警告パス): [file-access.md](file-access.md)
-- 設定キーの一覧: [configuration.md](configuration.md)
+- 設定キーの一覧: [configuration.md](../user/configuration.md)
 - セッションの復元: [session-restore.md](session-restore.md)
 
 ## 1. 概要
@@ -193,7 +193,7 @@ Emacs のフレーム(macOS のウィンドウ)を複数持てる。並行する
 - **外部からの「開く」要求**(CLI、Emacs、URL スキーム)の行き先は、**最後にアクティブだったフレーム**。
 - **「エディタで編集」で記録した位置**(`get-location`)と `get-view` は、記録した、または最後にアクティブだったフレームのものを返す。
 - **記憶した許可パス**([file-access.md](file-access.md) §4)と設定は、全フレームで共有する(ホスト側で管理する)。
-- メモリ: WebContent は、フレームごとに別々のプロセスで、共有されない。実測では、**フレームを 1 つ増やすごとに約 140〜150 MB 増える**(1 フレーム約 190 MB、5 フレーム約 740 MB、8 フレーム約 1.2 GB)。3〜5 フレームの使い方なら許容できるので、この構成を採用している([poc-frames-results.md](poc-frames-results.md))。
+- メモリ: WebContent は、フレームごとに別々のプロセスで、共有されない。実測では、**フレームを 1 つ増やすごとに約 140〜150 MB 増える**(1 フレーム約 190 MB、5 フレーム約 740 MB、8 フレーム約 1.2 GB)。3〜5 フレームの使い方なら許容できるので、この構成を採用している([poc-frames-results.md](../history/poc-frames-results.md))。
 
 ## 8. ファイルの内容の変更への追従
 

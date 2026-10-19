@@ -1,15 +1,16 @@
 #!/bin/bash
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Yasuo Hojo
-# 統合テスト: Web コアをビルドし、HyperBuf.app(デバッグビルド)で、プロジェクトの全文書を開いて検査する。
-# GUI セッションが要る(WebView を起動するため)。CI の macOS ランナーでも動く想定だが、未確認。
-# 使い方: scripts/integration-test.sh [プロジェクトのディレクトリ]   (既定: fixtures/sample-project)
+# Integration test: builds the Web core and opens all the project's documents in HyperBuf.app (debug build) to
+# check them.
+# Needs a GUI session (to launch the WebView). Expected to work on CI's macOS runners too, but unverified.
+# Usage: scripts/integration-test.sh [project directory]   (default: fixtures/sample-project)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 project="$(cd "${1:-fixtures/sample-project}" && pwd -P)"
 script="$(mktemp)"
-# 検査の対象のディレクトリ(絶対パス)を、先頭に付けて渡す
+# Pass the directory to check (an absolute path) at the front
 { printf 'const PROJECT = %s;\n' "$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$project")"; cat "$(pwd)/app/macos/IntegrationTests/smoke.js"; } >"$script"
 
 (cd core && npm ci --silent && npm run build >/dev/null)
@@ -19,7 +20,8 @@ state=""
 log="$(mktemp)"
 trap 'rm -rf "$log" "$script" "$state"' EXIT
 state="$(mktemp -d)"
-# 利用者の実際のソケット・記憶したパス・セッションには触れない(起動中の HyperBuf があっても、衝突しない)
+# Does not touch the user's real socket, remembered paths or sessions (no conflict even if a HyperBuf is
+# running)
 HYPERBUF_SOCKET_PATH="$state/hb.sock" HYPERBUF_TRUSTED_ROOTS="$state/trusted.json" HYPERBUF_SESSION_DIR="$state/sessions" \
   HYPERBUF_TEST_SCRIPT="$script" app/macos/.build/debug/HyperBuf "$project" >"$log" 2>&1 &
 pid=$!
@@ -51,7 +53,7 @@ for name, d in r["docs"].items():
         problems.append(f"{name}: 危険な要素が残っている ({d['dangerous']}, {d['inlineHandlers']})")
     if d["chars"] == 0:
         problems.append(f"{name}: 空に描画された")
-# 検証用の文書集(fixtures/sample-project)なら、期待する値も確かめる
+# For the verification document set (fixtures/sample-project), also check the expected values
 if "sample-project" in sys.argv[2]:
     images = r["docs"].get("rendering/05-images.md", {})
     if images.get("brokenImages") != 1: problems.append(f"存在しない画像だけが読めないはず: {images}")

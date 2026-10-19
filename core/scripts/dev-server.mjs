@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 開発用サーバー: dist/ と、1 つのディレクトリ(Markdown の置き場)を HTTP で配る。
-// 使い方: node scripts/dev-server.mjs [ディレクトリ] [ポート]
-//   既定のディレクトリ: ../fixtures/sample-project、既定のポート: 8765
-// 本番のシェル(macOS アプリ)が提供する hyperbufHost の代わりに、ブラウザで Web コアを動かすためのもの。
-// パスは絶対パス。ホスト(`~`)は、このディレクトリとして扱う。
-// 127.0.0.1 だけで待ち受け、このディレクトリの外と、.md・画像以外は返さない(本番のアクセス判定は、シェルが行う)。
+// Dev server: serves dist/ and one directory (where the Markdown lives) over HTTP.
+// Usage: node scripts/dev-server.mjs [directory] [port]
+//   Default directory: ../fixtures/sample-project, default port: 8765
+// Runs the Web core in a browser, standing in for the hyperbufHost that the production shell (macOS app)
+// provides.
+// Paths are absolute. The host (`~`) is treated as this directory.
+// Listens on 127.0.0.1 only and serves nothing outside this directory except .md and images (production
+// access checks are done by the shell).
 
 import { createServer } from "node:http";
 import { watch } from "node:fs";
@@ -39,7 +41,7 @@ const MIME = {
 };
 const IMAGE_EXT = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"]);
 
-/** ディレクトリ内に収まる実パス(絶対パス)だけを返す(.. やシンボリックリンクによる脱出を拒否)。 */
+/** Returns only real paths (absolute) contained in the directory (rejects escapes via .. or symlinks). */
 async function contained(path) {
   try {
     if (!path.startsWith("/")) return null;
@@ -52,7 +54,7 @@ async function contained(path) {
 
 const hidden = (name) => name.startsWith(".") || name === "node_modules";
 
-/** ディレクトリの 1 階層(.md とサブディレクトリ)。 */
+/** One level of a directory (.md files and subdirectories). */
 async function listDirectory(dir, showHidden) {
   const entries = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -63,7 +65,7 @@ async function listDirectory(dir, showHidden) {
   return entries;
 }
 
-/** ディレクトリ以下の .md の、起点からの相対パス(隠しファイル・隠しディレクトリ・node_modules を除く)。 */
+/** Relative paths from the origin of the .md files under a directory (excluding hidden files/directories and node_modules). */
 async function listTree(base, dir = base) {
   const out = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -75,7 +77,7 @@ async function listTree(base, dir = base) {
   return out.sort();
 }
 
-/** 大文字小文字を区別しない部分一致の全文検索(開発用の素朴な実装。1 ファイル最大 3 行)。 */
+/** Case-insensitive substring full-text search (a naive implementation for development; up to 3 lines per file). */
 async function search(dir, query, limit) {
   const q = query.toLowerCase();
   const results = [];
@@ -117,7 +119,7 @@ createServer(async (req, res) => {
       return send(res, 200, JSON.stringify({ home: root }), MIME[".json"]);
     }
     if (pathname === "/__project/config") {
-      // 開発用: 環境変数 HYPERBUF_CONFIG の JSON(keybindings だけを返す)
+      // For development: JSON of the HYPERBUF_CONFIG environment variable (returns keybindings only)
       const file = process.env.HYPERBUF_CONFIG;
       const config = file ? JSON.parse(await readFile(file, "utf8").catch(() => "{}")) : {};
       return send(
@@ -189,7 +191,7 @@ createServer(async (req, res) => {
       req.on("close", () => clients.delete(res));
       return;
     }
-    // 静的ファイル(dist/)
+    // Static files (dist/)
     const rel = pathname === "/" ? "index.html" : pathname.slice(1);
     const file = resolve(dist, rel);
     if (!file.startsWith(dist + sep)) return send(res, 404, "not found");

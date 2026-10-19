@@ -1,11 +1,13 @@
 #!/bin/bash
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Yasuo Hojo
-# 統合テスト(IPC・URL スキーム): 実際の HyperBuf.app(デバッグビルド)を起動し、ソケットのクライアントから、
-# ping・open(警告パスの外 / 承認される警告パス / 拒否される警告パス / 期限切れ)・get-location・異常系を試す。
-# さらに、URL スキーム(open -a <app> hyperbuf://…)での「開く」も試す。
-# 利用者の実際のソケット・記憶したパスの保存先は使わない(デバッグビルドの環境変数で差し替える)。
-# GUI セッションが要る。
+# Integration test (IPC / URL scheme): launches the real HyperBuf.app (debug build) and, from a socket client,
+# tries ping, open (outside warn paths / approved warn path / rejected warn path / expired), get-location and
+# error cases.
+# It also tries "open" through the URL scheme (open -a <app> hyperbuf://…).
+# Does not use the user's real socket or the storage for remembered paths (replaced via debug-build
+# environment variables).
+# Needs a GUI session.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 root="$(pwd)"
@@ -22,7 +24,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# 警告パス(設定の warnPaths)の下に、確認の対象になるファイルを作る。urlconf は、警告パスの外(URL スキームだけが確認する)
+# Under a warn path (warnPaths in the config), create the files to be confirmed. urlconf is outside the warn
+# paths (only the URL scheme confirms it)
 mkdir -p "$tmp/approve/repoA/docs" "$tmp/deny" "$tmp/wait" "$tmp/urlconf" "$tmp/sock"
 printf '# U\n' > "$tmp/urlconf/u.md"
 printf '# U2\n' > "$tmp/urlconf/u2.md"
@@ -31,7 +34,8 @@ printf '# B\n\n本文 B\n' > "$tmp/approve/repoA/docs/b.md"
 printf '# D\n' > "$tmp/deny/d.md"
 printf '# W\n' > "$tmp/wait/w.md"
 
-# エディタ連携(M6): 呼び出されるエディタの代わりのスクリプト(受け取った引数を記録する)と、その設定
+# Editor integration (M6): a script standing in for the editor to be invoked (records the arguments it
+# receives), and its settings
 mkdir -p "$tmp/cmd"
 cat > "$tmp/editor.sh" <<EDITOR
 #!/bin/sh
@@ -91,13 +95,13 @@ def raw(line, timeout=5):
     s.close()
     return json.loads(data.split(b"\n")[0])
 
-# ソケットの出現を待つ(アプリの起動)
+# Wait for the socket to appear (app launch)
 t0 = time.time()
 while not os.path.exists(sock_path):
     if time.time() - t0 > 30:
         sys.exit("ソケットが現れません(アプリが起動しなかった?)")
     time.sleep(0.05)
-time.sleep(1.0)  # Web コアの起動(ready)を待つ
+time.sleep(1.0)  # wait for the Web core to start (ready)
 print(f"アプリの起動からソケットまで {time.time() - t0:.2f} 秒")
 
 print("ping")
@@ -159,7 +163,8 @@ subprocess.run(["open", "-a", app, url], check=True)
 time.sleep(1.5)
 loc = call({"v": 1, "op": "get-view"})["result"]["view"]
 check("URL スキームで開ける(許可パスの中は確認なし)", loc and loc["path"] == f"{project}/index.md" and loc["anchor"] == "line:5", loc)
-# URL スキームは、起点を特定できない経路なので、許可パスにないファイルは、警告パスの外でも確認する
+# The URL scheme is a route whose origin cannot be identified, so files not in the allowed paths are confirmed
+# even outside warn paths
 url_u = "hyperbuf://open?v=1&path=" + __import__("urllib.parse").parse.quote(f"{tmp}/urlconf/u.md", safe="")
 subprocess.run(["open", "-a", app, url_u], check=True)
 time.sleep(2.0)
@@ -316,7 +321,7 @@ check("このとき、指した位置は変わらない", call({"v": 1, "op": "g
 
 call({"v": 1, "op": "open", "path": edit_file})
 select_and_edit("uniqueword")
-open(edit_file, "w", encoding="utf-8").write("# 書き換え\n\n先頭に 1 行が増えた版です。\n\n" + body.split("\n\n", 1)[1])  # 指したあとに、ファイルが変わる
+open(edit_file, "w", encoding="utf-8").write("# 書き換え\n\n先頭に 1 行が増えた版です。\n\n" + body.split("\n\n", 1)[1])  # the file changes after pointing
 time.sleep(1.0)
 if shutil.which("emacs"):
     r = emacs_visit()
@@ -356,7 +361,7 @@ print("Emacs から、アプリを起動して開く(hyperbuf-launch-if-needed)"
 if shutil.which("emacs") is None:
     print("  - emacs が見つからないので、省略")
 else:
-    # アプリを終了させる(ソケットのファイルは残る。クラッシュの後と同じ)。待つのは、接続できなくなるまで
+    # Quit the app (the socket file remains, as after a crash). Wait until connections are no longer possible
     subprocess.run(["pkill", "-f", f"{app}/Contents/MacOS/HyperBuf"])
     def listening():
         try:
@@ -372,8 +377,8 @@ else:
         time.sleep(0.1)
     check("アプリが終了して、ソケットに接続できなくなる", not listening())
 
-    # 起動だけは、テスト用の環境変数(ソケット・設定の隔離)つきの `open` に差し替える。
-    # 起動の URL(hyperbuf://ping)と、起動後にソケットで開く流れは、本物のまま
+    # Only the launch is swapped for `open` with test environment variables (isolating socket and config).
+    # The launch URL (hyperbuf://ping) and the flow of opening over the socket afterwards stay real
     envs = [f"HYPERBUF_SOCKET_PATH={sock_path}", f"HYPERBUF_TRUSTED_ROOTS={trusted_path}",
             f"HYPERBUF_SESSION_DIR={tmp}/sessions", f"HYPERBUF_TEST_LOG={test_log}",
             f"HYPERBUF_CONFIG={tmp}/config.json"]

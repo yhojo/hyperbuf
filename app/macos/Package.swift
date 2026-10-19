@@ -10,15 +10,15 @@ let package = Package(
         .executable(name: "HyperBuf", targets: ["HyperBuf"])
     ],
     dependencies: [
-        // アプリ(サーバー)と CLI(クライアント)が共有する、連携プロトコルの型と検証
+        // Integration protocol types and validation shared by the app (server) and the CLI (client)
         .package(path: "../../protocol/swift")
     ],
     targets: [
-        // OS の UI に依存しない部品(パスの検証、プロトコル、検索など)。単体テストの対象。
+        // Components independent of the OS UI (path validation, protocol, search, etc.). Covered by unit tests.
         .target(
             name: "HyperBufKit",
             dependencies: [.product(name: "HyperBufProtocol", package: "swift")]),
-        // SwiftUI + WKWebView のシェル。
+        // SwiftUI + WKWebView shell.
         .executableTarget(
             name: "HyperBuf",
             dependencies: [

@@ -1,10 +1,11 @@
 #!/bin/bash
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Yasuo Hojo
-# バージョンの表記がそろっているか検査する(docs/dev/release.md)。
-#   アプリの版(Version.swift)を正として、CLI、Web コア(index.ts)、Emacs パッケージのヘッダ、
-#   core と protocol の package.json と package-lock.json が同じこと、
-#   CHANGELOG.md に、その版の節(## [x.y.z])があることを確かめる。
+# Checks that the version strings are consistent (docs/dev/release.md).
+#   Taking the app version (Version.swift) as authoritative, verifies that the CLI, the Web core (index.ts),
+# the header of
+#   the Emacs package, and package.json and package-lock.json of core and protocol are the same,
+#   and that CHANGELOG.md has a section for that version (## [x.y.z]).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

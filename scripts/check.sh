@@ -1,8 +1,8 @@
 #!/bin/bash
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Yasuo Hojo
-# 全体のチェック(型検査・整形・ビルド・テスト)。CI(.github/workflows/ci.yml)と同じ内容。
-# 使い方: scripts/check.sh [license|version|core|protocol|app|cli|emacs]   (引数なしですべて)
+# Overall checks (type check, formatting, build, tests). Same content as CI (.github/workflows/ci.yml).
+# Usage: scripts/check.sh [license|version|core|protocol|app|cli|emacs]   (all if no argument)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -23,7 +23,7 @@ check_core() {
   (cd core && npm ci --silent && npm run check)
 }
 
-check_swift() { # $1=ディレクトリ
+check_swift() { # $1=directory
   step "$1: ビルド・テスト・整形"
   (cd "$1" && swift build && swift test && swift format lint --strict --recursive Sources Tests --configuration .swift-format)
 }

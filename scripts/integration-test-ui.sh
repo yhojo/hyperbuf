@@ -1,11 +1,11 @@
 #!/bin/bash
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Yasuo Hojo
-# 統合テスト(UI): 実際の HyperBuf.app(デバッグビルド、WKWebView)で、M3 の操作を検査する。
-#   文書内のインクリメンタル検索(C-s / C-r)、outline 風の見出し移動、スクロールの補完、
-#   キーマップの設定(config.json の keybindings)と describe-bindings(C-h b)。
-# キー入力は、ページ内で KeyboardEvent を発行する(ネイティブのキー経路の確認は、手動)。
-# GUI セッションが要る。利用者の実際のソケット・設定・信頼するルートは使わない。
+# Integration test (UI): checks the M3 operations with the real HyperBuf.app (debug build, WKWebView).
+#   Incremental search in a document (C-s / C-r), outline-style heading navigation, scroll completion,
+#   keymap configuration (keybindings in config.json) and describe-bindings (C-h b).
+# Key input fires KeyboardEvent inside the page (the native key path is checked by hand).
+# Needs a GUI session. Does not use the user's real socket, config or trusted roots.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 root="$(pwd)"
@@ -21,7 +21,7 @@ cleanup() {
 }
 trap cleanup EXIT
 mkdir -p "$tmp/cmd" "$tmp/sock"
-# 利用者の設定: M-p に back を割り当て、C-f を外し、不正な設定を 3 つ入れる(無視されて、一覧に出るはず)
+# User settings: assign back to M-p, remove C-f, put in 3 invalid settings (they should be ignored and listed)
 cat > "$tmp/config.json" <<'JSON'
 {
   "keybindings": {
@@ -74,7 +74,7 @@ def page(js, timeout=30):
         raise RuntimeError(text)
     return text.removeprefix("RESULT: ")
 
-# ページで使う補助(キー入力・状態)。各 page() の先頭に付ける
+# Helpers used in the page (key input, state). Prepended to each page()
 HELPERS = """
 const P = %s;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -83,7 +83,8 @@ const press = async (...keys) => {
   for (const [k, code, mods] of keys) window.dispatchEvent(new KeyboardEvent('keydown', { key: k, code, bubbles: true, cancelable: true, ...(mods ?? {}) }));
   await hb.keyboard.idle(); await sleep(80);
 };
-// C-s は、確定・取消まで終わらないコマンドなので、完了を待たずに発行する
+// C-s is a command that does not finish until confirmed or cancelled, so fire it without waiting for
+// completion
 const fire = async (k, code, mods = {}) => { window.dispatchEvent(new KeyboardEvent('keydown', { key: k, code, bubbles: true, cancelable: true, ...mods })); await sleep(80); };
 const input = () => document.getElementById('prompt-input');
 const typeIn = (t) => { input().value = t; input().dispatchEvent(new Event('input')); };
@@ -96,7 +97,7 @@ const C = (k, code) => [['c', 'KeyC', { ctrlKey: true }], [k, code, { ctrlKey: t
 def run(body):
     return json.loads(page(HELPERS % json.dumps(os.environ["PROJECT_DIR"]) + body))
 
-# 起動(Web コアの準備)を待つ
+# Wait for startup (Web core ready)
 t0 = time.time()
 while time.time() - t0 < 60:
     try:
@@ -255,14 +256,14 @@ await hb.open(f); await sleep(400);
 const c = content();
 const focus = () => document.querySelector('.win.selected .content a.link-focus')?.getAttribute('href') ?? null;
 const link = (h) => c.querySelector('a[href="' + h + '"]');
-// 中ほどのリンクが見える位置までスクロールして、TAB: 先頭ではなく、見えている最初のリンク
+// Scroll until the middle link is visible, then TAB: not the first link, but the first visible one
 link('middle.md').scrollIntoView({ block: 'center' }); await sleep(200);
 await press(['Tab','Tab']); const first = focus();
-await press(['Tab','Tab']); const second = focus();   // 次は、末尾
-// フォーカスしたリンクが、見えなくなったら、見えている範囲から選び直す
+await press(['Tab','Tab']); const second = focus();   // next is the last
+// If the focused link is no longer visible, re-select from the visible range
 c.scrollTop = 0; await sleep(200);
 await press(['Tab','Tab']); const afterScrollUp = focus();
-// S-TAB は、見えている最後のリンクから
+// S-TAB starts from the last visible link
 link('middle.md').scrollIntoView({ block: 'center' }); await sleep(200);
 await press(['Tab','Tab',{ shiftKey: true }]); const back = focus();
 return JSON.stringify({ first, second, afterScrollUp, back });
@@ -286,7 +287,7 @@ return JSON.stringify({ before, after: document.querySelector('.mode-line .ml-hi
 check("C-x x u で追従がオンになり、モードラインに [Follow] が出る", "[Follow]" in r["after"] and "[Follow]" not in r["before"] and "on" in r["echo"], r)
 follow_lines[101] = "行 100 (変更)\n\n"
 open(follow_path + ".tmp", "w", encoding="utf-8").write("".join(follow_lines))
-os.replace(follow_path + ".tmp", follow_path)  # エディタの保存と同じく、置き換える
+os.replace(follow_path + ".tmp", follow_path)  # replace, like an editor's save
 time.sleep(2)
 r = run("""
 const c = content();
@@ -335,11 +336,11 @@ r = run("""
 await hb.open(P + '/long.md'); await sleep(300);
 await hb.open(P + '/index.md'); await sleep(200);
 const before = document.querySelector('.mode-line').textContent;
-await press(['p','KeyP',{altKey:true}]);               // M-p(利用者が back に割り当てた)
+await press(['p','KeyP',{altKey:true}]);               // M-p (the user assigned it to back)
 const afterMp = document.querySelector('.mode-line').textContent;
-await press(['f','KeyF',{ctrlKey:true}]);              // C-f(利用者が外した → 何も起きない)
+await press(['f','KeyF',{ctrlKey:true}]);              // C-f (the user removed it → nothing happens)
 const afterCf = document.querySelector('.mode-line').textContent;
-await press(['b','KeyB',{ctrlKey:true}]);              // C-b(標準のまま back)
+await press(['b','KeyB',{ctrlKey:true}]);              // C-b (still the default back)
 const afterCb = document.querySelector('.mode-line').textContent;
 await press(['h','KeyH',{ctrlKey:true}], ['b','KeyB']); // C-h b
 const header = document.querySelector('.mode-line').textContent;
@@ -372,7 +373,7 @@ typeIn(initial + 'arch'); await sleep(200);
 const typed = { first: cands()[0]?.textContent, marked: [...(cands()[0]?.querySelectorAll('b') ?? [])].map((b) => b.textContent), on: cands()[0]?.className };
 pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(250);
 const opened = document.querySelector('.mode-line').textContent;
-// ディレクトリは、RET で確定せず、その中に入る
+// A directory is not confirmed with RET; it is entered
 await fire('x','KeyX',{ctrlKey:true}); await fire('f','KeyF',{ctrlKey:true}); await sleep(200);
 const initial2 = input().value;
 typeIn(initial2 + 'rend'); await sleep(200);
@@ -380,7 +381,7 @@ const dirFirst = cands()[0]?.textContent;
 pressIn('Enter','Enter'); await sleep(250);
 const descended = { value: input().value, texts: cands().slice(0, 4).map((li) => li.textContent), hidden: document.getElementById('minibuffer').hidden };
 pressIn('g','KeyG',{ctrlKey:true}); await sleep(80);
-// 入力の履歴(M-p)
+// Input history (M-p)
 await fire('x','KeyX',{ctrlKey:true}); await fire('f','KeyF',{ctrlKey:true}); await sleep(200);
 pressIn('p','KeyP',{altKey:true}); await sleep(80);
 const recalled = input().value;
@@ -407,7 +408,7 @@ typeIn('sample-project/rend'); await sleep(250);
 const filtered = cands().map((li) => li.textContent);
 pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(300);
 const header = document.querySelector('.mode-line').textContent;
-// 基準を ../ に切り替えて、基準の外のファイルに届く
+// Switch the base to ../ to reach a file outside the base
 await fire('x','KeyX',{ctrlKey:true}); await fire('p','KeyP'); await fire('f','KeyF'); await sleep(300);
 typeIn('../'); await sleep(500);
 const outer = cands().map((li) => li.textContent);
@@ -415,7 +416,7 @@ pressIn('g','KeyG',{ctrlKey:true}); await sleep(80);
 const ROOT = P.slice(0, P.lastIndexOf('/fixtures/'));
 return JSON.stringify({ label, listed, narrowed, filtered, header, outer, repoName: ROOT.slice(ROOT.lastIndexOf('/') + 1) });
 """)
-# サンプルのプロジェクトは、リポジトリの中(.git のあるルートは、リポジトリの先頭)にある
+# The sample project is inside the repository (the root with .git is the top of the repository)
 sp = "fixtures/sample-project/"
 check("C-x p f: プロジェクト・ルート(.git のある先頭)以下を再帰で一覧にする(ルートからの相対パス)", r["label"].startswith("Find file in ~/") and r["label"].endswith(r["repoName"] + "/: ") and "README.md" in r["listed"] and sp + "long.md" in r["narrowed"], (r["label"], r["listed"][:8], r["narrowed"][:5]))
 check("絞り込んで RET で開く", r["filtered"] and r["filtered"][0].startswith(sp + "rendering/") and "long.md" not in r["header"] and ".md" in r["header"], (r["filtered"], r["header"]))

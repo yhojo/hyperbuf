@@ -1,29 +1,32 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
-// 代替のアイコン「分割した 2 つの window」(app/macos/Resources/alternatives/split-windows/)を、CoreGraphics で描いて生成する。
-// 既定のアイコンは、icon-from-image.swift が、元の画像(Resources/source/)から作る(docs/dev/release.md)。
-// 使い方: swift app/macos/scripts/make-icon.swift [出力のディレクトリ]   (既定: app/macos/Resources/alternatives/split-windows)
-//   → AppIcon.iconset/(各サイズの PNG)と AppIcon.icns を出力する。`iconutil` を使う(macOS 標準)。
-// 意匠: 暗い角丸の板の上に、分割した 2 つの window(buffer)。左は文書(見出しと本文、選択した一節とカーソル)、
-//       右は別の buffer(コードの断片)。各 window の下に、Emacs のようなモードライン。タブはない。
+// Draws and generates the alternative icon "two split windows" (app/macos/Resources/alternatives/split-windows/) with
+// CoreGraphics.
+// The default icon is made by icon-from-image.swift from the original image (Resources/source/) (docs/dev/release.md).
+// Usage: swift app/macos/scripts/make-icon.swift [output directory] (default:
+// app/macos/Resources/alternatives/split-windows)
+//   → Outputs AppIcon.iconset/ (PNGs of each size) and AppIcon.icns. Uses `iconutil` (standard on macOS).
+// Design: on a dark rounded plate, two split windows (buffers). The left is a document (heading and body, a selected
+// passage and cursor),
+//       the right is another buffer (a code fragment). Under each window, an Emacs-like mode line. No tabs.
 import AppKit
 import CoreGraphics
 
 let outDir = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "app/macos/Resources/alternatives/split-windows"
 
-// MARK: 色
+// MARK: Colors
 func rgb(_ hex: UInt32, _ alpha: CGFloat = 1) -> CGColor {
     CGColor(
         srgbRed: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
         blue: CGFloat(hex & 0xFF) / 255, alpha: alpha)
 }
 let space = CGColorSpace(name: CGColorSpace.sRGB)!
-let accent: UInt32 = 0x3DDC97  // 選択・カーソル・見出し
-let ink: UInt32 = 0x9AA4C8  // 本文の行
-let paper: UInt32 = 0xF3F5FF  // window の地
+let accent: UInt32 = 0x3DDC97  // selection, cursor, headings
+let ink: UInt32 = 0x9AA4C8  // body lines
+let paper: UInt32 = 0xF3F5FF  // window background
 let modeline: UInt32 = 0x1B2250
 
-// MARK: 描画(1024 x 1024 の座標。上が y = 0)
+// MARK: Drawing (1024 x 1024 coordinates; y = 0 at the top)
 func draw(_ ctx: CGContext) {
     func roundedRect(_ r: CGRect, _ radius: CGFloat) -> CGPath {
         CGPath(roundedRect: r, cornerWidth: radius, cornerHeight: radius, transform: nil)
@@ -34,7 +37,7 @@ func draw(_ ctx: CGContext) {
         ctx.fillPath()
     }
 
-    // 板(macOS の角丸。外側に 100 px の余白)
+    // Plate (macOS rounded corners; 100 px margin outside)
     let body = CGRect(x: 100, y: 100, width: 824, height: 824)
     let bodyPath = roundedRect(body, 184)
     ctx.saveGState()
@@ -48,13 +51,13 @@ func draw(_ ctx: CGContext) {
         colorsSpace: space, colors: [rgb(0x2E3A8C), rgb(0x11163A)] as CFArray, locations: [0, 1])!
     ctx.drawLinearGradient(
         gradient, start: CGPoint(x: 512, y: 100), end: CGPoint(x: 512, y: 924), options: [])
-    // 上端のうっすらとした光
+    // A faint glow along the top edge
     let sheen = CGGradient(
         colorsSpace: space, colors: [rgb(0xFFFFFF, 0.14), rgb(0xFFFFFF, 0)] as CFArray, locations: [0, 1])!
     ctx.drawLinearGradient(sheen, start: CGPoint(x: 512, y: 100), end: CGPoint(x: 512, y: 420), options: [])
     ctx.restoreGState()
 
-    // 1 つの window: 地・本文・モードライン
+    // One window: background, body, mode line
     func window(_ r: CGRect, content: (CGRect) -> Void) {
         let path = roundedRect(r, 30)
         ctx.saveGState()
@@ -65,7 +68,7 @@ func draw(_ ctx: CGContext) {
         ctx.addPath(path)
         ctx.clip()
         content(r)
-        // モードライン(下)
+        // Mode line (bottom)
         let bar = CGRect(x: r.minX, y: r.maxY - 46, width: r.width, height: 46)
         ctx.setFillColor(rgb(modeline))
         ctx.fill(bar)
@@ -78,13 +81,13 @@ func draw(_ ctx: CGContext) {
         fill(roundedRect(CGRect(x: x, y: y, width: w, height: h), h / 2), rgb(color, alpha))
     }
 
-    // 左の window: 文書(見出し・本文・選択・カーソル)
+    // Left window: document (heading, body, selection, cursor)
     window(CGRect(x: 196, y: 214, width: 360, height: 596)) { r in
         let x = r.minX + 36
-        line(x, r.minY + 44, 190, color: accent, h: 30)  // 見出し
+        line(x, r.minY + 44, 190, color: accent, h: 30)  // heading
         for (i, w) in [270, 288, 244, 280].enumerated() { line(x, r.minY + 112 + CGFloat(i) * 38, CGFloat(w)) }
-        line(x, r.minY + 292, 150, color: accent, h: 26)  // 小見出し
-        // 選択した一節(ハイライト)と、カーソルのブロック
+        line(x, r.minY + 292, 150, color: accent, h: 26)  // subheading
+        // The selected passage (highlight) and the cursor block
         let selection = CGRect(x: x - 10, y: r.minY + 350, width: 214, height: 34)
         fill(roundedRect(selection, 10), rgb(accent, 0.30))
         line(x, r.minY + 359, 196, color: 0x1B2250)
@@ -92,12 +95,12 @@ func draw(_ ctx: CGContext) {
         for (i, w) in [284, 232, 270].enumerated() { line(x, r.minY + 422 + CGFloat(i) * 38, CGFloat(w)) }
     }
 
-    // 右の window: 別の buffer(コードの断片)
+    // Right window: another buffer (a code fragment)
     window(CGRect(x: 584, y: 214, width: 244, height: 596)) { r in
         let x = r.minX + 28
         line(x, r.minY + 44, 120, color: accent, h: 28)
         for (i, w) in [170, 184, 140].enumerated() { line(x, r.minY + 108 + CGFloat(i) * 36, CGFloat(w)) }
-        // コードブロック
+        // Code block
         fill(roundedRect(CGRect(x: x - 8, y: r.minY + 236, width: r.width - 40, height: 176), 16), rgb(0x1B2250))
         let code: [(CGFloat, CGFloat, UInt32)] = [(0, 70, 0x3DDC97), (28, 110, 0x9AA4C8), (28, 84, 0xF2A65A), (0, 56, 0x3DDC97)]
         for (i, c) in code.enumerated() {
@@ -107,7 +110,7 @@ func draw(_ ctx: CGContext) {
     }
 }
 
-// MARK: 書き出し
+// MARK: Writing out
 func png(size: Int) -> Data {
     let rep = NSBitmapImageRep(
         bitmapDataPlanes: nil, pixelsWide: size, pixelsHigh: size, bitsPerSample: 8, samplesPerPixel: 4,
@@ -117,7 +120,7 @@ func png(size: Int) -> Data {
     ctx.interpolationQuality = .high
     let scale = CGFloat(size) / 1024
     ctx.translateBy(x: 0, y: CGFloat(size))
-    ctx.scaleBy(x: scale, y: -scale)  // 上が y = 0
+    ctx.scaleBy(x: scale, y: -scale)  // y = 0 at the top
     draw(ctx)
     return rep.representation(using: .png, properties: [:])!
 }

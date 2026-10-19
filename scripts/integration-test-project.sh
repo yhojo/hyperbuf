@@ -1,12 +1,12 @@
 #!/bin/bash
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Yasuo Hojo
-# 統合テスト(プロジェクト・ルート): 実際の HyperBuf.app(デバッグビルド、WKWebView)で、
-#   C-x p f / C-x p g / C-x p b / C-x p k と、M-s g(基準のディレクトリ)を検査する。docs/dev/buffer-model.md §6。
-#   VCS の目印のさかのぼり(.git ディレクトリ・.git ファイル)、目印がないときの default-directory、
-#   projectIgnorePaths、プロジェクトごとのバッファの切替・一括 kill。
-# キー入力は、ページ内で KeyboardEvent を発行する。GUI セッションが要る。
-# 利用者の実際のソケット・設定・信頼するルートは使わない。
+# Integration test (project root): with the real HyperBuf.app (debug build, WKWebView),
+#   checks C-x p f / C-x p g / C-x p b / C-x p k and M-s g (the base directory). docs/dev/buffer-model.md §6.
+#   Walking up to VCS markers (.git directory / .git file), default-directory when there is no marker,
+#   projectIgnorePaths, switching buffers per project and killing them in bulk.
+# Key input fires KeyboardEvent inside the page. Needs a GUI session.
+# Does not use the user's real socket, config or trusted roots.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 root="$(pwd)"
@@ -22,10 +22,10 @@ cleanup() {
 trap cleanup EXIT
 mkdir -p "$tmp/cmd" "$tmp/sock"
 
-# 試験用のツリー(テンポラリの下。上位に VCS の目印はない)
+# Test tree (under a temp directory. No VCS markers above it)
 w="$tmp/work"
 mkdir -p "$w/repoA/.git" "$w/repoA/docs/deep" "$w/repoB" "$w/loose/notes" "$w/wrap/.git" "$w/wrap/sub"
-echo "gitdir: /elsewhere" > "$w/repoB/.git"            # worktree / submodule の .git はファイル
+echo "gitdir: /elsewhere" > "$w/repoB/.git"            # in a worktree / submodule, .git is a file
 printf '# Top\n\nneedle in A top\n' > "$w/repoA/top.md"
 printf '# Deep\n\nneedle in A deep\n' > "$w/repoA/docs/deep/a.md"
 printf '# B\n\nneedle in A docs\n' > "$w/repoA/docs/b.md"
@@ -174,12 +174,12 @@ await cx('p', 'b'); await sleep(250);
 const switching = { label: label(), listed: cands() };
 await cancel();
 const before = keys();
-// C-x p k: no で何も閉じない
+// C-x p k: nothing is closed with no
 await cx('p', 'k'); await sleep(250);
 const killLabel = label();
 typeIn('no'); pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(250);
 const afterNo = keys().length;
-// yes で、repoA のバッファだけが閉じる
+// with yes, only repoA's buffers are closed
 await cx('p', 'k'); await sleep(250);
 typeIn('yes'); pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(400);
 const after = keys();

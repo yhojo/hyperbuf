@@ -1,9 +1,11 @@
 #!/bin/bash
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Yasuo Hojo
-# 統合テスト(セッション): 実際の HyperBuf.app(デバッグビルド)で、終了 → 再起動のあとに、作業中の状態が戻ることを検査する。
-#   複数フレーム、window の配置・参照履歴・閲覧位置・選択範囲、restoreSession の設定、壊れた保存データ、なくなった文書。
-# GUI セッションが要る。利用者の実際のセッション・ソケット・設定・信頼するルートは使わない。
+# Integration test (session): with the real HyperBuf.app (debug build), checks that the working state comes
+# back after quit → relaunch.
+#   Multiple frames, window layout, reference history, reading position, selection, the restoreSession
+# setting, broken saved data, missing documents.
+# Needs a GUI session. Does not use the user's real session, socket, config or trusted roots.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 root="$(pwd)"
@@ -17,7 +19,7 @@ cleanup() {
   rm -rf "$tmp"
 }
 trap cleanup EXIT
-# 文書を消す検査のために、サンプルのディレクトリを複製して使う(実パスで)
+# Use a copy of the sample directory for the checks that delete documents (with real paths)
 tmp="$(cd "$tmp" && pwd -P)"
 cp -R "$root/fixtures/sample-project" "$tmp/project"
 
@@ -78,7 +80,7 @@ def run(body, frame=1):
     return json.loads(page(HELPERS.replace("__P__", json.dumps(project)) + body, frame=frame))
 
 def launch(config=None, args=()):
-    """アプリを起動して、Web コアの準備を待つ。"""
+    """Launches the app and waits for the Web core to be ready."""
     n = len(glob.glob(os.path.join(tmp, "cmd*")))
     state["cmd"] = os.path.join(tmp, f"cmd{n}")
     os.makedirs(state["cmd"])
@@ -102,7 +104,7 @@ def launch(config=None, args=()):
     sys.exit("アプリが起動しませんでした")
 
 def quit_app():
-    """通常の終了(⌘Q 相当)。終了の直前に、セッションが保存される。"""
+    """Normal quit (equivalent to Cmd-Q). The session is saved just before quitting."""
     subprocess.run(["osascript", "-e", f'tell application "{app}" to quit'], check=True, capture_output=True)
     for _ in range(100):
         if subprocess.run(["pgrep", "-f", f"{app}/Contents/MacOS/HyperBuf"], capture_output=True).returncode != 0:
@@ -118,7 +120,7 @@ await hb.open(P + '/interaction.md'); await sleep(200);
 await press(['x','KeyX',{ctrlKey:true}], ['3','Digit3']);
 await hb.open(P + '/long.md'); await sleep(300);
 const c = document.querySelector('.win.selected .content'); c.scrollTop = 1500; await sleep(300);
-// 左の window(長い文書)の本文の一部を選択する
+// Select part of the body of the left window (the long document)
 const body = document.querySelectorAll('.win .content')[0];
 const target = [...body.querySelectorAll('p')].find((p) => p.textContent.length > 20);
 const r = document.createRange(); r.setStart(target.firstChild, 3); r.setEnd(target.firstChild, 14);
@@ -171,7 +173,7 @@ return JSON.stringify({ start, fwd, back: sel().history[sel().index].path });
 """)
 back = r
 check("復元した履歴で、Forward / Back が動く(buffer が読み込まれている)", back["start"] != back["fwd"] and back["back"] == back["start"], back)
-# 範囲の端が要素になる選択(段落全体、トリプルクリックなど)も、保存できる
+# Selections whose range ends are elements (a whole paragraph, triple-click, etc.) can also be saved
 para = run("""
 const body = document.querySelectorAll('.win .content')[0];
 const p = [...body.querySelectorAll('p')].find((x) => x.textContent.length > 20);
@@ -180,14 +182,15 @@ getSelection().removeAllRanges(); getSelection().addRange(r);
 await sleep(200); await hb.flushSession();
 return JSON.stringify({ text: p.textContent });
 """)
-time.sleep(1.0)  # ホストは、全フレームのセッションを、少し待ってから書く
+time.sleep(1.0)  # the host writes the sessions of all frames after waiting a little
 saved_sel = json.load(open(files[0]))["frames"][0]["snapshot"].get("selection")
 check("段落全体の選択(端が要素)も、位置と文字列で保存される", saved_sel is not None and saved_sel["text"].strip() == para["text"].strip(), (saved_sel, para))
 check("2 回目の終了", quit_app())
 
 print("文書がなくなった・保存が壊れた・設定で無効にした場合")
 os.remove(os.path.join(project, "interaction.md"))
-# 選択していた文書(long.md)を書き換える: 位置の文字列が合わなくなるので、選択範囲は戻さない
+# Rewrite the selected document (long.md): the position strings no longer match, so the selection is not
+# restored
 long_path = os.path.join(project, "long.md")
 text = open(long_path, encoding="utf-8").read()
 open(long_path, "w", encoding="utf-8").write("# 先頭を足した\n\n新しい段落です。\n\n" + text)
@@ -224,7 +227,7 @@ saved_after = json.load(open(files[0]))["frames"][0]["snapshot"]
 check("restoreSession が false の間は、保存もしない(前回の保存が、そのまま残る)", saved_after["root"]["type"] == "split", saved_after["root"]["type"])
 
 print("複数フレーム")
-# 保存を消してから始める(前の場面の状態を引き継がない)
+# Start after deleting the saved data (do not carry over the state of the previous scene)
 os.remove(files[0])
 launch()
 run("await hb.open(P + '/index.md'); await sleep(200); await hb.open(P + '/long.md'); await sleep(300); return JSON.stringify(1);")
@@ -254,11 +257,11 @@ launch()
 time.sleep(1.0)
 r1 = run("return JSON.stringify(shape());")
 check("閉じたフレームは、再起動でも戻らない", r1["wins"][0]["paths"] == f1["wins"][0]["paths"], r1)
-# 最後の 1 つを閉じる = 終了: そのフレームのセッションは残る
+# Closing the last one = quit: that frame's session remains
 try:
     page("await window.hyperbufHost.frame('delete'); return JSON.stringify(1);", timeout=3)
 except RuntimeError:
-    pass  # アプリが終了するので、結果は返らないことがある
+    pass  # the app quits, so a result may not come back
 for _ in range(100):
     if subprocess.run(["pgrep", "-f", f"{app}/Contents/MacOS/HyperBuf"], capture_output=True).returncode != 0:
         break

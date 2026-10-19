@@ -1,20 +1,24 @@
 #!/bin/bash
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Yasuo Hojo
-# リリースの成果物を作る: Developer ID 署名 → 公証 → ステープル → .zip / .dmg → チェックサム。
-# 手順と前提: docs/dev/release.md
+# Builds release artifacts: Developer ID signing → notarization → stapling → .zip / .dmg → checksums.
+# Steps and prerequisites: docs/dev/release.md
 #
-# 使い方:
-#   scripts/release.sh --dry-run   ad-hoc 署名で、組み立てとパッケージ化だけを試す(公証しない。配布しない)
-#   scripts/release.sh             署名・公証して、配布できる成果物を作る
+# Usage:
+#   scripts/release.sh --dry-run only try assembling and packaging with ad-hoc signing (no notarization; do
+# not distribute)
+#   scripts/release.sh             sign and notarize, producing distributable artifacts
 #
-# 環境変数:
-#   HYPERBUF_SIGN_IDENTITY   署名に使う証明書(「Developer ID Application: …」)。省略すると、キーチェーンに
-#                            1 つだけある場合に、それを使う
-#   HYPERBUF_NOTARY_PROFILE  公証の認証情報の保存名(`xcrun notarytool store-credentials` で作る)。
-#                            このスクリプトは、Apple ID・パスワード・API キーを受け取らない(キーチェーンのプロファイルだけを使う)
-#   HYPERBUF_RELEASE_DIR     成果物の置き場所(既定: dist/release)
-#   HYPERBUF_ICON            アプリのアイコン(.icns)を差し替える(既定: app/macos/Resources/AppIcon.icns)
+# Environment variables:
+#   HYPERBUF_SIGN_IDENTITY certificate used for signing ("Developer ID Application: …"). If omitted, the one
+# in the keychain
+#                            is used when there is exactly one
+#   HYPERBUF_NOTARY_PROFILE saved name of the notarization credentials (created with `xcrun notarytool
+# store-credentials`).
+#                            This script does not accept an Apple ID, password or API key (only the keychain
+# profile is used)
+#   HYPERBUF_RELEASE_DIR     where artifacts are placed (default: dist/release)
+#   HYPERBUF_ICON            replaces the app icon (.icns) (default: app/macos/Resources/AppIcon.icns)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -34,7 +38,7 @@ version="$(sed -n 's/^public let hyperBufVersion = "\(.*\)"$/\1/p' app/macos/Sou
 app="app/macos/.build/HyperBuf.app"
 name="HyperBuf-$version"
 
-# --- 署名の証明書と、公証のプロファイル ------------------------------------------------------------
+# --- Signing certificate and notarization profile --------------------------------------------------
 if [ "$dry_run" -eq 1 ]; then
   identity="-"
   timestamp="--timestamp=none"
@@ -54,7 +58,7 @@ else
 fi
 echo "バージョン: $version / 署名: $identity / 出力: $out"
 
-# --- 検査と組み立て ---------------------------------------------------------------------------------
+# --- Checks and assembly ----------------------------------------------------------------------------
 step "検査(ライセンス表記・バージョンの表記・ライセンスの一覧)"
 scripts/check.sh license
 scripts/check.sh version
@@ -64,7 +68,7 @@ step "組み立て(release ビルド)"
 app/macos/scripts/make-app.sh release >/dev/null
 [ -d "$app" ] || die "$app がありません"
 
-# --- 署名(内側から外側へ。Hardened Runtime + セキュアタイムスタンプ) -------------------------------
+# --- Signing (inside out. Hardened Runtime + secure timestamp) -------------------------------------
 step "署名"
 sign() { codesign --force --options runtime "$timestamp" --sign "$identity" "$@"; }
 sign "$app/Contents/Resources/bin/hyperbuf"
@@ -76,7 +80,7 @@ codesign -d --entitlements - --verbose=2 "$app" 2>&1 | grep -E "flags|Authority|
 rm -rf "$out"
 mkdir -p "$out"
 
-notarize() { # $1=ファイル(.zip / .dmg)
+notarize() { # $1=file (.zip / .dmg)
   xcrun notarytool submit "$1" --keychain-profile "$HYPERBUF_NOTARY_PROFILE" --wait --output-format json \
     >"$out/notary-result.json" || { cat "$out/notary-result.json" >&2; die "公証の提出に失敗しました"; }
   status="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("status",""))' "$out/notary-result.json")"
@@ -88,7 +92,7 @@ notarize() { # $1=ファイル(.zip / .dmg)
   echo "公証: Accepted ($id)"
 }
 
-# --- 公証とステープル(アプリ) -----------------------------------------------------------------------
+# --- Notarization and stapling (app) ----------------------------------------------------------------
 if [ "$dry_run" -eq 0 ]; then
   step "公証(アプリ)"
   ditto -c -k --keepParent "$app" "$out/HyperBuf-notarize.zip"
@@ -98,7 +102,7 @@ if [ "$dry_run" -eq 0 ]; then
   xcrun stapler validate "$app"
 fi
 
-# --- パッケージ化 -------------------------------------------------------------------------------------
+# --- Packaging ----------------------------------------------------------------------------------------
 step "パッケージ化(.zip / .dmg)"
 ditto -c -k --keepParent "$app" "$out/$name.zip"
 
@@ -110,7 +114,7 @@ cp LICENSE "$stage/LICENSE.txt"
 cp NOTICE "$stage/NOTICE.txt"
 cp CHANGELOG.md "$stage/CHANGELOG.md"
 cp docs/user/getting-started.md "$stage/README.md"
-# Emacs 連携(GPL-3.0-or-later。アプリとは別のプログラムとして、ライセンスを添えて同梱する)
+# Emacs integration (GPL-3.0-or-later. Bundled with its license as a separate program from the app)
 mkdir "$stage/emacs"
 cp emacs/hyperbuf.el emacs/README.md emacs/LICENSE "$stage/emacs/"
 hdiutil create -volname "HyperBuf $version" -srcfolder "$stage" -ov -format UDZO "$out/$name.dmg" >/dev/null
@@ -123,7 +127,7 @@ if [ "$dry_run" -eq 0 ]; then
   xcrun stapler validate "$out/$name.dmg"
 fi
 
-# --- チェックサムと、最終の検査 -------------------------------------------------------------------------
+# --- Checksums and final checks -------------------------------------------------------------------------
 step "チェックサムと検査"
 (cd "$out" && shasum -a 256 "$name.zip" "$name.dmg" >SHA256SUMS && cat SHA256SUMS)
 if [ "$dry_run" -eq 0 ]; then

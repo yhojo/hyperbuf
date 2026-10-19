@@ -33,7 +33,7 @@ done
 kill "$pid" 2>/dev/null || true
 
 if ! grep -q '^RESULT: ' "$log"; then
-  echo "統合テストの結果が得られませんでした:" >&2
+  echo "No integration test result was obtained:" >&2
   cat "$log" >&2
   exit 1
 fi
@@ -43,31 +43,31 @@ import json, re, sys
 text = open(sys.argv[1], encoding="utf-8").read()
 r = json.loads(re.search(r"^RESULT: (.*)$", text, re.M).group(1))
 problems = []
-if r["host"] != "macos": problems.append(f"host が macos ではない: {r['host']}")
-if r["files"] == 0: problems.append("Markdown が 0 件")
-if r["alerts"]: problems.append(f"alert が発火した: {r['alerts']}")
-if r["violations"]: problems.append(f"CSP 違反: {r['violations']}")
-if r["errors"]: problems.append(f"実行時エラー: {r['errors']}")
+if r["host"] != "macos": problems.append(f"host is not macos: {r['host']}")
+if r["files"] == 0: problems.append("No Markdown files")
+if r["alerts"]: problems.append(f"alert fired: {r['alerts']}")
+if r["violations"]: problems.append(f"CSP violation: {r['violations']}")
+if r["errors"]: problems.append(f"runtime error: {r['errors']}")
 for name, d in r["docs"].items():
     if d["dangerous"] or d["inlineHandlers"]:
-        problems.append(f"{name}: 危険な要素が残っている ({d['dangerous']}, {d['inlineHandlers']})")
+        problems.append(f"{name}: dangerous elements remain ({d['dangerous']}, {d['inlineHandlers']})")
     if d["chars"] == 0:
-        problems.append(f"{name}: 空に描画された")
+        problems.append(f"{name}: rendered empty")
 # For the verification document set (fixtures/sample-project), also check the expected values
 if "sample-project" in sys.argv[2]:
     images = r["docs"].get("rendering/05-images.md", {})
-    if images.get("brokenImages") != 1: problems.append(f"存在しない画像だけが読めないはず: {images}")
-    if images.get("blockedImages") != 1: problems.append(f"外部画像だけがブロックされるはず: {images}")
-    if sum(d["mermaid"] for d in r["docs"].values()) != 7: problems.append("Mermaid は 7 図が描画されるはず(ELK の図を除く)")
+    if images.get("brokenImages") != 1: problems.append(f"only the nonexistent image should fail to load: {images}")
+    if images.get("blockedImages") != 1: problems.append(f"only the external image should be blocked: {images}")
+    if sum(d["mermaid"] for d in r["docs"].values()) != 7: problems.append("7 Mermaid diagrams should render (excluding the ELK one)")
     elk = r["docs"].get("rendering/08-elk.md", {})
     if elk.get("renderErrors") != 1 or elk.get("mermaid") != 1:
-        problems.append(f"ELK の図は、エラーとして表示され、同じ文書の通常の図は描画されるはず: {elk}")
+        problems.append(f"the ELK diagram should show as an error while normal diagrams in the same document render: {elk}")
     mer = r["docs"].get("rendering/04-mermaid.md", {})
-    if mer.get("renderErrors") != 1: problems.append(f"Mermaid の構文エラーは 1 件のはず: {mer}")
+    if mer.get("renderErrors") != 1: problems.append(f"there should be exactly 1 Mermaid syntax error: {mer}")
 if not r["search"] or r["search"]["items"] == 0:
-    problems.append(f"検索の結果が空: {r['search']}")
+    problems.append(f"search result is empty: {r['search']}")
 total = sum(d["ms"] for d in r["docs"].values())
-print(f"host={r['host']} files={r['files']} 合計 {total} ms / 検索 '{r['search']['word']}' → {r['search']['items']} 件 / 画像 {sum(d['images'] for d in r['docs'].values())} 枚(読めない {sum(d['brokenImages'] for d in r['docs'].values())}) / Mermaid {sum(d['mermaid'] for d in r['docs'].values())} 図")
+print(f"host={r['host']} files={r['files']} total {total} ms / search '{r['search']['word']}' → {r['search']['items']} hits / images {sum(d['images'] for d in r['docs'].values())} (unreadable {sum(d['brokenImages'] for d in r['docs'].values())}) / Mermaid {sum(d['mermaid'] for d in r['docs'].values())} diagrams")
 if problems:
     print("NG:"); [print("  -", p) for p in problems]; sys.exit(1)
 print("OK")

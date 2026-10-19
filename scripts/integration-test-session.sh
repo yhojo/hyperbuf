@@ -45,14 +45,14 @@ def page(js, timeout=30, frame=1):
     deadline0 = time.time() + timeout
     while not os.path.isdir(d):
         if time.time() > deadline0:
-            raise RuntimeError(f"フレーム {frame} の入口がありません")
+            raise RuntimeError(f"No entry point for frame {frame}")
         time.sleep(0.05)
     open(f"{d}/{name}.js.tmp", "w", encoding="utf-8").write(js)
     os.rename(f"{d}/{name}.js.tmp", f"{d}/{name}.js")
     deadline = time.time() + timeout
     while not os.path.exists(f"{d}/{name}.result"):
         if time.time() > deadline:
-            raise RuntimeError("ページの応答がありません: " + js[:80])
+            raise RuntimeError("No response from the page: " + js[:80])
         time.sleep(0.05)
     text = open(f"{d}/{name}.result", encoding="utf-8").read()
     if text.startswith("ERROR"):
@@ -101,7 +101,7 @@ def launch(config=None, args=()):
         except RuntimeError:
             pass
         time.sleep(0.3)
-    sys.exit("アプリが起動しませんでした")
+    sys.exit("The app did not start")
 
 def quit_app():
     """Normal quit (equivalent to Cmd-Q). The session is saved just before quitting."""
@@ -112,7 +112,7 @@ def quit_app():
         time.sleep(0.1)
     return False
 
-print("作業の状態を作る")
+print("Building the working state")
 launch()
 r = run("""
 await hb.open(P + '/index.md'); await sleep(200);
@@ -133,36 +133,36 @@ const out = shape(); out.picked = window.__picked;
 return JSON.stringify(out);
 """)
 before = r
-check("2 つの window に分割され、それぞれの履歴がある", before["split"] == "row" and len(before["wins"]) == 2, before)
-check("復元の対象の状態ができた(左の window が長い文書、選択は右で、履歴を 1 つ戻してある)", before["wins"][0]["paths"][-1].endswith("/long.md") and before["selected"] == 1 and before["wins"][1]["index"] == 0, before)
-check("選択範囲を作れた", len(before["picked"]) == 11, before["picked"])
-check("終了するとき、通常の終了の手順が完了する", quit_app())
+check("Split into 2 windows, each with its own history", before["split"] == "row" and len(before["wins"]) == 2, before)
+check("The state to restore is ready (left window shows the long document, the right one is selected, history stepped back by one)", before["wins"][0]["paths"][-1].endswith("/long.md") and before["selected"] == 1 and before["wins"][1]["index"] == 0, before)
+check("A selection was created", len(before["picked"]) == 11, before["picked"])
+check("The normal quit procedure completes on exit", quit_app())
 files = glob.glob(os.path.join(sessions, "session.json"))
-check("セッションが、全体で 1 つのファイル(session.json)に保存される", len(files) == 1, files)
+check("The session is saved as a single file (session.json)", len(files) == 1, files)
 if files:
     mode = stat.S_IMODE(os.stat(files[0]).st_mode)
-    check("保存ファイルは本人だけが読み書きできる(0600)", mode == 0o600, oct(mode))
+    check("The saved file is readable and writable only by its owner (0600)", mode == 0o600, oct(mode))
     saved = open(files[0], encoding="utf-8").read()
-    check("文書の内容は保存しない(パスと位置だけ)", "セクション 20" not in saved and "Hyperbuf PoC" not in saved, saved[:200])
+    check("Document content is not saved (only paths and positions)", "セクション 20" not in saved and "Hyperbuf PoC" not in saved, saved[:200])
     doc = json.loads(saved)
-    check("フレームの並びとして保存される(version 2、スロット、ウィンドウの位置)", doc["version"] == 2 and [f["slot"] for f in doc["frames"]] == [1] and set(doc["frames"][0]["rect"]) == {"x", "y", "width", "height"}, doc)
+    check("Saved as a list of frames (version 2, slots, window rects)", doc["version"] == 2 and [f["slot"] for f in doc["frames"]] == [1] and set(doc["frames"][0]["rect"]) == {"x", "y", "width", "height"}, doc)
 
-print("再起動して復元する")
+print("Relaunch and restore")
 launch()
 time.sleep(1.0)
 after = run("return JSON.stringify(shape());")
-check("window の配置・各 window の履歴・選択が戻る", all(after[k] == before[k] for k in ("split", "selected", "wins")), (before, after))
-check("最近使った順が戻る", after["mru"] == before["mru"], (before["mru"], after["mru"]))
-check("復元したことが知らされる", "restored" in after["echo"], after["echo"])
+check("The window layout, each window's history and the selection are restored", all(after[k] == before[k] for k in ("split", "selected", "wins")), (before, after))
+check("The most-recently-used order is restored", after["mru"] == before["mru"], (before["mru"], after["mru"]))
+check("The restore is announced", "restored" in after["echo"], after["echo"])
 sel = run("await sleep(300); return JSON.stringify({ text: String(getSelection()) });")
-check("選択範囲が戻る", sel["text"] == before["picked"], (sel, before["picked"]))
+check("The selection is restored", sel["text"] == before["picked"], (sel, before["picked"]))
 r = run("""
 await sleep(500);
 const c = [...document.querySelectorAll('.win .content')];
 return JSON.stringify({ scrolls: c.map((e) => Math.round(e.scrollTop)), rendered: c.map((e) => e.querySelector('.markdown-body') !== null) });
 """)
 shown = r
-check("閲覧位置が戻り、文書が描画されている", shown["rendered"] == [True, True] and abs(shown["scrolls"][0] - before["wins"][0]["scroll"]) < 5 and before["wins"][0]["scroll"] > 1000, (shown, before["wins"]))
+check("The reading position is restored and the document is rendered", shown["rendered"] == [True, True] and abs(shown["scrolls"][0] - before["wins"][0]["scroll"]) < 5 and before["wins"][0]["scroll"] > 1000, (shown, before["wins"]))
 r = run("""
 const sel = () => wins().find((w) => w.id === hb.ctx.model.selected);
 const start = sel().history[sel().index].path;
@@ -172,7 +172,7 @@ await press(['b','KeyB',{ctrlKey:true}]);
 return JSON.stringify({ start, fwd, back: sel().history[sel().index].path });
 """)
 back = r
-check("復元した履歴で、Forward / Back が動く(buffer が読み込まれている)", back["start"] != back["fwd"] and back["back"] == back["start"], back)
+check("Forward / Back work on the restored history (buffers are loaded)", back["start"] != back["fwd"] and back["back"] == back["start"], back)
 # Selections whose range ends are elements (a whole paragraph, triple-click, etc.) can also be saved
 para = run("""
 const body = document.querySelectorAll('.win .content')[0];
@@ -184,10 +184,10 @@ return JSON.stringify({ text: p.textContent });
 """)
 time.sleep(1.0)  # the host writes the sessions of all frames after waiting a little
 saved_sel = json.load(open(files[0]))["frames"][0]["snapshot"].get("selection")
-check("段落全体の選択(端が要素)も、位置と文字列で保存される", saved_sel is not None and saved_sel["text"].strip() == para["text"].strip(), (saved_sel, para))
-check("2 回目の終了", quit_app())
+check("A whole-paragraph selection (edges are elements) is also saved by position and text", saved_sel is not None and saved_sel["text"].strip() == para["text"].strip(), (saved_sel, para))
+check("Second quit", quit_app())
 
-print("文書がなくなった・保存が壊れた・設定で無効にした場合")
+print("When a document is gone, the saved data is broken, or restore is disabled in the settings")
 os.remove(os.path.join(project, "interaction.md"))
 # Rewrite the selected document (long.md): the position strings no longer match, so the selection is not
 # restored
@@ -197,18 +197,18 @@ open(long_path, "w", encoding="utf-8").write("# 先頭を足した\n\n新しい�
 launch()
 time.sleep(1.0)
 gone = run("return JSON.stringify(shape());")
-check("なくなった文書は、履歴から外れ、残りで復元される", all(not any(p.endswith("interaction.md") for p in w["paths"]) for w in gone["wins"]) and "restored" in gone["echo"], gone)
-check("復元した window は、すべて表示する文書を持つ(空の window を残さない)", all(w["scroll"] >= 0 and w["paths"] for w in gone["wins"]), gone)
+check("A missing document is dropped from the history and the rest is restored", all(not any(p.endswith("interaction.md") for p in w["paths"]) for w in gone["wins"]) and "restored" in gone["echo"], gone)
+check("Every restored window has a document to show (no empty windows are left)", all(w["scroll"] >= 0 and w["paths"] for w in gone["wins"]), gone)
 sel = run("await sleep(300); return JSON.stringify({ text: String(getSelection()) });")
-check("文書が書き換わっていれば、ずれた場所を選ばない(選択範囲は戻さない)", sel["text"] == "", sel)
-check("3 回目の終了", quit_app())
+check("If the document was rewritten, a shifted location is not selected (the selection is not restored)", sel["text"] == "", sel)
+check("Third quit", quit_app())
 
 open(files[0], "w").write("{broken")
 launch()
 time.sleep(1.0)
 broken = run("return JSON.stringify(shape());")
-check("保存が壊れていれば、使わずに、通常どおり起動する(バッファのない画面)", broken["split"] is None and len(broken["wins"]) == 1 and broken["wins"][0]["paths"] == [], broken)
-check("4 回目の終了", quit_app())
+check("If the saved data is broken, it is not used and the app starts normally (a screen without buffers)", broken["split"] is None and len(broken["wins"]) == 1 and broken["wins"][0]["paths"] == [], broken)
+check("Fourth quit", quit_app())
 
 launch()
 r = run("""
@@ -216,47 +216,47 @@ await hb.open(P + '/long.md'); await sleep(200);
 await press(['x','KeyX',{ctrlKey:true}], ['3','Digit3']);
 return JSON.stringify(shape());
 """)
-check("壊れていたファイルは、次の保存で作り直される", quit_app() and json.load(open(files[0]))["frames"][0]["snapshot"]["version"] == 1)
+check("The broken file is recreated on the next save", quit_app() and json.load(open(files[0]))["frames"][0]["snapshot"]["version"] == 1)
 
 launch(config={"restoreSession": False})
 time.sleep(1.0)
 off = run("return JSON.stringify(shape());")
-check("restoreSession が false なら、復元しない", off["split"] is None and off["wins"][0]["paths"] == [], off)
-check("5 回目の終了", quit_app())
+check("With restoreSession false, nothing is restored", off["split"] is None and off["wins"][0]["paths"] == [], off)
+check("Fifth quit", quit_app())
 saved_after = json.load(open(files[0]))["frames"][0]["snapshot"]
-check("restoreSession が false の間は、保存もしない(前回の保存が、そのまま残る)", saved_after["root"]["type"] == "split", saved_after["root"]["type"])
+check("While restoreSession is false, nothing is saved either (the previous save stays as is)", saved_after["root"]["type"] == "split", saved_after["root"]["type"])
 
-print("複数フレーム")
+print("Multiple frames")
 # Start after deleting the saved data (do not carry over the state of the previous scene)
 os.remove(files[0])
 launch()
 run("await hb.open(P + '/index.md'); await sleep(200); await hb.open(P + '/long.md'); await sleep(300); return JSON.stringify(1);")
-check("フレームを作れる(host.frame)", run("await window.hyperbufHost.frame('make'); return JSON.stringify(1);") == 1)
+check("A frame can be created (host.frame)", run("await window.hyperbufHost.frame('make'); return JSON.stringify(1);") == 1)
 f2 = run("await hb.open(P + '/architecture.md'); await sleep(300); return JSON.stringify(shape());", frame=2)
-check("フレーム 2 は、独立した作業場(自分のバッファだけを持つ)", len(f2["wins"]) == 1 and f2["wins"][0]["paths"] == [project + "/architecture.md"], f2)
+check("Frame 2 is an independent workspace (it has only its own buffers)", len(f2["wins"]) == 1 and f2["wins"][0]["paths"] == [project + "/architecture.md"], f2)
 f1 = run("return JSON.stringify(shape());")
-check("フレーム 1 の状態は、そのまま", f1["wins"][0]["paths"][-1].endswith("/long.md") and not any("architecture" in p for p in f1["wins"][0]["paths"]), f1)
+check("The state of frame 1 is unchanged", f1["wins"][0]["paths"][-1].endswith("/long.md") and not any("architecture" in p for p in f1["wins"][0]["paths"]), f1)
 time.sleep(1.2)
 doc = json.load(open(files[0]))
-check("セッションは、フレームの並び(スロット 1 と 2)", [f["slot"] for f in doc["frames"]] == [1, 2] and doc["active"] in (1, 2), doc["frames"])
-check("終了(2 フレーム)", quit_app())
+check("The session is a list of frames (slots 1 and 2)", [f["slot"] for f in doc["frames"]] == [1, 2] and doc["active"] in (1, 2), doc["frames"])
+check("Quit (2 frames)", quit_app())
 
 launch()
 time.sleep(1.5)
 r1 = run("return JSON.stringify(shape());")
 r2 = run("return JSON.stringify(shape());", frame=2)
-check("再起動で、両方のフレームが戻る", r1["wins"][0]["paths"] == f1["wins"][0]["paths"] and r2["wins"][0]["paths"] == f2["wins"][0]["paths"], (r1, r2))
+check("Both frames come back on relaunch", r1["wins"][0]["paths"] == f1["wins"][0]["paths"] and r2["wins"][0]["paths"] == f2["wins"][0]["paths"], (r1, r2))
 
-print("フレームを閉じる")
+print("Closing frames")
 run("await window.hyperbufHost.frame('delete'); return JSON.stringify(1);", frame=2)
 time.sleep(1.5)
 doc = json.load(open(files[0]))
-check("最後でないフレームを閉じると、そのフレームのセッションは破棄される", [f["slot"] for f in doc["frames"]] == [1], doc["frames"])
-check("終了(1 フレーム)", quit_app())
+check("Closing a non-last frame discards that frame's session", [f["slot"] for f in doc["frames"]] == [1], doc["frames"])
+check("Quit (1 frame)", quit_app())
 launch()
 time.sleep(1.0)
 r1 = run("return JSON.stringify(shape());")
-check("閉じたフレームは、再起動でも戻らない", r1["wins"][0]["paths"] == f1["wins"][0]["paths"], r1)
+check("A closed frame does not come back on relaunch", r1["wins"][0]["paths"] == f1["wins"][0]["paths"], r1)
 # Closing the last one = quit: that frame's session remains
 try:
     page("await window.hyperbufHost.frame('delete'); return JSON.stringify(1);", timeout=3)
@@ -267,18 +267,18 @@ for _ in range(100):
         break
     time.sleep(0.1)
 exited = subprocess.run(["pgrep", "-f", f"{app}/Contents/MacOS/HyperBuf"], capture_output=True).returncode != 0
-check("最後の 1 つを閉じると、アプリが終了する", exited)
+check("Closing the last one quits the app", exited)
 doc = json.load(open(files[0]))
-check("最後の 1 つを閉じると、アプリが終了し、そのフレームのセッションは残る", [f["slot"] for f in doc["frames"]] == [1] and doc["frames"][0]["snapshot"]["root"]["type"] in ("leaf", "split"), doc)
+check("Closing the last one quits the app and that frame's session is kept", [f["slot"] for f in doc["frames"]] == [1] and doc["frames"][0]["snapshot"]["root"]["type"] in ("leaf", "split"), doc)
 launch()
 time.sleep(1.0)
 r1 = run("return JSON.stringify(shape());")
-check("残ったセッションから復元できる", r1["wins"][0]["paths"] == f1["wins"][0]["paths"], r1)
+check("Restore works from the remaining session", r1["wins"][0]["paths"] == f1["wins"][0]["paths"], r1)
 ok = quit_app()
-check("終了", ok, subprocess.run(["pgrep", "-fl", f"{app}/Contents/MacOS/HyperBuf"], capture_output=True, text=True).stdout)
+check("Quit", ok, subprocess.run(["pgrep", "-fl", f"{app}/Contents/MacOS/HyperBuf"], capture_output=True, text=True).stdout)
 
 if failures:
-    print(f"\nNG: {len(failures)} 件")
+    print(f"\nNG: {len(failures)} failed")
     sys.exit(1)
 print("\nOK")
 PY

@@ -64,7 +64,7 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
   <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSPrincipalClass</key><string>NSApplication</string>
-  <!-- hyperbuf:// : アプリの起動と、外部リンクからの「開く」(docs/dev/integration-protocol.md §4.1) -->
+  <!-- hyperbuf:// : アプリの起動と、外部リンクからの「開く」(docs/dev/integration-protocol.md §5.2) -->
   <key>CFBundleURLTypes</key>
   <array>
     <dict>

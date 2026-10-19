@@ -3,7 +3,7 @@
 
 import Foundation
 
-/// `hyperbuf://open?v=1&path=…&line=…&anchor=…&project=…&target=…`(docs/dev/integration-protocol.md §4.1)。
+/// `hyperbuf://open?v=1&path=…&line=…&anchor=…&project=…&target=…`(docs/dev/integration-protocol.md §5.2)。
 public enum OpenURL {
     public static func make(_ request: Request) -> URL? {
         var components = URLComponents()

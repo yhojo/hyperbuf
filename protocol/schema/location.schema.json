@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://hyperbuf.invalid/protocol/location.schema.json",
   "title": "HyperBuf edit location",
-  "description": "「エディタで編集」で指した位置。get-location の result.location。docs/dev/integration-protocol.md §10。エディタは、ここにある照合用の情報(file・expect・context)で、位置が正しいことを確かめてから、移動する。",
+  "description": "「エディタで編集」で指した位置。get-location の result.location。docs/dev/edit-location.md §5。エディタは、ここにある照合用の情報(file・expect・context)で、位置が正しいことを確かめてから、移動する。",
   "type": "object",
   "required": [
     "v",

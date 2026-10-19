@@ -159,7 +159,7 @@ const LINE_TAGS = new Set([
  * 元の Markdown の位置を、ブロック要素に残す。
  *  - data-source-line: 開始行(「N 行目を開く」用)
  *  - data-source-start / data-source-end: 開始・終了の文字オフセット(UTF-16)。ビューアから、編集位置を
- *    エディタへ渡すために、選択した範囲を、元の位置に対応づける(docs/dev/integration-protocol.md §10)
+ *    エディタへ渡すために、選択した範囲を、元の位置に対応づける(docs/dev/edit-location.md §4)
  *  - data-source-end-line: 終了行
  */
 const rehypeSourceLines: Plugin<[], HastRoot> = () => (tree) => {

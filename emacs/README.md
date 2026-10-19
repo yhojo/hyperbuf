@@ -1,7 +1,7 @@
 # emacs/
 
 Open a document in HyperBuf (a Markdown viewer for macOS) from Emacs, at a given file and line.
-Specification: [`docs/dev/integration-protocol.md`](../docs/dev/integration-protocol.md) (in Japanese). Requires Emacs 29.1 or later.
+Specification: [`docs/dev/integration-protocol.md`](../docs/dev/integration-protocol.md) and [`docs/dev/edit-location.md`](../docs/dev/edit-location.md) (in Japanese). Requires Emacs 29.1 or later.
 
 ## Usage
 
@@ -44,7 +44,7 @@ On success, the range is highlighted briefly and the text the viewer pointed at 
 Emacs moves to the start of the block and says that the location is ambiguous and the whole block is shown (it never moves on a guess).
 
 To let the viewer call Emacs, write a fixed command in `~/Library/Application Support/HyperBuf/config.json`
-(the document content and location are not passed as arguments; see `docs/dev/integration-protocol.md` section 15, in Japanese).
+(the document content and location are not passed as arguments; see `docs/dev/edit-location.md` section 7, in Japanese).
 
 ```json
 {

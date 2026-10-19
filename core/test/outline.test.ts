@@ -13,7 +13,7 @@ import {
   upIndex,
 } from "../src/outline.ts";
 
-// 見出しの構成の例:
+// Example heading structure:
 //   0: # A            (level 1, top 0)
 //   1: ## A1          (level 2, top 100)
 //   2: ### A1a        (level 3, top 200)
@@ -26,25 +26,25 @@ const tops = [0, 100, 200, 300, 400, 500];
 test("いまの節: 画面の上端以前の、最後の見出し", () => {
   assert.equal(currentIndex(tops, 0), 0);
   assert.equal(currentIndex(tops, 150), 1);
-  assert.equal(currentIndex(tops, 100 - EPS), 1); // 見出しの上端に(ほぼ)いる
+  assert.equal(currentIndex(tops, 100 - EPS), 1); // (almost) at the top edge of a heading
   assert.equal(currentIndex(tops, 100 - EPS - 1), 0);
   assert.equal(currentIndex(tops, 9999), 5);
-  assert.equal(currentIndex([50], 0), -1); // 最初の見出しの前
+  assert.equal(currentIndex([50], 0), -1); // before the first heading
   assert.equal(currentIndex([], 0), -1);
 });
 
 test("次の見出し: 画面の上端より下の、最初の見出し", () => {
   assert.equal(nextIndex(tops, 0), 1);
   assert.equal(nextIndex(tops, 150), 2);
-  assert.equal(nextIndex(tops, 100), 2); // 見出しの上端にいるとき、次は、その次
+  assert.equal(nextIndex(tops, 100), 2); // At the top edge of a heading, next means the one after it
   assert.equal(nextIndex(tops, 500), null);
   assert.equal(nextIndex(tops, -100), 0);
   assert.equal(nextIndex([], 0), null);
 });
 
 test("前の見出し: 画面の上端より上の、最後の見出し", () => {
-  assert.equal(previousIndex(tops, 150), 1); // 節の途中では、その節の見出しへ
-  assert.equal(previousIndex(tops, 100), 0); // 見出しの上端にいるとき、前は、その前
+  assert.equal(previousIndex(tops, 150), 1); // In the middle of a section, go to that section's heading
+  assert.equal(previousIndex(tops, 100), 0); // At the top edge of a heading, previous means the one before it
   assert.equal(previousIndex(tops, 0), null);
   assert.equal(previousIndex(tops, 9999), 5);
   assert.equal(previousIndex([], 0), null);
@@ -62,13 +62,13 @@ test("上のレベルの見出し", () => {
 
 test("同じレベルの、次・前(親をまたがない)", () => {
   assert.equal(sameLevelForward(levels, 1), 3); // A1 → A2
-  assert.equal(sameLevelForward(levels, 3), null); // A2 → なし(次は、親の兄弟 B)
+  assert.equal(sameLevelForward(levels, 3), null); // A2 → none (next would be the parent's sibling B)
   assert.equal(sameLevelForward(levels, 0), 4); // A → B
-  assert.equal(sameLevelForward(levels, 2), null); // A1a: 兄弟なし
+  assert.equal(sameLevelForward(levels, 2), null); // A1a: no sibling
   assert.equal(sameLevelBackward(levels, 3), 1); // A2 → A1
-  assert.equal(sameLevelBackward(levels, 1), null); // A1 → なし
+  assert.equal(sameLevelBackward(levels, 1), null); // A1 → none
   assert.equal(sameLevelBackward(levels, 4), 0); // B → A
-  assert.equal(sameLevelBackward(levels, 5), null); // B1: 前の兄弟なし
+  assert.equal(sameLevelBackward(levels, 5), null); // B1: no previous sibling
 });
 
 test("見出しのレベルが飛んでいても動く(# → ###)", () => {

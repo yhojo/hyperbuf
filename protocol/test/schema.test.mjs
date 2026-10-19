@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// JSON Schema が、共有の例(examples/)と食い違っていないかを確かめる。
-// 同じ例を、Swift のサーバー・CLI・Emacs も使う(各自の適合テスト)。
+// Checks that the JSON Schema agrees with the shared examples (examples/).
+// The Swift server, the CLI and Emacs use the same examples (in their own conformance tests).
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";

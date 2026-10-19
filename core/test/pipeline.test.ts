@@ -30,18 +30,18 @@ test("sanitize: script・イベントハンドラ・javascript: URL を除去す
 test("sanitize: セキュリティ検証文書(fixtures)に、実行・外部読み込み・DOM の乗っ取りが残らない", () => {
   const out = html(fixture("06-html-security.md"), "rendering/06-html-security.md");
   assert.doesNotMatch(out, /<(script|iframe|object|embed|form|style|meta|base|svg|button)\b/i);
-  // input は、タスクリスト用の「無効なチェックボックス」だけが残る(入力も送信もできない)
+  // Only the disabled checkboxes for task lists remain as input (no input or submission possible)
   for (const input of out.match(/<input\b[^>]*>/gi) ?? []) {
     assert.match(input, /type="checkbox"/);
     assert.match(input, /\bdisabled\b/);
   }
   assert.doesNotMatch(out, /\son[a-z]+\s*=/i); // onclick, onerror, onload, ...
-  assert.doesNotMatch(out, /\b(href|src|action|data)\s*=\s*["']?\s*javascript:/i); // 属性の中だけ(本文の語は対象外)
+  assert.doesNotMatch(out, /\b(href|src|action|data)\s*=\s*["']?\s*javascript:/i); // attributes only (words in the body text are not covered)
   assert.doesNotMatch(out, /style=/i);
-  // アプリの DOM と衝突しうる id は、接頭辞で隔離される
+  // ids that could collide with the app's DOM are isolated by a prefix
   assert.doesNotMatch(out, /\sid="echo"/);
   assert.match(out, /id="user-content-echo"/);
-  // 文書の末尾まで描画される
+  // the document is rendered to its end
   assert.match(out, /最後まで表示されれば OK です/);
 });
 
@@ -116,9 +116,9 @@ test("行アンカー: ブロック要素に元の行番号が付く", () => {
 test("元の位置: ブロック要素に、開始・終了のオフセットと行が付く", () => {
   const md = "# 見出し\n\n段落 A\n段落 B\n\n- x\n";
   const out = html(md);
-  // 見出し: 0 〜 5(「# 見出し」は 5 文字)、1 行目
+  // heading: 0 to 5 ("# 見出し" is 5 characters), line 1
   assert.match(out, /<h1[^>]*data-source-start="0"[^>]*data-source-end="5"/);
-  // 段落: 7 〜 15(「段落 A\n段落 B」)、3〜4 行目
+  // paragraph: 7 to 15 ("段落 A\n段落 B"), lines 3-4
   const p =
     /<p[^>]*data-source-start="(\d+)"[^>]*data-source-end="(\d+)"[^>]*data-source-end-line="(\d+)"/.exec(
       out,
@@ -143,12 +143,12 @@ test("details/summary と kbd を通す", () => {
 test("数式: Marked 2 流に、\\_ を下付き文字として描画する(設定で、そのままにもできる)", () => {
   const md = "$f\\_{2}$ と $$ g\\_{1} = \\text{a\\_b} $$";
   const on = html(md);
-  assert.match(on, /msupsub/); // 下付き文字になる
-  assert.match(on, /a_b/); // \text の中は、文字としての下線のまま
+  assert.match(on, /msupsub/); // becomes a subscript
+  assert.match(on, /a_b/); // inside \text, the underscore stays a literal character
   renderer.configure({ mathUnescapeUnderscore: false });
   try {
     const off = html("$f\\_{2}$");
-    assert.doesNotMatch(off, /msupsub/); // そのままなら、下線の文字
+    assert.doesNotMatch(off, /msupsub/); // left as is, it is an underscore character
   } finally {
     renderer.configure({ mathUnescapeUnderscore: true });
   }

@@ -9,7 +9,7 @@ import type { AppContext } from "../src/ui/context.ts";
 import { bufferProjectRoot, projectBuffers } from "../src/ui/project.ts";
 
 const HOME = "/Users/me";
-/** `/w/a` と `/w/b` が、それぞれプロジェクト・ルート。それ以外は、ディレクトリ自身。 */
+/** `/w/a` and `/w/b` are project roots; anything else is its own directory. */
 const projectRoot = async (dir: string): Promise<string> => {
   for (const root of ["/w/a", "/w/b"]) if (dir === root || dir.startsWith(`${root}/`)) return root;
   return dir;

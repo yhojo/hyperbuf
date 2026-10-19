@@ -26,16 +26,16 @@ test("keyName: 修飾キー付き英字は code から求める(Option で文字
 });
 
 test("keyName: Option(Meta)つきの記号は、物理キーから求める(M-< と M->)", () => {
-  // macOS では、Option+Shift+, の event.key は、別の文字(≤)になる
+  // On macOS, event.key for Option+Shift+, is a different character (≤)
   assert.equal(keyName(ev({ key: "≤", code: "Comma", altKey: true, shiftKey: true })), "M-<");
   assert.equal(keyName(ev({ key: "≥", code: "Period", altKey: true, shiftKey: true })), "M->");
   assert.equal(keyName(ev({ key: "…", code: "Semicolon", altKey: true })), "M-;");
   assert.equal(keyName(ev({ key: "?", code: "Slash", ctrlKey: true, shiftKey: true })), "C-?");
   assert.equal(keyName(ev({ key: "%", code: "Digit5", altKey: true, shiftKey: true })), "M-%");
   assert.equal(keyName(ev({ key: "1", code: "Digit1", altKey: true })), "M-1");
-  // 修飾キーがなければ、`key` のまま(日本語入力・他の配列でも、入力した文字そのもの)
+  // Without modifier keys, `key` is used as is (the typed character itself, also for Japanese input and other layouts)
   assert.equal(keyName(ev({ key: "<", code: "Comma", shiftKey: true })), "<");
-  // Shift が、記号を変えないキー(矢印・Tab)には、S- が付く
+  // Keys whose symbol Shift does not change (arrows, Tab) get S-
   assert.equal(
     keyName(ev({ key: "ArrowUp", code: "ArrowUp", shiftKey: true, altKey: true })),
     "M-S-up",

@@ -12,7 +12,7 @@ import {
   uniqueMatch,
 } from "../src/locate.ts";
 
-/** 段落のブロックの位置(UTF-16 のオフセット)。テストでは、空行で区切られた段落を、ブロックとみなす。 */
+/** Block positions of paragraphs (UTF-16 offsets). In tests, paragraphs separated by blank lines count as blocks. */
 function paragraphs(text: string): { start: number; end: number }[] {
   const out: { start: number; end: number }[] = [];
   let offset = 0;
@@ -46,7 +46,7 @@ test("行の開始オフセット(LF・CRLF・CR)", () => {
 test("桁は、コードポイントで数える(サロゲートペアは 1 文字)", () => {
   const text = "😀a日本\nxyz";
   const starts = lineStarts(text);
-  // 「😀」は UTF-16 で 2 単位。「a」の位置は、UTF-16 では 2、コードポイントでは 1
+  // "😀" is 2 units in UTF-16. The position of "a" is 2 in UTF-16 and 1 in code points
   assert.deepEqual(offsetToPosition(starts, text, 2), { line: 1, column: 2 });
   assert.deepEqual(offsetToPosition(starts, text, 3), { line: 1, column: 3 });
   assert.deepEqual(offsetToPosition(starts, text, text.indexOf("xyz") + 1), { line: 2, column: 2 });
@@ -57,10 +57,10 @@ test("選択が、ブロックの中にちょうど 1 か所なら、exact", () 
   const loc = locate(text, 1, "独自の語");
   assert.equal(loc.precision, "exact");
   assert.equal(loc.expect, "独自の語");
-  // 「この文には、」は 6 文字なので、「独自の語」は 7 桁目から(終了は、含まない位置)
+  // "この文には、" is 6 characters, so "独自の語" starts at column 7 (the end is an exclusive position)
   assert.deepEqual(loc.range.start, { line: 3, column: 7 });
   assert.deepEqual(loc.range.end, { line: 3, column: 11 });
-  // 文脈は、行(ブロック)をまたいでよい。Emacs は「直前の文字列が、この文脈で終わるか」で照合する
+  // The context may span lines (blocks). Emacs matches by "does the preceding text end with this context"
   assert.equal(loc.context.before, "# 見出し\n\nこの文には、");
   assert.equal(loc.context.after, "があります。\n\n別の段落です。");
   assert.equal(loc.selection, "独自の語");
@@ -83,7 +83,7 @@ test("同じ文言が、別のブロックにあっても、指したブロッ�
 
 test("見えている文字列が、元の Markdown と違えば(強調・リンクをまたぐ)、block", () => {
   const text = "これは **強調** です";
-  const loc = locate(text, 0, "これは 強調 です"); // 表示では、** が消えている
+  const loc = locate(text, 0, "これは 強調 です"); // ** is gone in the rendered text
   assert.equal(loc.precision, "block");
   assert.equal(loc.expect, text);
 });
@@ -92,7 +92,7 @@ test("強調の内側だけを選べば、exact", () => {
   const text = "これは **強調** です";
   const loc = locate(text, 0, "強調");
   assert.equal(loc.precision, "exact");
-  // 「これは **」は 6 文字なので、「強調」は 7 桁目から
+  // "これは **" is 6 characters, so "強調" starts at column 7
   assert.deepEqual(loc.range.start, { line: 1, column: 7 });
 });
 
@@ -160,6 +160,6 @@ test("前後の文脈は、サロゲートペアを途中で切らない", () =>
 test("uniqueMatch: なし・1 か所・複数(重なりも)", () => {
   assert.equal(uniqueMatch("abc", "x"), null);
   assert.equal(uniqueMatch("abc", "b"), 1);
-  assert.equal(uniqueMatch("aaa", "aa"), null); // 重なる 2 か所
+  assert.equal(uniqueMatch("aaa", "aa"), null); // 2 overlapping places
   assert.equal(uniqueMatch("abc", ""), null);
 });

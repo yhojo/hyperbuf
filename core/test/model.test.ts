@@ -45,7 +45,7 @@ test("参照履歴: visit/back/forward と先の履歴の破棄", () => {
   assert.ok(back(m, w));
   assert.equal(currentEntry(w)?.path, "b.md");
   visit(m, w, "a.md", "x");
-  assert.equal(w.history.length, 3); // c.md は破棄された
+  assert.equal(w.history.length, 3); // c.md was discarded
   assert.ok(!forward(m, w));
 });
 
@@ -54,10 +54,10 @@ test("参照履歴: 先頭・最後へ移る", () => {
   const w = selectedWindow(m);
   visit(m, w, "b.md");
   visit(m, w, "c.md");
-  assert.ok(!forwardToEnd(m, w)); // すでに最後
+  assert.ok(!forwardToEnd(m, w)); // already at the end
   assert.ok(backToStart(m, w));
   assert.equal(currentEntry(w)?.path, "a.md");
-  assert.ok(!backToStart(m, w)); // すでに先頭
+  assert.ok(!backToStart(m, w)); // already at the start
   assert.ok(forwardToEnd(m, w));
   assert.equal(currentEntry(w)?.path, "c.md");
 });
@@ -164,14 +164,14 @@ test("kill-buffer: どの window の履歴からも、その buffer への参照
   visit(m, w, "b.md");
   visit(m, w, "c.md");
   visit(m, w, "b.md", "x");
-  // 履歴: a, b, c, b#x(現在)
+  // history: a, b, c, b#x (current)
   const empty = killBuffer(m, "b.md");
   assert.deepEqual(empty, []);
   assert.deepEqual(paths(w), ["a.md", "c.md"]);
-  assert.equal(currentEntry(w)?.path, "c.md"); // 現在の参照が消えたので、ひとつ前の参照を表示する
+  assert.equal(currentEntry(w)?.path, "c.md"); // the current reference was removed, so the previous one is shown
   assert.ok(!m.buffers.has("b.md"));
   assert.ok(!m.mru.includes("b.md"));
-  // 現在でない参照を消すと、現在位置は、そのまま
+  // Removing a non-current reference leaves the current position unchanged
   killBuffer(m, "a.md");
   assert.equal(currentEntry(w)?.path, "c.md");
   assert.deepEqual(paths(w), ["c.md"]);
@@ -180,7 +180,7 @@ test("kill-buffer: どの window の履歴からも、その buffer への参照
 test("kill-buffer: 分割した window の履歴も、それぞれ整理される。履歴が空になった window を返す", () => {
   const m = setup();
   const w = selectedWindow(m);
-  const other = split(m, "row"); // 履歴: [a](複製)
+  const other = split(m, "row"); // history: [a] (duplicated)
   visit(m, other, "b.md"); // other: a, b
   const empty = killBuffer(m, "a.md");
   assert.deepEqual(paths(w), []);
@@ -204,9 +204,9 @@ test("外部からの位置つき open: 表示中の文書なら、履歴を積�
   jump(m, w, "a.md", "line:9");
   assert.equal(w.history.length, 1);
   assert.equal(currentEntry(w)?.anchor, "line:9");
-  jump(m, w, "a.md"); // 位置なし: そのまま
+  jump(m, w, "a.md"); // no position: unchanged
   assert.equal(currentEntry(w)?.anchor, "line:9");
-  jump(m, w, "b.md", "line:1"); // 別の文書は、通常どおり積む
+  jump(m, w, "b.md", "line:1"); // a different document is pushed as usual
   assert.deepEqual(paths(w), ["a.md", "b.md"]);
 });
 
@@ -214,10 +214,10 @@ test("window の大きさ: 広げる・狭める・上限と、モードライ�
   const m = setup();
   const top = selectedWindow(m);
   const bottom = split(m, "col");
-  assert.equal(resizeWindow(m, top, "row", 0.1), false); // 左右の分割はない
+  assert.equal(resizeWindow(m, top, "row", 0.1), false); // there is no left/right split
   assert.equal(resizeWindow(m, top, "col", 0.2), true);
   assert.ok(Math.abs((m.root.type === "split" ? (m.root.ratio ?? 0) : 0) - 0.7) < 1e-9);
-  assert.equal(resizeWindow(m, bottom, "col", 0.2), true); // 下の window が広がる = 境界が上へ
+  assert.equal(resizeWindow(m, bottom, "col", 0.2), true); // the lower window grows = the boundary moves up
   assert.ok(Math.abs((m.root.type === "split" ? (m.root.ratio ?? 0) : 0) - 0.5) < 1e-9);
   resizeWindow(m, top, "col", 5);
   assert.equal(m.root.type === "split" ? m.root.ratio : 0, 0.9);

@@ -11,12 +11,14 @@ import type { HistoryEntry, LayoutNode, Model, Win } from "./model.ts";
 
 export const SESSION_VERSION = 1;
 
+// 制限値。docs/dev/session-restore.md §4 の表と同じ値にする(値を変えたら、表も直す。
+// core/test/session-docs.test.ts が、一致を検査する)。
 /** 1 つの window の履歴の、保存する最大の件数(現在位置の前後を残す)。 */
 export const MAX_HISTORY = 100;
-const MAX_MRU = 200;
-const MAX_WINDOWS = 32;
-const MAX_DEPTH = 16;
-const MAX_STRING = 4096;
+export const MAX_MRU = 200;
+export const MAX_WINDOWS = 32;
+export const MAX_DEPTH = 16;
+export const MAX_STRING = 4096;
 /** 保存する選択範囲の、最大の文字数(長いものは、保存しない)。 */
 export const MAX_SELECTION = 4096;
 

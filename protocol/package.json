@@ -2,7 +2,7 @@
   "name": "@hyperbuf/protocol",
   "version": "0.1.2",
   "private": true,
-  "description": "HyperBuf の連携プロトコルの、JSON Schema と適合テスト用の例。",
+  "description": "JSON Schema and conformance-test examples for the HyperBuf integration protocol.",
   "type": "module",
   "scripts": {
     "test": "node --test \"test/**/*.test.mjs\"",

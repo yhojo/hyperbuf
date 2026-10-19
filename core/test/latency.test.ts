@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { summarize } from "../src/ui/latency.ts";
 
-test("中央値・p95・最大を求める", () => {
+test("computes median, p95 and max", () => {
   const s = summarize(Array.from({ length: 100 }, (_, i) => i + 1));
   assert.equal(s.n, 100);
   assert.equal(s.median, 51);
@@ -13,6 +13,6 @@ test("中央値・p95・最大を求める", () => {
   assert.equal(s.max, 100);
 });
 
-test("空でも落ちない", () => {
+test("does not fail when empty", () => {
   assert.deepEqual(summarize([]), { n: 0, median: 0, p95: 0, max: 0 });
 });

@@ -12,17 +12,17 @@ const HOME = "/Users/me";
 const ctxOf = (model = createModel()): AppContext =>
   ({ model, host: { home: HOME } }) as unknown as AppContext;
 
-test("基準のディレクトリ: バッファがなければ、ホスト", () => {
+test("base directory: the host's, when there is no buffer", () => {
   assert.equal(defaultDirectory(ctxOf()), HOME);
 });
 
-test("基準のディレクトリ: ファイルの文書は、そのファイルのディレクトリ", () => {
+test("base directory: a file document uses the file's directory", () => {
   const model = createModel();
   visit(model, selectedWindow(model), "/Users/me/work/docs/a.md");
   assert.equal(defaultDirectory(ctxOf(model)), "/Users/me/work/docs");
 });
 
-test("基準のディレクトリ: 検索結果は起点。起点のない仮想バッファは、履歴を戻って直前のもの", () => {
+test("base directory: a search result uses its origin; a virtual buffer without one goes back through the history to the previous one", () => {
   const model = createModel();
   const win = selectedWindow(model);
   visit(model, win, "/p/a.md");
@@ -35,7 +35,7 @@ test("基準のディレクトリ: 検索結果は起点。起点のない仮想
   assert.equal(defaultDirectory(ctxOf(only)), HOME);
 });
 
-test("バッファ名: 開いているバッファ全体で uniquify する", () => {
+test("buffer names: uniquify across all open buffers", () => {
   const model = createModel();
   openBuffer(model, "/a/docs/README.md", "");
   openBuffer(model, "/a/emacs/README.md", "");
@@ -46,7 +46,7 @@ test("バッファ名: 開いているバッファ全体で uniquify する", ()
   assert.equal(names.get("/a/docs/design.md"), "design.md");
 });
 
-test("プロジェクト・ルート: ホストが求める。求められなければ(または失敗したら)、基準のディレクトリ自身", async () => {
+test("project root: asked of the host; if it cannot be (or fails), the base directory itself", async () => {
   const model = createModel();
   visit(model, selectedWindow(model), "/p/repo/docs/a.md");
   const withHost = (projectRoot?: (dir: string) => Promise<string>): AppContext =>

@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { firstChangedLine } from "../src/diff.ts";
 
-test("firstChangedLine: 最初に違う行を返す", () => {
+test("firstChangedLine: returns the first differing line", () => {
   assert.equal(firstChangedLine("a\nb\nc", "a\nb\nc"), null);
   assert.equal(firstChangedLine("a\nb\nc", "a\nX\nc"), 2);
   assert.equal(firstChangedLine("a\nb", "a\nb\nc"), 3);

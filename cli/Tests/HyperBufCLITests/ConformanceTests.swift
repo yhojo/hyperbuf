@@ -35,7 +35,7 @@ import Testing
                 let urlString = try #require(output.out.first, "\(name)")
                 let parsed = try #require(URL(string: urlString))
                 guard case .success(let request) = OpenURL.parse(parsed) else {
-                    Issue.record("\(name): URL を解釈できない: \(urlString)")
+                    Issue.record("\(name): cannot parse the URL: \(urlString)")
                     continue
                 }
                 #expect(request.op == expected["op"] as? String, "\(name)")

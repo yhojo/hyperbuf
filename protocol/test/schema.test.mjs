@@ -19,7 +19,7 @@ const validateRequest = ajv.compile(read("../schema/request.schema.json"));
 const validateResponse = ajv.compile(read("../schema/response.schema.json"));
 const validateLocation = ajv.compile(read("../schema/location.schema.json"));
 
-test("open の検証例: スキーマの合否が、期待(ok かエラー)と一致する", () => {
+test("open validation examples: schema pass/fail matches the expectation (ok or error)", () => {
   for (const item of read("../examples/open-validation.json")) {
     const valid = validateRequest(item.request);
     assert.equal(
@@ -30,7 +30,7 @@ test("open の検証例: スキーマの合否が、期待(ok かエラー)と�
   }
 });
 
-test("URL の例から作る要求は、スキーマに合う", () => {
+test("requests built from the URL examples match the schema", () => {
   for (const item of read("../examples/url.json")) {
     if (!item.request) continue;
     assert.ok(
@@ -40,14 +40,14 @@ test("URL の例から作る要求は、スキーマに合う", () => {
   }
 });
 
-test("open には path が必須、ping には不要", () => {
+test("open requires path, ping does not", () => {
   assert.equal(validateRequest({ op: "open" }), false);
   assert.equal(validateRequest({ op: "ping" }), true);
   assert.equal(validateRequest({ op: "get-location", id: "x" }), true);
   assert.equal(validateRequest({ op: "delete" }), false);
 });
 
-test("応答: 成功には result、失敗には error が要り、両方は持てない", () => {
+test("response: success needs result, failure needs error, and it cannot have both", () => {
   assert.ok(validateResponse({ v: 1, id: "1", ok: true, result: { path: "a.md" } }));
   assert.ok(validateResponse({ v: 1, ok: true, result: null }));
   assert.ok(
@@ -70,7 +70,7 @@ test("応答: 成功には result、失敗には error が要り、両方は持�
   );
 });
 
-test("位置(location)の例: スキーマの合否が、期待と一致する", () => {
+test("location examples: schema pass/fail matches the expectation", () => {
   for (const item of read("../examples/location.json")) {
     assert.equal(
       validateLocation(item.location),
@@ -80,7 +80,7 @@ test("位置(location)の例: スキーマの合否が、期待と一致する",
   }
 });
 
-test("照合の例(location-check): 位置のペイロードとして、スキーマに合う(sha256 は auto を置き換える)", () => {
+test("check examples (location-check): match the schema as a location payload (sha256 replaces auto)", () => {
   const checks = read("../examples/location-check.json");
   assert.ok(checks.length >= 8);
   for (const item of checks) {
@@ -99,6 +99,6 @@ test("照合の例(location-check): 位置のペイロードとして、スキ�
   }
 });
 
-test("get-view も、リクエストのスキーマに合う", () => {
+test("get-view also matches the request schema", () => {
   assert.ok(validateRequest({ op: "get-view" }));
 });

@@ -13,26 +13,26 @@ const files = [
   "area0/topic1/group3/doc-00042.md",
 ];
 
-test("空の問い合わせは先頭から返す", () => {
+test("an empty query returns from the start", () => {
   assert.deepEqual(fuzzyFilter(files, "", 2), files.slice(0, 2));
 });
 
-test("ファイル名への一致を、ディレクトリ名への一致より優先する", () => {
+test("a match on the file name beats a match on the directory name", () => {
   assert.equal(fuzzyFilter(files, "model")[0], "docs/interaction-model.md");
   assert.equal(fuzzyFilter(files, "readme")[0], "README.md");
 });
 
-test("空白区切りの語はすべて含む必要がある", () => {
+test("all whitespace-separated words must be included", () => {
   assert.deepEqual(fuzzyFilter(files, "docs arch"), ["docs/architecture-evaluation.md"]);
   assert.deepEqual(fuzzyFilter(files, "docs zzz"), []);
 });
 
-test("飛び飛びの一致", () => {
+test("scattered matches", () => {
   assert.equal(fuzzyFilter(files, "inmo")[0], "docs/interaction-model.md");
   assert.equal(fuzzyFilter(files, "g3d42")[0], "area0/topic1/group3/doc-00042.md");
 });
 
-test("一致した範囲(強調表示用): ファイル名を優先し、語ごと・飛び飛びにも対応し、まとめる", () => {
+test("matched ranges (for highlighting): prefer the file name, handle per-word and scattered matches, and merge", () => {
   assert.deepEqual(matchRanges("docs/interaction-model.md", "model"), [[17, 22]]);
   assert.deepEqual(matchRanges("docs/model/model.md", "model"), [[11, 16]]); // the file name side
   assert.deepEqual(matchRanges("docs/interaction-model.md", "docs model"), [

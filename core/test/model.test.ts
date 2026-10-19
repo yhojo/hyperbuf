@@ -36,7 +36,7 @@ function setup() {
 
 const paths = (w: { history: { path: string }[] }) => w.history.map((e) => e.path);
 
-test("参照履歴: visit/back/forward と先の履歴の破棄", () => {
+test("reference history: visit/back/forward and discarding forward history", () => {
   const m = setup();
   const w = selectedWindow(m);
   visit(m, w, "b.md");
@@ -49,7 +49,7 @@ test("参照履歴: visit/back/forward と先の履歴の破棄", () => {
   assert.ok(!forward(m, w));
 });
 
-test("参照履歴: 先頭・最後へ移る", () => {
+test("reference history: jump to the first / last", () => {
   const m = setup();
   const w = selectedWindow(m);
   visit(m, w, "b.md");
@@ -62,14 +62,14 @@ test("参照履歴: 先頭・最後へ移る", () => {
   assert.equal(currentEntry(w)?.path, "c.md");
 });
 
-test("同じ参照の連続 visit は積まない", () => {
+test("consecutive visits to the same reference are not pushed", () => {
   const m = setup();
   const w = selectedWindow(m);
   visit(m, w, "a.md");
   assert.equal(w.history.length, 1);
 });
 
-test("MRU は参照履歴とは別に管理される", () => {
+test("MRU is managed separately from the reference history", () => {
   const m = setup();
   const w = selectedWindow(m);
   visit(m, w, "b.md");
@@ -78,7 +78,7 @@ test("MRU は参照履歴とは別に管理される", () => {
   assert.deepEqual(m.mru.slice(0, 3), ["b.md", "c.md", "a.md"]);
 });
 
-test("分割: 履歴は複製され、以降は独立する", () => {
+test("split: the history is copied and independent afterwards", () => {
   const m = setup();
   const w = selectedWindow(m);
   visit(m, w, "b.md");
@@ -94,7 +94,7 @@ test("分割: 履歴は複製され、以降は独立する", () => {
   assert.equal(currentEntry(fresh)?.scroll, 0);
 });
 
-test("window の削除・単独化・移動", () => {
+test("window deletion, isolation and movement", () => {
   const m = setup();
   const w1 = selectedWindow(m);
   const w2 = split(m, "row");
@@ -114,7 +114,7 @@ test("window の削除・単独化・移動", () => {
   assert.ok(!deleteWindow(m));
 });
 
-test("リンク解決", () => {
+test("link resolution", () => {
   assert.deepEqual(resolveLink("/p/docs/a.md", "b.md#x"), { path: "/p/docs/b.md", anchor: "x" });
   assert.deepEqual(resolveLink("/p/docs/a.md", "../c.md"), { path: "/p/c.md", anchor: null });
   assert.deepEqual(resolveLink("/p/docs/a.md", "#top"), { path: "/p/docs/a.md", anchor: "top" });
@@ -132,7 +132,7 @@ test("リンク解決", () => {
   assert.equal(resolveLink("/p/a.md", "https://example.com"), null);
 });
 
-test("仮想 buffer からの相対リンクは、起点のディレクトリ(なければ /)からになる", () => {
+test("a relative link from a virtual buffer resolves from its origin directory (or / if none)", () => {
   assert.deepEqual(resolveLink("*search: x @ /p/docs*", "area0/doc.md#line:3"), {
     path: "/p/docs/area0/doc.md",
     anchor: "line:3",
@@ -144,7 +144,7 @@ test("仮想 buffer からの相対リンクは、起点のディレクトリ(�
   });
 });
 
-test("removeWindow: 指定した window を取り除き、選択中なら隣に移る。唯一の window は取り除けない", () => {
+test("removeWindow: removes the given window and moves to a neighbor if selected; the only window cannot be removed", () => {
   const m = createModel();
   const first = selectedWindow(m);
   assert.equal(removeWindow(m, first), false);
@@ -158,7 +158,7 @@ test("removeWindow: 指定した window を取り除き、選択中なら隣に�
   assert.equal(m.selected, first.id);
 });
 
-test("kill-buffer: どの window の履歴からも、その buffer への参照を取り除き、現在位置を保つ", () => {
+test("kill-buffer: removes references to the buffer from every window's history and keeps the current position", () => {
   const m = setup();
   const w = selectedWindow(m);
   visit(m, w, "b.md");
@@ -177,7 +177,7 @@ test("kill-buffer: どの window の履歴からも、その buffer への参照
   assert.deepEqual(paths(w), ["c.md"]);
 });
 
-test("kill-buffer: 分割した window の履歴も、それぞれ整理される。履歴が空になった window を返す", () => {
+test("kill-buffer: split windows' histories are cleaned up each; returns the windows whose history became empty", () => {
   const m = setup();
   const w = selectedWindow(m);
   const other = split(m, "row"); // history: [a] (duplicated)
@@ -190,14 +190,14 @@ test("kill-buffer: 分割した window の履歴も、それぞれ整理され�
   assert.equal(currentEntry(other)?.path, "b.md");
 });
 
-test("kill-buffer: ない buffer を閉じても、何も起きない", () => {
+test("kill-buffer: closing a nonexistent buffer does nothing", () => {
   const m = setup();
   const w = selectedWindow(m);
   assert.deepEqual(killBuffer(m, "nope.md"), []);
   assert.deepEqual(paths(w), ["a.md"]);
 });
 
-test("外部からの位置つき open: 表示中の文書なら、履歴を積まずに位置だけ置き換える", () => {
+test("external open with a position: for the displayed document, only the position is replaced without pushing history", () => {
   const m = setup();
   const w = selectedWindow(m);
   jump(m, w, "a.md", "line:3");
@@ -210,7 +210,7 @@ test("外部からの位置つき open: 表示中の文書なら、履歴を積�
   assert.deepEqual(paths(w), ["a.md", "b.md"]);
 });
 
-test("window の大きさ: 広げる・狭める・上限と、モードラインの境界", () => {
+test("window size: grow, shrink, limits and the mode line boundary", () => {
   const m = setup();
   const top = selectedWindow(m);
   const bottom = split(m, "col");
@@ -225,7 +225,7 @@ test("window の大きさ: 広げる・狭める・上限と、モードライ�
   assert.equal(boundaryBelow(m, bottom), null);
 });
 
-test("モードラインの右端の境界: 左右の分割で、左の window だけが持つ", () => {
+test("mode line right edge boundary: in a left/right split, only the left window has it", () => {
   const m = setup();
   const left = selectedWindow(m);
   const right = split(m, "row");

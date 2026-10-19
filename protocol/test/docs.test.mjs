@@ -15,21 +15,21 @@ const response = JSON.parse(read("../schema/response.schema.json"));
 /** The `name` in the first column of the table between a heading (such as `### 3.3 Operations`) and the next heading. */
 function firstColumn(heading) {
   const start = doc.indexOf(heading);
-  assert.notEqual(start, -1, `${heading} が文書にない`);
+  assert.notEqual(start, -1, `${heading} is missing from the document`);
   const rest = doc.slice(start + heading.length);
   const end = rest.search(/\n#{2,3} /);
   const section = end === -1 ? rest : rest.slice(0, end);
   return [...section.matchAll(/^\| `([a-z-]+)` +\|/gm)].map((m) => m[1]);
 }
 
-test("操作の表が、request.schema.json の op と一致する", () => {
+test("the operations table matches op in request.schema.json", () => {
   assert.deepEqual(
     firstColumn("### 3.3 Operations").sort(),
     [...request.properties.op.enum].sort(),
   );
 });
 
-test("エラーコードの表が、response.schema.json の error.code と一致する", () => {
+test("the error code table matches error.code in response.schema.json", () => {
   const codes = response.oneOf[1].properties.error.properties.code.enum;
   assert.deepEqual(firstColumn("### 3.4 Error codes").sort(), [...codes].sort());
 });

@@ -67,7 +67,7 @@ import Testing
             case .failure(let error) = OpenRequestValidator.validate(
                 path: "/a.md", line: nil, anchor: longAnchor, version: nil)
         else {
-            Issue.record("拒否されるはず")
+            Issue.record("should be rejected")
             return
         }
         #expect(error.code == ErrorCode.badRequest.rawValue)

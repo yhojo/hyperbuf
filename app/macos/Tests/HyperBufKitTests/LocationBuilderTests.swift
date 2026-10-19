@@ -51,7 +51,7 @@ import Testing
         let access = access(t)
         for bad in ["a.md", t.url.path + "/none.md", "*search: x*"] {
             guard case .failure(let error) = LocationBuilder.build(web(path: bad), access: access) else {
-                Issue.record("拒否されるはず: \(bad)")
+                Issue.record("should be rejected: \(bad)")
                 continue
             }
             #expect(error.code == ErrorCode.notFound.rawValue)
@@ -63,7 +63,7 @@ import Testing
         defer { t.remove() }
         let result = LocationBuilder.build(web(path: t.url.path + "/a.md"), access: access(t))
         guard case .failure(let error) = result else {
-            Issue.record("読んだ記録がなければ、渡さない")
+            Issue.record("do not hand over without a read record")
             return
         }
         #expect(error.code == ErrorCode.stale.rawValue)
@@ -74,7 +74,7 @@ import Testing
         defer { t.remove() }
         guard case .failure(let error) = LocationBuilder.build(web(path: t.url.path + "/a.txt"), access: access(t))
         else {
-            Issue.record("拒否されるはず")
+            Issue.record("should be rejected")
             return
         }
         #expect(error.code == ErrorCode.notMarkdown.rawValue)

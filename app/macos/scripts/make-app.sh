@@ -46,7 +46,7 @@ cp "$cli_bin/hyperbuf" "$app/Contents/Resources/bin/hyperbuf"
 # Setting the environment variable HYPERBUF_ICON to the path of an .icns swaps in a different icon (for
 # comparison)
 icon="${HYPERBUF_ICON:-app/macos/Resources/AppIcon.icns}"
-[ -f "$icon" ] || { echo "アイコンがありません: $icon" >&2; exit 1; }
+[ -f "$icon" ] || { echo "Icon not found: $icon" >&2; exit 1; }
 cp "$icon" "$app/Contents/Resources/AppIcon.icns"
 cp LICENSE "$app/Contents/Resources/LICENSE.txt"
 cp NOTICE "$app/Contents/Resources/NOTICE.txt"

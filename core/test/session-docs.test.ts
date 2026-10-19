@@ -28,7 +28,7 @@ const values: Record<string, number> = {
 };
 
 for (const [name, value] of Object.entries(values)) {
-  test(`session-restore.md の制限値 ${name} が、コードと一致する`, () => {
-    assert.equal(rows.get(name), value, `docs/dev/session-restore.md §4 の ${name} を確かめる`);
+  test(`session-restore.md limit ${name} matches the code`, () => {
+    assert.equal(rows.get(name), value, `check ${name} in docs/dev/session-restore.md §4`);
   });
 }

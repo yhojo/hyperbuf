@@ -25,7 +25,7 @@ guard let image = NSImage(contentsOfFile: inputPath),
     let best = image.representations.max(by: { $0.pixelsWide < $1.pixelsWide }),
     let source = best.cgImage(forProposedRect: nil, context: nil, hints: nil)
 else {
-    FileHandle.standardError.write(Data("画像を読めません: \(inputPath)\n".utf8))
+    FileHandle.standardError.write(Data("Cannot read the image: \(inputPath)\n".utf8))
     exit(1)
 }
 let width = source.width
@@ -73,7 +73,7 @@ radius = solved
 // Cut with a slightly larger radius and a 1 px inward bite so the outer background does not bleed into the edge
 let inset: CGFloat = 1.5
 let clipRadius = radius * 1.06
-print(String(format: "板の範囲: %.0f,%.0f %.0fx%.0f / 角の半径(推定): %.0f", box.minX, box.minY, box.width, box.height, radius))
+print(String(format: "Plate bounds: %.0f,%.0f %.0fx%.0f / corner radius (estimated): %.0f", box.minX, box.minY, box.width, box.height, radius))
 guard let cropped = source.cropping(to: box.insetBy(dx: inset, dy: inset)) else { exit(1) }
 
 // MARK: Drawing (1024 coordinates; y = 0 at the top)
@@ -127,4 +127,4 @@ iconutil.arguments = ["-c", "icns", iconset, "-o", "\(outDir)/AppIcon.icns"]
 try iconutil.run()
 iconutil.waitUntilExit()
 try? FileManager.default.removeItem(atPath: iconset)
-print("\(outDir)/AppIcon.icns を生成しました")
+print("Generated \(outDir)/AppIcon.icns")

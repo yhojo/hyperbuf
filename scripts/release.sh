@@ -34,7 +34,7 @@ die() { echo "NG: $1" >&2; exit 1; }
 
 out="${HYPERBUF_RELEASE_DIR:-dist/release}"
 version="$(sed -n 's/^public let hyperBufVersion = "\(.*\)"$/\1/p' app/macos/Sources/HyperBufKit/Version.swift)"
-[ -n "$version" ] || die "バージョンを読めません(app/macos/Sources/HyperBufKit/Version.swift)"
+[ -n "$version" ] || die "Cannot read the version (app/macos/Sources/HyperBufKit/Version.swift)"
 app="app/macos/.build/HyperBuf.app"
 name="HyperBuf-$version"
 
@@ -47,29 +47,29 @@ else
   if [ -z "$identity" ]; then
     found="$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: .*\)"$/\1/p')"
     [ "$(printf '%s\n' "$found" | grep -c .)" -eq 1 ] \
-      || die "Developer ID Application の証明書が 1 つに決まりません。HYPERBUF_SIGN_IDENTITY を指定してください(見つかったもの: ${found:-なし})"
+      || die "Cannot pick a single Developer ID Application certificate. Set HYPERBUF_SIGN_IDENTITY (found: ${found:-none})"
     identity="$found"
   fi
   [ -n "${HYPERBUF_NOTARY_PROFILE:-}" ] \
-    || die "HYPERBUF_NOTARY_PROFILE がありません(公証の認証情報の保存名。docs/dev/release.md の手順 2)"
+    || die "HYPERBUF_NOTARY_PROFILE is not set (the stored name of the notarization credentials; docs/dev/release.md step 2)"
   xcrun notarytool history --keychain-profile "$HYPERBUF_NOTARY_PROFILE" >/dev/null 2>&1 \
-    || die "公証のプロファイル「$HYPERBUF_NOTARY_PROFILE」を使えません(xcrun notarytool store-credentials で作ります)"
+    || die "Cannot use the notarization profile '$HYPERBUF_NOTARY_PROFILE' (create it with xcrun notarytool store-credentials)"
   timestamp="--timestamp"
 fi
-echo "バージョン: $version / 署名: $identity / 出力: $out"
+echo "Version: $version / signing: $identity / output: $out"
 
 # --- Checks and assembly ----------------------------------------------------------------------------
-step "検査(ライセンス表記・バージョンの表記・ライセンスの一覧)"
+step "Checks (license headers, version strings, license list)"
 scripts/check.sh license
 scripts/check.sh version
 (cd core && npm ci --silent && node scripts/licenses.mjs check)
 
-step "組み立て(release ビルド)"
+step "Assemble (release build)"
 app/macos/scripts/make-app.sh release >/dev/null
-[ -d "$app" ] || die "$app がありません"
+[ -d "$app" ] || die "$app does not exist"
 
 # --- Signing (inside out. Hardened Runtime + secure timestamp) -------------------------------------
-step "署名"
+step "Sign"
 sign() { codesign --force --options runtime "$timestamp" --sign "$identity" "$@"; }
 sign "$app/Contents/Resources/bin/hyperbuf"
 sign "$app"
@@ -82,19 +82,19 @@ mkdir -p "$out"
 
 notarize() { # $1=file (.zip / .dmg)
   xcrun notarytool submit "$1" --keychain-profile "$HYPERBUF_NOTARY_PROFILE" --wait --output-format json \
-    >"$out/notary-result.json" || { cat "$out/notary-result.json" >&2; die "公証の提出に失敗しました"; }
+    >"$out/notary-result.json" || { cat "$out/notary-result.json" >&2; die "notarization submission failed"; }
   status="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("status",""))' "$out/notary-result.json")"
   id="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("id",""))' "$out/notary-result.json")"
   if [ "$status" != "Accepted" ]; then
     xcrun notarytool log "$id" --keychain-profile "$HYPERBUF_NOTARY_PROFILE" >&2 || true
-    die "公証が受理されませんでした(status=$status, id=$id)"
+    die "notarization was not accepted (status=$status, id=$id)"
   fi
-  echo "公証: Accepted ($id)"
+  echo "Notarization: Accepted ($id)"
 }
 
 # --- Notarization and stapling (app) ----------------------------------------------------------------
 if [ "$dry_run" -eq 0 ]; then
-  step "公証(アプリ)"
+  step "Notarize (app)"
   ditto -c -k --keepParent "$app" "$out/HyperBuf-notarize.zip"
   notarize "$out/HyperBuf-notarize.zip"
   rm -f "$out/HyperBuf-notarize.zip"
@@ -103,7 +103,7 @@ if [ "$dry_run" -eq 0 ]; then
 fi
 
 # --- Packaging ----------------------------------------------------------------------------------------
-step "パッケージ化(.zip / .dmg)"
+step "Package (.zip / .dmg)"
 ditto -c -k --keepParent "$app" "$out/$name.zip"
 
 stage="$(mktemp -d)"
@@ -121,19 +121,19 @@ hdiutil create -volname "HyperBuf $version" -srcfolder "$stage" -ov -format UDZO
 codesign --force "$timestamp" --sign "$identity" "$out/$name.dmg"
 
 if [ "$dry_run" -eq 0 ]; then
-  step "公証(.dmg)"
+  step "Notarize (.dmg)"
   notarize "$out/$name.dmg"
   xcrun stapler staple "$out/$name.dmg"
   xcrun stapler validate "$out/$name.dmg"
 fi
 
 # --- Checksums and final checks -------------------------------------------------------------------------
-step "チェックサムと検査"
+step "Checksums and verification"
 (cd "$out" && shasum -a 256 "$name.zip" "$name.dmg" >SHA256SUMS && cat SHA256SUMS)
 if [ "$dry_run" -eq 0 ]; then
   spctl -a -vv -t exec "$app"
   spctl -a -vv -t open --context context:primary-signature "$out/$name.dmg"
 else
-  echo "(dry-run: ad-hoc 署名のため、Gatekeeper の評価と公証は行いません。配布しないでください)"
+  echo "(dry-run: ad-hoc signed, so Gatekeeper assessment and notarization are skipped. Do not distribute)"
 fi
 printf '\nOK: %s\n' "$out"

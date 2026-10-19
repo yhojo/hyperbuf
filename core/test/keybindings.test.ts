@@ -15,7 +15,7 @@ const defaults = {
   "C-x C-f": "find-file",
 };
 
-test("キー表記の検証", () => {
+test("key notation validation", () => {
   for (const ok of [
     "C-x",
     "C-x 2",
@@ -48,7 +48,7 @@ test("キー表記の検証", () => {
   }
 });
 
-test("割り当てを足す・置き換える・外す", () => {
+test("add, replace and remove bindings", () => {
   const r = applyOverrides(defaults, { "M-p": "back", "C-f": null, "C-x 2": "next-link" }, known);
   assert.deepEqual(r.problems, []);
   assert.equal(r.bindings["M-p"], "back");
@@ -58,13 +58,13 @@ test("割り当てを足す・置き換える・外す", () => {
   assert.doesNotThrow(() => createKeymap(r.bindings));
 });
 
-test("標準の割り当てを変えない(元のオブジェクトは、不変)", () => {
+test("does not change the default bindings (the original object stays immutable)", () => {
   const before = JSON.stringify(defaults);
   applyOverrides(defaults, { "C-f": null, "M-p": "back" }, known);
   assert.equal(JSON.stringify(defaults), before);
 });
 
-test("不明なコマンド・不正な表記・割り当てのないキーの解除は、無視して理由を残す", () => {
+test("unknown commands, invalid notation and unbinding unbound keys are ignored with a reason recorded", () => {
   const r = applyOverrides(
     defaults,
     { "M-q": "no-such-command", "Ctrl-x": "back", "M-z": null, "M-w": "back" },
@@ -78,13 +78,13 @@ test("不明なコマンド・不正な表記・割り当てのないキーの�
   assert.ok(!("M-q" in r.bindings));
 });
 
-test("C-g は、取り消しに予約されている", () => {
+test("C-g is reserved for cancel", () => {
   const r = applyOverrides(defaults, { "C-g": "back" }, known);
   assert.ok(r.problems[0]?.includes("reserved"));
   assert.ok(!("C-g" in r.bindings));
 });
 
-test("プレフィックスとコマンドの衝突は、無視する(外してから割り当てれば、できる)", () => {
+test("prefix/command conflicts are ignored (unbind first, then bind, to do it)", () => {
   // C-x is a prefix of C-x 2 and so on
   const conflict = applyOverrides(defaults, { "C-x": "back" }, known);
   assert.ok(conflict.problems[0]?.includes("conflicts"));
@@ -98,7 +98,7 @@ test("プレフィックスとコマンドの衝突は、無視する(外して�
   assert.equal(ok.bindings["C-x 2 a"], "back");
 });
 
-test("設定の並びに依存しない(解除が先)", () => {
+test("independent of the order of settings (unbinding comes first)", () => {
   const a = applyOverrides(defaults, { "C-f": null, "C-f ": "back" } as never, known);
   const b = applyOverrides(defaults, { "M-a": "back", "C-b": null }, known);
   const c = applyOverrides(defaults, { "C-b": null, "M-a": "back" }, known);
@@ -106,13 +106,13 @@ test("設定の並びに依存しない(解除が先)", () => {
   assert.ok(a.problems.length >= 0);
 });
 
-test("コマンドごとのキー", () => {
+test("keys per command", () => {
   const keys = keysByCommand({ "C-f": "forward", "s-]": "forward", "C-b": "back" });
   assert.deepEqual(keys.get("forward"), ["C-f", "s-]"]);
   assert.deepEqual(keys.get("back"), ["C-b"]);
 });
 
-test("describe-bindings の内容: 割り当て済み・キーなし・設定の問題", () => {
+test("describe-bindings content: bound, unbound and configuration problems", () => {
   const md = renderBindingsHelp({
     docs: { forward: "進む|戻る", back: "戻る", "next-link": "次のリンク" },
     bindings: { "C-f": "forward", "s-]": "forward", "C-b": "back" },

@@ -72,7 +72,7 @@ def page(js, timeout=30):
     deadline = time.time() + timeout
     while not os.path.exists(f"{cmd_dir}/{name}.result"):
         if time.time() > deadline:
-            raise RuntimeError("ページの応答がありません: " + js[:80])
+            raise RuntimeError("No response from the page: " + js[:80])
         time.sleep(0.05)
     text = open(f"{cmd_dir}/{name}.result", encoding="utf-8").read()
     if text.startswith("ERROR"):
@@ -107,9 +107,9 @@ while time.time() - t0 < 60:
         pass
     time.sleep(0.3)
 else:
-    sys.exit("アプリが起動しませんでした")
+    sys.exit("The app did not start")
 
-print("C-x p f: VCS の目印をさかのぼってルートを求める")
+print("C-x p f: find the root by walking up to a VCS marker")
 r = run("""
 await hb.open(W + '/repoA/docs/deep/a.md'); await sleep(300);
 await cx('p', 'f'); await sleep(500);
@@ -121,14 +121,14 @@ const b = { label: label(), listed: cands() };
 await cancel();
 return JSON.stringify({ a, b });
 """)
-check("深いディレクトリの文書から、.git のあるディレクトリがルートになる(入力欄にルートを示す)",
+check("from a document in a deep directory, the directory containing .git becomes the root (the input shows the root)",
       r["a"]["label"].endswith("work/repoA/: "), r["a"]["label"])
-check("ルート以下の .md が、ルートからの相対パスで並ぶ(ほかのリポジトリは含まない)",
+check("the .md files under the root are listed by path relative to the root (other repositories are excluded)",
       sorted(r["a"]["listed"]) == ["docs/b.md", "docs/deep/a.md", "top.md"], r["a"]["listed"])
-check(".git がファイル(worktree・submodule)でも、目印になる",
+check("a .git that is a file (worktree, submodule) also works as a marker",
       r["b"]["label"].endswith("work/repoB/: ") and r["b"]["listed"] == ["r.md"], r["b"])
 
-print("C-x p f: 目印がないとき・projectIgnorePaths")
+print("C-x p f: no marker / projectIgnorePaths")
 r = run("""
 await hb.open(W + '/loose/notes/l.md'); await sleep(300);
 await cx('p', 'f'); await sleep(500);
@@ -140,12 +140,12 @@ const ignored = { label: label(), listed: cands() };
 await cancel();
 return JSON.stringify({ loose, ignored });
 """)
-check("目印がなければ、default-directory(文書のディレクトリ)自身がルートになる",
+check("without a marker, default-directory (the document's directory) itself becomes the root",
       r["loose"]["label"].endswith("work/loose/notes/: ") and r["loose"]["listed"] == ["l.md"], r["loose"])
-check("projectIgnorePaths のディレクトリは、目印があってもルートにしない(さらに上にも目印がないので、自身)",
+check("a projectIgnorePaths directory is not made the root even with a marker (no marker further up either, so itself)",
       r["ignored"]["label"].endswith("work/wrap/sub/: ") and r["ignored"]["listed"] == ["w.md"], r["ignored"])
 
-print("C-x p g(ルート以下)と M-s g(default-directory 以下)")
+print("C-x p g (under the root) and M-s g (under default-directory)")
 r = run("""
 await hb.open(W + '/repoA/docs/deep/a.md'); await sleep(300);
 await cx('p', 'g'); await sleep(200);
@@ -159,15 +159,15 @@ typeIn('needle'); pressIn('Enter','Enter'); await hb.keyboard.idle(); await slee
 const directory = { text: content() };
 return JSON.stringify({ prompt, project, dirPrompt, directory });
 """)
-check("C-x p g: プロンプトにルートを示す", r["prompt"].startswith("Search in ") and r["prompt"].endswith("work/repoA/: "), r["prompt"])
+check("C-x p g: the prompt shows the root", r["prompt"].startswith("Search in ") and r["prompt"].endswith("work/repoA/: "), r["prompt"])
 t = r["project"]["text"]
-check("C-x p g: ルート以下の全体を検索する(top.md・docs/b.md・docs/deep/a.md。repoB は含まない)",
+check("C-x p g: searches everything under the root (top.md, docs/b.md, docs/deep/a.md; repoB excluded)",
       "docs/deep/a.md" in t and "docs/b.md" in t and "top.md" in t and "r.md" not in t.replace("docs/b.md", ""), t[:400])
 t = r["directory"]["text"]
-check("M-s g: 従来どおり default-directory 以下だけを検索する(a.md だけ)",
+check("M-s g: as before, searches only under default-directory (a.md only)",
       r["dirPrompt"] == "Search: " and "a.md" in t and "top.md" not in t and "docs/b.md" not in t, (r["dirPrompt"], t[:300]))
 
-print("C-x p b / C-x p k: 同じプロジェクト・ルートのバッファだけ")
+print("C-x p b / C-x p k: only buffers of the same project root")
 r = run("""
 for (const p of ['/repoB/r.md', '/loose/other.md', '/repoA/docs/b.md', '/repoA/top.md']) { await hb.open(W + p); await sleep(200); }
 await cx('p', 'b'); await sleep(250);
@@ -186,26 +186,26 @@ const after = keys();
 return JSON.stringify({ switching, before, killLabel, afterNo, after, echo: echo() });
 """)
 names = r["switching"]["listed"]
-check("C-x p b: プロンプトにルートを示し、同じルートのバッファだけが候補になる",
+check("C-x p b: the prompt shows the root and only buffers of the same root are candidates",
       r["switching"]["label"].startswith("Switch to buffer in ") and r["switching"]["label"].endswith("work/repoA/: ")
       and "b.md" in names and "top.md" in names and "r.md" not in names and "other.md" not in names, r["switching"])
-check("C-x p k: 件数とルートを示して確認する", r["killLabel"].startswith("Kill ") and "work/repoA?" in r["killLabel"] and "buffer" in r["killLabel"], r["killLabel"])
-check("C-x p k: no なら、何も閉じない", r["afterNo"] == len(r["before"]), (r["afterNo"], len(r["before"])))
+check("C-x p k: confirms, showing the count and the root", r["killLabel"].startswith("Kill ") and "work/repoA?" in r["killLabel"] and "buffer" in r["killLabel"], r["killLabel"])
+check("C-x p k: answering no closes nothing", r["afterNo"] == len(r["before"]), (r["afterNo"], len(r["before"])))
 w = os.environ["WORK_DIR"]
-check("C-x p k: yes なら、同じルートのバッファだけが閉じ、ほかのプロジェクトのバッファは残る",
+check("C-x p k: answering yes closes only buffers of the same root; other projects' buffers remain",
       not any(k.startswith(w + "/repoA/") for k in r["after"]) and any(k == w + "/repoB/r.md" for k in r["after"]) and any(k == w + "/loose/other.md" for k in r["after"]),
       r["after"])
-check("閉じたことが知らされる", r["echo"].startswith("Killed ") and "buffer" in r["echo"], r["echo"])
+check("the kill is announced", r["echo"].startswith("Killed ") and "buffer" in r["echo"], r["echo"])
 
-print("設定の問題")
+print("Config problems")
 r = run("""
 await fire('h','KeyH',{ctrlKey:true}); await fire('b','KeyB'); await sleep(500);
 return JSON.stringify({ text: content() });
 """)
-check("projectIgnorePaths の不正な項目(相対パス)は、無視して、設定の問題に出る", "projectIgnorePaths" in r["text"], r["text"][:300])
+check("an invalid projectIgnorePaths entry (relative path) is ignored and reported as a config problem", "projectIgnorePaths" in r["text"], r["text"][:300])
 
 if failures:
-    print(f"\nNG: {len(failures)} 件")
+    print(f"\nNG: {len(failures)} failure(s)")
     sys.exit(1)
 print("\nOK")
 PY

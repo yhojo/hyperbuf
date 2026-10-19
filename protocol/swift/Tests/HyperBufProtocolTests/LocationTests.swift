@@ -49,7 +49,7 @@ import Testing
             file: .init(sha256: String(repeating: "a", count: 64), mtime: 1, size: 3),
             viewer: .init(selection: "abc", version: 2, readAt: 5), markedAt: 9)
         guard case .object(let object) = payload.json else {
-            Issue.record("オブジェクトになるはず")
+            Issue.record("should be an object")
             return
         }
         #expect(

@@ -8,7 +8,7 @@ import Testing
 
 @Suite struct ArgumentsTests {
     private func open(_ args: [String]) throws -> OpenOptions {
-        guard case .success(.open(let options)) = Arguments.parse(args) else { throw UsageError("open ではない") }
+        guard case .success(.open(let options)) = Arguments.parse(args) else { throw UsageError("not open") }
         return options
     }
 
@@ -42,7 +42,7 @@ import Testing
             ["--anchor", "x", "a.md", "b.md"], ["--project", "dir", "a.md"],
         ] {
             guard case .failure = Arguments.parse(bad) else {
-                Issue.record("使い方の誤りになるはず: \(bad)")
+                Issue.record("should be a usage error: \(bad)")
                 continue
             }
         }

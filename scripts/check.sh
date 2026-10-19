@@ -9,33 +9,33 @@ cd "$(dirname "$0")/.."
 step() { printf '\n==> %s\n' "$1"; }
 
 check_license() {
-  step "ライセンス表記: SPDX の表記(Apache-2.0 / emacs/ は GPL-3.0-or-later)"
+  step "License headers: SPDX identifiers (Apache-2.0; emacs/ is GPL-3.0-or-later)"
   scripts/check-license-headers.sh
 }
 
 check_version() {
-  step "バージョンの表記: アプリ・CLI・package.json・CHANGELOG"
+  step "Version strings: app, CLI, package.json, CHANGELOG"
   scripts/check-versions.sh
 }
 
 check_core() {
-  step "core: 型検査・整形・テスト"
+  step "core: typecheck, format, tests"
   (cd core && npm ci --silent && npm run check)
 }
 
 check_swift() { # $1=directory
-  step "$1: ビルド・テスト・整形"
+  step "$1: build, tests, format"
   (cd "$1" && swift build && swift test && swift format lint --strict --recursive Sources Tests --configuration .swift-format)
 }
 
 check_protocol() {
-  step "protocol: JSON Schema・例の検証"
+  step "protocol: JSON Schema and example validation"
   (cd protocol && npm ci --silent && npm run check)
   check_swift protocol/swift
 }
 
 check_emacs() {
-  step "emacs: バイトコンパイル(警告をエラー扱い)・テスト"
+  step "emacs: byte-compile (warnings as errors), tests"
   emacs -Q --batch -L emacs --eval '(setq byte-compile-error-on-warn t)' -f batch-byte-compile emacs/hyperbuf.el
   rm -f emacs/hyperbuf.elc
   emacs -Q --batch -L emacs -l ert -l emacs/test/hyperbuf-test.el -f ert-run-tests-batch-and-exit

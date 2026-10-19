@@ -3,7 +3,7 @@
   "version": "0.1.2",
   "private": true,
   "license": "Apache-2.0",
-  "description": "HyperBuf の共通 Web コア(OS 非依存)。シェルとの境界は HyperbufHost の契約のみ。",
+  "description": "HyperBuf shared Web core (OS-independent). The only boundary to a shell is the HyperbufHost contract.",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",

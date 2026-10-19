@@ -168,17 +168,17 @@ async function collect() {
 function problems({ packages, grammars }) {
   const list = [];
   for (const p of packages) {
-    if (!p.license) list.push(`${p.name}@${p.version}: ライセンスが分からない`);
+    if (!p.license) list.push(`${p.name}@${p.version}: license unknown`);
     else if (!p.override?.review && !allowed(p.license)) {
-      list.push(`${p.name}@${p.version}: 許可していないライセンス: ${p.license}`);
+      list.push(`${p.name}@${p.version}: license not allowed: ${p.license}`);
     }
-    if (!p.files.length) list.push(`${p.name}@${p.version}: ライセンス文のファイルがない`);
+    if (!p.files.length) list.push(`${p.name}@${p.version}: no license text file`);
     if (p.override?.review)
-      list.push(`${p.name}@${p.version}: 要確認(${p.license}): ${p.override.reason}`);
+      list.push(`${p.name}@${p.version}: needs review (${p.license}): ${p.override.reason}`);
   }
   for (const g of grammars) {
     if (!allowed(g.spdx))
-      list.push(`starry-night の文法 ${g.files[0]} ほか: 許可していないライセンス: ${g.spdx}`);
+      list.push(`starry-night grammar ${g.files[0]} and others: license not allowed: ${g.spdx}`);
   }
   return list;
 }
@@ -295,28 +295,28 @@ const summaryFile = join(repo, "docs/user/third-party-licenses.md");
 
 if (mode === "summary") {
   writeFileSync(summaryFile, summary(data));
-  console.log(`${summaryFile} を生成しました(${data.packages.length} パッケージ)`);
+  console.log(`Generated ${summaryFile} (${data.packages.length} packages)`);
 } else if (mode === "notices") {
-  if (!target) throw new Error("出力先を指定してください");
+  if (!target) throw new Error("Specify the output path");
   writeFileSync(target, notices(data));
-  console.log(`${target} を生成しました`);
+  console.log(`Generated ${target}`);
 } else if (mode === "check") {
-  const found = problems(data).filter((p) => !p.includes("要確認"));
-  const reviews = problems(data).filter((p) => p.includes("要確認"));
+  const found = problems(data).filter((p) => !p.includes("needs review"));
+  const reviews = problems(data).filter((p) => p.includes("needs review"));
   const current = existsSync(summaryFile) ? readFileSync(summaryFile, "utf8") : "";
   if (current !== summary(data))
     found.push(
-      "docs/user/third-party-licenses.md が古い(node scripts/licenses.mjs summary で生成し直す)",
+      "docs/user/third-party-licenses.md is stale (regenerate with node scripts/licenses.mjs summary)",
     );
-  for (const r of reviews) console.warn(`注意: ${r}`);
+  for (const r of reviews) console.warn(`Note: ${r}`);
   if (found.length) {
     for (const p of found) console.error(`NG: ${p}`);
     process.exit(1);
   }
   console.log(
-    `ライセンスの検査: OK(${data.packages.length} パッケージ、文法 ${data.grammarFiles.size} 件)`,
+    `License check: OK (${data.packages.length} packages, ${data.grammarFiles.size} grammars)`,
   );
 } else {
-  console.error("使い方: licenses.mjs summary | notices <出力先> | check");
+  console.error("Usage: licenses.mjs summary | notices <output path> | check");
   process.exit(2);
 }

@@ -32,4 +32,4 @@ UI text is fixed to English (not localized).
 
 - `README.md`, `docs/user/` and `docs/dev/` are written in English, like the UI text and `emacs/`. A form like Emacs info, with translations following the locale added later, is desirable for the user documents, but no plan has been decided.
 - `docs/history/` keeps the records in Japanese, as they were at the time, with an English summary in its `README.md`.
-- Source code comments, test names and the output of the repository scripts are still mostly Japanese; new ones may be written in English.
+- Source code comments are in English. Test names and the output of the repository scripts are still partly Japanese; new ones are written in English.

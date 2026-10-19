@@ -169,7 +169,7 @@ v0.1.0 の初期配布で出たフィードバック(メニューやモードラ
 
 ## 8. 範囲外(このPoCでは扱わない)
 
-- ~~複数 frame と Project の対応~~ — **解消(M7b)**: frame と project の対応は持たない。project は、Emacs の `project.el` と同じく、バッファのファイルから求める概念で、frame には結びつかない([project-model.md](project-model.md))。
+- ~~複数 frame と Project の対応~~ — **解消(M7b)**: frame と project の対応は持たない。project は、Emacs の `project.el` と同じく、バッファのファイルから求める概念で、frame には結びつかない([buffer-model.md](buffer-model.md))。
 - コピーのためのテキスト選択の方法。閲覧画面へのカーソル表示は導入しない方向で、別途検討する。
 - セッション復元の保存形式。
 - 拡張機構。

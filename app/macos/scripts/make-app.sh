@@ -73,7 +73,7 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
     </dict>
   </array>
   <!-- Finder の「このアプリケーションで開く」・Dock へのドラッグ&ドロップ(Markdown とフォルダ)。
-       既定のアプリにはならない(Alternate)。docs/project-model.md §3.1 -->
+       既定のアプリにはならない(Alternate)。docs/buffer-model.md §5.1 -->
   <key>CFBundleDocumentTypes</key>
   <array>
     <dict>

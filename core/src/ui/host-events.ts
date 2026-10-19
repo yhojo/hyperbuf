@@ -54,7 +54,7 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
     };
     if (req.error) return fail("bad-request", req.error);
     if (req.confirm) {
-      // 警告パスのファイルは、ダイアログではなくミニバッファで確認する(docs/project-model.md §5)。
+      // 警告パスのファイルは、ダイアログではなくミニバッファで確認する(docs/file-access.md)。
       // 承認されたら、シェルが提案したパスが記憶される(永続化される)。
       const where = req.remember ? `Remember ${abbreviateHome(req.remember, host.home)} and ` : "";
       confirming = req.id ?? null;

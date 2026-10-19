@@ -57,7 +57,7 @@ export interface TreeListing {
 }
 
 /**
- * ファイルへのアクセスの判定(docs/project-model.md §5)。
+ * ファイルへのアクセスの判定(docs/file-access.md)。
  *  - allow: そのまま読める
  *  - confirm: 警告パスのファイル。利用者の確認が要る(承認されたら `remember` のパスを記憶する)
  */
@@ -91,7 +91,7 @@ export interface HyperbufHost {
   /** ディレクトリ以下の `.md` の再帰の一覧(隠しファイルと node_modules を除く)。守りはシェルが行う。 */
   listTree(dir: string): Promise<TreeListing>;
   /**
-   * `dir` のプロジェクト・ルート(VCS の目印をさかのぼって求める。なければ `dir` 自身。docs/project-model.md §14)。
+   * `dir` のプロジェクト・ルート(VCS の目印をさかのぼって求める。なければ `dir` 自身。docs/buffer-model.md §6)。
    * ない(古いシェル、開発サーバー)ときは、`dir` をルートとして扱う。
    */
   projectRoot?(dir: string): Promise<string>;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// プロジェクト単位のバッファ操作(`C-x p b` / `C-x p k`)。docs/project-model.md §14.7。
+// プロジェクト単位のバッファ操作(`C-x p b` / `C-x p k`)。docs/buffer-model.md §6.8。
 // プロジェクトは、バッファのパスから、そのつど求める(バッファにもフレームにも、保存しない)。
 
 import { isVirtualPath } from "../model.ts";

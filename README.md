@@ -30,7 +30,7 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 - **Render what engineers write.** — GFM、SVG、数式、図表、コードなど、実務で使われる表現への対応を重視する。
 - **Extensible by design.** — 拡張しやすく、設定や動作が理解できる構造を目指す。
 - **Local first.** — 基本的な閲覧はオフラインで完結し、意図しない外部通信を行わない。
-- **Mac outside, Emacs inside.** — メニューバーやダイアログは macOS の流儀、フレームの中（キー操作・モードライン・ミニバッファ）はEmacsの流儀で作る。アプリ自身の文言は英語に固定し（ローカライズしない）、扱う文書やファイル名は国際化されている。詳細は `docs/dev/interaction-model.md` §6b。
+- **Mac outside, Emacs inside.** — メニューバーやダイアログは macOS の流儀、フレームの中（キー操作・モードライン・ミニバッファ）はEmacsの流儀で作る。アプリ自身の文言は英語に固定し（ローカライズしない）、扱う文書やファイル名は国際化されている。詳細は `docs/dev/ui-conventions.md`。
 
 ## Product goals
 

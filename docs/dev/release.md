@@ -15,12 +15,14 @@
 
 ## 2. リリースの手順
 
-1. **バージョンを決める。** 次の 3 か所を、同じ版にそろえる。
+1. **バージョンを決める。** 次の場所を、同じ版にそろえる。
    - `app/macos/Sources/HyperBufKit/Version.swift` の `hyperBufVersion`(アプリの版の正)
    - `cli/Sources/HyperBufCLI/CLI.swift` の `cliVersion`
-   - `core/package.json` と `protocol/package.json` の `version`
+   - `core/src/index.ts` の `version`
+   - `emacs/hyperbuf.el` のヘッダの `;; Version:`
+   - `core/package.json`、`protocol/package.json` の `version`、および、それぞれの `package-lock.json` の先頭の `version`(2 か所)
 
-   `Info.plist` の版は、`make-app.sh` が `Version.swift` から設定する(ビルド番号はコミット数)。そろっているかは `scripts/check.sh version` が検査する(`release.sh` も、実行の中で検査する)。
+   `Info.plist` の版は、`make-app.sh` が `Version.swift` から設定する(ビルド番号はコミット数)。そろっているかは `scripts/check.sh version` が検査する(`release.sh` も、実行の中で検査する)。あわせて、`README.md` と `CLAUDE.md` の状態の行を新しい版に直し、`docs/history/plan-change-log.md` に記録する。
 
 2. **変更履歴を確定する。** `CHANGELOG.md` の `[Unreleased]` を、版の見出し(`## [x.y.z] - 日付`)にし、新しい空の `[Unreleased]` を先頭に置く。
 3. **ブランチで準備して、マージする。** 版と変更履歴の更新は、`chore/release-<版>` のブランチで行い、`--no-ff` で `main` にマージする(ブランチ運用: `CLAUDE.md`)。以降は、マージ後の `main` で作業する。

@@ -39,7 +39,7 @@ release ビルドは **Universal(arm64 と x86_64)**。Apple Silicon と Intel �
 
 - `HyperBuf.app` と、`/Applications` へのリンク。
 - `LICENSE.txt`、`NOTICE.txt`、`CHANGELOG.md`(利用者が更新内容を確認できる)。
-- `README.md`: 配布用の案内。元は `app/macos/Resources/dmg/README.md`(インストール、基本の操作、`hyperbuf` コマンドのリンクの作り方、Emacs 連携)。
+- `README.md`: 利用者向けの案内。元は [getting-started.md](../user/getting-started.md)(概要、インストール、基本の操作、設定、`hyperbuf` コマンドのリンクの作り方、Emacs 連携)で、`release.sh` が `README.md` としてコピーする。単独で読めるよう、相対リンクは使わない。
 - `emacs/`: `hyperbuf.el`、`README.md`、`LICENSE`。`emacs/` は GPL-3.0-or-later で、アプリ(Apache-2.0)とは別のプログラムとして、自身のライセンスを添えて同梱する(集積であり、結合ではない)。
 
 ## 5. 署名の設計

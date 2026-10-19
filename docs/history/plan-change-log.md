@@ -2,6 +2,13 @@
 
 README.md に記載した方針・計画を変更した際の記録。新しいものを上に追記する。README は自由に更新してよいが、変更理由をここに残す。
 
+## 2026-10-19 — README を、リリース段階の入口として書き直す
+
+- **変更前**: 開発開始時点のプロダクトビジョン(NOTE つき)。「Product goals」は計画の文体で、「Initial interaction sketch」(Candidate binding)、「Architecture and technology: candidates, not decisions」(大半が決定済み)、「Development approach」(PoC の 4 段階)、解決済みを含む「Open questions」、長い「Project status」を持っていた。File monitoring は「FSEvents(決定)」と書かれていた。
+- **変更後**: 「Features」(現在形)、「はじめかた」と主なキー、「ドキュメント」の案内(`docs/user/`・`docs/dev/`・`docs/history/`)、概要だけの「Architecture」、今も未解決のものだけの「Open questions」、License。技術選定の詳細は `docs/dev/architecture.md` に集約した。ファイル監視は kqueue に直した(実装に合わせた)。画像の拡大・縮小・パンは未実装なので、機能ではなく Open questions に移した。
+- **併せて**: `.dmg` に同梱する README の元を、`app/macos/Resources/dmg/README.md` から `docs/user/getting-started.md` に一本化した(`scripts/release.sh` が `README.md` としてコピーする。`.dmg` の中身のファイル名は変わらない)。
+- **理由**: ソースの公開に向けて、リポジトリの入口として、現状と整合させるため。方針は変えていない。
+
 ## 2026-10-19 — `docs/project-model.md` を `buffer-model.md` と `file-access.md` に再構成する
 
 - **変更前**: 「プロジェクトを持たない設計」(`docs/project-model.md`)に、ファイルの扱い・アクセス判定・フレーム・プロジェクト・ルートの設計がまとまっていた。

@@ -1,41 +1,41 @@
-# セッションの復元
+# Session Restore
 
-アプリを終了して起動し直したあとに、作業中の状態を戻す仕組み。保存の対象はバッファ・window・参照履歴で、概念は [buffer-model.md](buffer-model.md) と [interaction-model.md](interaction-model.md) に従う。
+The mechanism that brings back the working state after the app is quit and launched again. What is saved is buffers, windows, and reference history; the concepts follow [buffer-model.md](buffer-model.md) and [interaction-model.md](interaction-model.md).
 
-## 1. 概要
+## 1. Overview
 
-- セッションは、**全体で 1 つのファイル**に、**フレーム(macOS のウィンドウ)の並び**として保存する。プロジェクトごと、バッファごとには保存しない。
-- 起動時は、前回の全フレームを復元する。保存がない、または壊れていれば、スロット 1 のフレームが 1 つだけの、空の画面に「`C-x C-f` で開く」と出す。
-- `hyperbuf <ファイル>` で開いたときは、復元した状態に、そのファイルを開く(行き先のフレームは、[buffer-model.md](buffer-model.md) §7)。
-- 設定は `config.json` の `restoreSession`(既定 `true`)。`false` のあいだは、復元も保存もしない([configuration.md](../user/configuration.md))。
+- The session is saved in **one file overall**, as a **sequence of frames (macOS windows)**. It is not saved per project or per buffer.
+- At startup, all frames from last time are restored. If there is no saved data or it is broken, an empty screen with a single slot-1 frame shows "open with `C-x C-f`".
+- When opening with `hyperbuf <file>`, that file is opened on top of the restored state (the destination frame is described in [buffer-model.md](buffer-model.md) §7).
+- The setting is `restoreSession` in `config.json` (default `true`). While it is `false`, nothing is restored or saved ([configuration.md](../user/configuration.md)).
 
-## 2. 保存する範囲
+## 2. What is saved
 
-フレームごとに、次を保存して、次の起動で復元する。
+For each frame, the following is saved and restored at the next launch.
 
-- window の分割配置(分割の向き、window の並び、分割の比率)。比率は省略可で、省略は均等。`C-x ^` などやモードラインのドラッグで変えた大きさを戻す。
-- 各 window の参照履歴(文書・アンカー・閲覧位置)と、履歴の現在位置。
-- 選択中の window。
-- buffer の、最近使った順(`C-x b` の候補順)。
-- **選択範囲**(文書内で選択していたテキスト): 表示されたテキストの中の位置(開始・終了)と、選択していた文字列を、1 件だけ。復元は、その window が、保存したときと同じ文書を表示していて、**その位置の文字列が一致するときだけ**行う(文書が書き換わっていれば、ずれた場所を選ばないよう、戻さない)。選択範囲だけが壊れていても、ほかは復元する。段落全体の選択(範囲の端が要素になる場合)も保存できる。
-- ウィンドウの位置と大きさ(`rect`)。復元時に、いまの画面に収まるよう補正する。
+- The window split layout (split direction, order of windows, split ratio). The ratio is optional, and omitting it means equal sizes. It brings back sizes changed with `C-x ^` and the like or by dragging the mode line.
+- Each window's reference history (documents, anchors, reading positions) and the current position in the history.
+- The selected window.
+- The most-recently-used order of buffers (the `C-x b` candidate order).
+- The **selection** (text selected in a document): the position within the displayed text (start and end) and the selected string, one entry only. It is restored only when the window displays the same document as when it was saved and **the string at that position matches** (if the document has been rewritten, it is not restored, so that a shifted place is not selected). Even if only the selection is broken, everything else is restored. A selection of a whole paragraph (where the ends of the range are elements) can also be saved.
+- The window position and size (`rect`). On restore, it is adjusted to fit the current screen.
 
-保存しないもの:
+Not saved:
 
-- **文書の内容。** 復元時に、ファイルから読み直す(最新の内容が表示される)。
-- 仮想 buffer(`*search: …*`、`*Help: …*`)。履歴から外し、履歴の残りで現在位置を決める。
-- 入力途中のミニバッファ、検索語(`C-s` の前回の語)、リンクの選択(`TAB`)。
-- 記憶したパス([file-access.md](file-access.md) §4)は、別の保存先(`trusted-roots.json`)に、すでに永続化している。
+- **Document contents.** They are re-read from the file at restore (the latest contents are shown).
+- Virtual buffers (`*search: …*`, `*Help: …*`). They are removed from the history, and the current position is decided from the rest of the history.
+- A minibuffer with input in progress, the search term (the previous term of `C-s`), and the link selection (`TAB`).
+- Remembered paths ([file-access.md](file-access.md) §4) are already persisted in a separate location (`trusted-roots.json`).
 
-## 3. 保存先と形式
+## 3. Location and format
 
 ```
 ~/Library/Application Support/HyperBuf/session.json
 ```
 
-置き場所のディレクトリは 0700、ファイルは 0600。一時ファイルに書いてから置き換える(途中の状態を見せない)。
+The containing directory is 0700 and the file is 0600. It is written to a temporary file and then replaced (so intermediate states are never visible).
 
-### 3.1 ファイル(version 2)
+### 3.1 File (version 2)
 
 ```json
 {
@@ -51,13 +51,13 @@
 }
 ```
 
-- `active` は、最後にアクティブだったフレームのスロット。
-- `slot` は、フレームの番号(`Cmd-1` … `Cmd-9`)。1〜9 で、不正・重複したフレームは捨てる。
-- `rect` は、ウィンドウの位置と大きさ。
+- `active` is the slot of the frame that was last active.
+- `slot` is the frame number (`Cmd-1` … `Cmd-9`). It is 1 to 9; invalid or duplicate frames are discarded.
+- `rect` is the position and size of the window.
 
-### 3.2 スナップショット(1 フレーム分。version 1)
+### 3.2 Snapshot (one frame; version 1)
 
-Web コアが作る(`core/src/session.ts`)。
+Produced by the Web core (`core/src/session.ts`).
 
 ```json
 {
@@ -91,44 +91,44 @@ Web コアが作る(`core/src/session.ts`)。
 }
 ```
 
-- `root` は分割ツリー。ノードは `split`(`dir`: `row` / `col`、`children`: 2 つ、`ratio`: 省略可)か、`leaf`(window。`id`、履歴、履歴の現在位置 `index`)。
-- `selected` は選択中の window の `id`、`winSeq` は最後に振った window の番号。
-- `selection` は省略可。
-- スナップショットの形を変えるときは、`SESSION_VERSION` を上げる。
+- `root` is the split tree. A node is either a `split` (`dir`: `row` / `col`, `children`: two, `ratio`: optional) or a `leaf` (a window: `id`, history, and the current position in the history `index`).
+- `selected` is the `id` of the selected window, and `winSeq` is the number of the last window assigned.
+- `selection` is optional.
+- When the shape of the snapshot changes, `SESSION_VERSION` is raised.
 
-## 4. 制限値
+## 4. Limits
 
-形・型・件数・長さを制限する。値の定義は、コードの次の場所にある。**この表とコードの値を変えるときは、必ず両方を直す**(`core/test/session-docs.test.ts` が、Web コア側の値と、この表の一致を検査する)。
+The shape, types, counts, and lengths are limited. The values are defined at the following places in the code. **When you change a value in this table or in the code, always fix both** (`core/test/session-docs.test.ts` checks that the Web core's values match this table).
 
-| 名前            | 値      | 意味                                                                  | 定義                                               |
-| --------------- | ------- | --------------------------------------------------------------------- | -------------------------------------------------- |
-| `MAX_HISTORY`   | 100     | 1 window あたりの、保存する履歴の件数(現在位置の前後を残す)           | `core/src/session.ts`                              |
-| `MAX_MRU`       | 200     | 最近使った順に保存する buffer の件数                                  | `core/src/session.ts`                              |
-| `MAX_WINDOWS`   | 32      | 1 フレームの window の数                                              | `core/src/session.ts`                              |
-| `MAX_DEPTH`     | 16      | 分割ツリーの深さ                                                      | `core/src/session.ts`                              |
-| `MAX_STRING`    | 4096    | パス・アンカーなどの文字列の長さ                                      | `core/src/session.ts`                              |
-| `MAX_SELECTION` | 4096    | 保存する選択範囲の文字数(超えるものは保存しない)                      | `core/src/session.ts`                              |
-| `SAVE_DELAY_MS` | 1000    | 変更から、Web コアがフレームごとに保存するまでの待ち(ミリ秒)          | `core/src/ui/session.ts`                           |
-| `maxBytes`      | 4000000 | `session.json` の大きさの上限(バイト。超えるものは保存も読みもしない) | `app/macos/Sources/HyperBufKit/SessionStore.swift` |
-| `maxFrames`     | 9       | フレームの数(スロット 1〜9)                                           | `app/macos/Sources/HyperBufKit/SessionStore.swift` |
+| Name            | Value   | Meaning                                                                                            | Definition                                         |
+| --------------- | ------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `MAX_HISTORY`   | 100     | Number of history entries saved per window (keeping entries before and after the current position) | `core/src/session.ts`                              |
+| `MAX_MRU`       | 200     | Number of buffers saved in most-recently-used order                                                | `core/src/session.ts`                              |
+| `MAX_WINDOWS`   | 32      | Number of windows per frame                                                                        | `core/src/session.ts`                              |
+| `MAX_DEPTH`     | 16      | Depth of the split tree                                                                            | `core/src/session.ts`                              |
+| `MAX_STRING`    | 4096    | Length of strings such as paths and anchors                                                        | `core/src/session.ts`                              |
+| `MAX_SELECTION` | 4096    | Number of characters of a saved selection (a longer one is not saved)                              | `core/src/session.ts`                              |
+| `SAVE_DELAY_MS` | 1000    | Wait, per frame, from a change until the Web core saves (milliseconds)                             | `core/src/ui/session.ts`                           |
+| `maxBytes`      | 4000000 | Upper limit on the size of `session.json` (bytes; a larger one is neither saved nor read)          | `app/macos/Sources/HyperBufKit/SessionStore.swift` |
+| `maxFrames`     | 9       | Number of frames (slots 1 to 9)                                                                    | `app/macos/Sources/HyperBufKit/SessionStore.swift` |
 
-## 5. 保存と復元の動き
+## 5. Saving and restoring
 
-### 5.1 保存
+### 5.1 Saving
 
-- Web コアが、表示の更新・スクロールのたびに、1 秒待ってから(連続する変更は 1 回にまとめて)、フレームごとに保存する。
-- ホストは、全フレームのスナップショットを集めて、さらに 0.5 秒待って、1 つのファイルに書く。内容が前回と同じなら、書かない。
-- ページが非表示になる・ウィンドウを閉じる・アプリを終了するときは、待たずに書く。終了は、保存が終わるまで待つ(最大 1.5 秒)。
-- **フレームを閉じたとき:** 最後の 1 つでなければ、そのフレームのセッションは破棄する(Emacs の `delete-frame` と同じ)。最後の 1 つを閉じる、またはアプリを終了するときは、その時点の全フレームを保存する。
+- On every display update and scroll, the Web core waits 1 second (consecutive changes are merged into one) and then saves per frame.
+- The host collects the snapshots of all frames, waits a further 0.5 seconds, and writes them to one file. If the contents are the same as last time, it does not write.
+- When the page becomes hidden, a window is closed, or the app quits, it writes without waiting. Quitting waits until saving finishes (up to 1.5 seconds).
+- **When a frame is closed:** if it is not the last one, that frame's session is discarded (the same as Emacs `delete-frame`). When the last one is closed, or the app quits, all frames at that moment are saved.
 
-### 5.2 復元
+### 5.2 Restoring
 
-- 起動して、前回のフレームをすべて作り、それぞれのスナップショットを復元する。復元のあとに、保存を始める(復元の前に書いて、前回の状態を消さない)。
-- 文書が存在するかは、読んでみて分かる。**なくなった文書、読めなくなった文書(権限など)は、履歴から外す**(現在位置は、ひとつ前の参照になる)。window の履歴が空になれば、その window をたたむ(分割をなくす)。すべてなくなれば、通常の起動にする。
+- At startup, all frames from last time are created, and each snapshot is restored. Saving starts after the restore (it does not write before the restore, so the previous state is not erased).
+- Whether a document exists is known by trying to read it. **Documents that are gone or can no longer be read (permissions and so on) are removed from the history** (the current position becomes the previous reference). If a window's history becomes empty, that window is folded away (the split is removed). If everything is gone, it becomes a normal startup.
 
-### 5.3 検証
+### 5.3 Validation
 
-保存されたデータは、**信頼しない入力として扱う**。
+Saved data is **treated as untrusted input**.
 
-- Web コアが、形・型・件数・長さを、§4 の制限値で厳密に検証する(`core/src/session.ts`)。壊れたフレームは、部分的には使わず、そのフレームだけ捨て、ほかは復元する。使えるフレームがなければ、通常の起動にする。選択範囲だけが壊れている場合は、選択範囲だけを捨てる。
-- シェル(Swift)は、JSON として読めること、大きさ、スロットの大枠だけを見る。
+- The Web core strictly validates the shape, types, counts, and lengths with the limits in §4 (`core/src/session.ts`). A broken frame is not used partially; only that frame is discarded and the others are restored. If there is no usable frame, it becomes a normal startup. If only the selection is broken, only the selection is discarded.
+- The shell (Swift) checks only that it is readable as JSON, its size, and the rough outline of the slots.

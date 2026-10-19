@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 HyperBuf is in **active implementation**. v0.1.2 was released on 2026-10-19 (tag `v0.1.2`; Developer ID signed + notarized Universal build) and is in private initial distribution to a few acquaintances to collect feedback. Migration plan M0–M7b are done; M8 (distribution) is in progress: signing, notarization, the `.zip` / `.dmg`, SECURITY/CONTRIBUTING, the secret scan and the git-history cleanup are done. A trademark search (2026-10-19) found registrations of the same name (`HYPER-BUF` in the US, `HYPERBUF` in Brazil, both CA, Inc.), so **the project will not be made public**: it is distributed only to people who ask for it. The remaining publication work (English translation of the documents, recreating the GitHub repository, GitHub settings, GitHub Releases) is still carried out to learn the process. The Homebrew cask is not supported for now. The PoCs are finished and live on `poc/*` branches (not merged). The repository is mirrored to a private GitHub repo (`yhojo/hyperbuf`); CI runs on pushes to `main`.
 
-Progress, decisions and the order of work: `docs/history/migration-plan.md`. The product vision and feature overview: `README.md` (Japanese).
+Progress, decisions and the order of work: `docs/history/migration-plan.md`. The product vision and feature overview: `README.md`.
 
 ## Commands
 
@@ -85,7 +85,7 @@ Documents are split by audience under `docs/`:
 | `docs/dev/` | developers | the current design and specification (architecture, buffer model, interaction model, file access, integration protocol, session, release, …) |
 | `docs/history/` | history | PoC results, migration plan, plan change log, past decisions. Records of the time; do not rewrite them to match the present |
 
-- **Language:** design documents are Japanese until the translation phase before source publication; user-facing documents will be English first. UI text and `emacs/` are already English. When adding documents, follow the existing language of their directory unless told otherwise.
+- **Language:** `README.md`, `docs/user/` and `docs/dev/` are in English, as are UI text, `emacs/` and `CLAUDE.md`. `docs/history/` stays in Japanese (records of the time) with an English summary in its `README.md`. Source code comments, test names and the output of repo scripts are still mostly Japanese; new ones may be written in English. When adding documents, write them in English except under `docs/history/`.
 - **Generated files, never edit by hand:** `docs/user/keybindings.md`, `docs/user/syntax-highlighting.md`, `docs/user/third-party-licenses.md` (see "Commands" for how to regenerate; `npm run check` fails when they are stale).
 - **Checks that keep documents and code in sync:** the config key list in `docs/user/configuration.md` (`ConfigDocsTests`), the limits table in `docs/dev/session-restore.md` (`core/test/session-docs.test.ts`), the operations and error codes in `docs/dev/integration-protocol.md` (`protocol/test/docs.test.mjs`), and the version strings (`scripts/check-versions.sh`).
 - **When you change X, update Y:**

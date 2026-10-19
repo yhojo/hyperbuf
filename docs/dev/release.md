@@ -1,78 +1,78 @@
-# リリースの手順
+# Release procedure
 
-署名・公証・配布の手順。`scripts/release.sh` が、Developer ID 署名 → 公証 → ステープル → `.zip` / `.dmg` → チェックサムまでを行う。成果物の内容と署名の設計は [distribution.md](distribution.md)。
+The procedure for signing, notarizing and distributing. `scripts/release.sh` performs Developer ID signing, notarization, stapling, the `.zip` / `.dmg`, and the checksums. The contents of the artifacts and the signing design are in [distribution.md](distribution.md).
 
-## 1. 前提(1 回だけ)
+## 1. Prerequisites (once only)
 
-1. **署名の証明書:** キーチェーンに「Developer ID Application: …」がある(Apple Developer Program の証明書。`security find-identity -v -p codesigning` で確認する)。複数あるときは、`HYPERBUF_SIGN_IDENTITY` で指定する。
-2. **公証の認証情報:** Apple ID の **App 用パスワード**(appleid.apple.com で発行)を、キーチェーンのプロファイルとして保存する。**このスクリプトも Claude も、パスワードや Apple ID を受け取らない**。自分の端末で、1 回だけ実行する。
+1. **Signing certificate:** "Developer ID Application: …" is in the keychain (an Apple Developer Program certificate; check with `security find-identity -v -p codesigning`). When there are several, specify one with `HYPERBUF_SIGN_IDENTITY`.
+2. **Notarization credentials:** Store an **app-specific password** for your Apple ID (issued at appleid.apple.com) as a keychain profile. **Neither this script nor Claude receives the password or the Apple ID**. Run this once on your own machine.
 
    ```bash
-   xcrun notarytool store-credentials "hyperbuf-notary" --apple-id "<Apple ID>" --team-id "<チーム ID>"
+   xcrun notarytool store-credentials "hyperbuf-notary" --apple-id "<Apple ID>" --team-id "<team ID>"
    ```
 
-   パスワードは、コマンドが対話で尋ねる。`--password` を引数に書かない(履歴に残るため)。
+   The command asks for the password interactively. Do not write `--password` as an argument (it would remain in the history).
 
-## 2. リリースの手順
+## 2. Release steps
 
-1. **バージョンを決める。** 次の場所を、同じ版にそろえる。
-   - `app/macos/Sources/HyperBufKit/Version.swift` の `hyperBufVersion`(アプリの版の正)
-   - `cli/Sources/HyperBufCLI/CLI.swift` の `cliVersion`
-   - `core/src/index.ts` の `version`
-   - `emacs/hyperbuf.el` のヘッダの `;; Version:`
-   - `core/package.json`、`protocol/package.json` の `version`、および、それぞれの `package-lock.json` の先頭の `version`(2 か所)
+1. **Decide the version.** Make the following places carry the same version.
+   - `hyperBufVersion` in `app/macos/Sources/HyperBufKit/Version.swift` (the source of truth for the app version)
+   - `cliVersion` in `cli/Sources/HyperBufCLI/CLI.swift`
+   - `version` in `core/src/index.ts`
+   - `;; Version:` in the header of `emacs/hyperbuf.el`
+   - `version` in `core/package.json` and `protocol/package.json`, and the top-level `version` (2 places) in each `package-lock.json`
 
-   `Info.plist` の版は、`make-app.sh` が `Version.swift` から設定する(ビルド番号はコミット数)。そろっているかは `scripts/check.sh version` が検査する(`release.sh` も、実行の中で検査する)。あわせて、`README.md` と `CLAUDE.md` の状態の行を新しい版に直し、`docs/history/plan-change-log.md` に記録する。
+   The version in `Info.plist` is set by `make-app.sh` from `Version.swift` (the build number is the commit count). `scripts/check.sh version` checks that they agree (`release.sh` also checks during its run). Also update the status lines in `README.md` and `CLAUDE.md` to the new version, and record it in `docs/history/plan-change-log.md`.
 
-2. **変更履歴を確定する。** `CHANGELOG.md` の `[Unreleased]` を、版の見出し(`## [x.y.z] - 日付`)にし、新しい空の `[Unreleased]` を先頭に置く。
-3. **ブランチで準備して、マージする。** 版と変更履歴の更新は、`chore/release-<版>` のブランチで行い、`--no-ff` で `main` にマージする(ブランチ運用: `CLAUDE.md`)。以降は、マージ後の `main` で作業する。
-4. **チェック。** `scripts/check.sh` が通ること。GUI の統合テスト(`scripts/integration-test*.sh`。CI では実行しない)も通ること。
-5. **リハーサル**(任意。公証しない)。`scripts/release.sh --dry-run`。組み立て・ad-hoc 署名・`.zip` / `.dmg` の作成だけを試す。**この成果物は、配布しない**。
-6. **本番。**
+2. **Finalize the changelog.** Turn `[Unreleased]` in `CHANGELOG.md` into a version heading (`## [x.y.z] - date`), and put a new empty `[Unreleased]` at the top.
+3. **Prepare on a branch and merge.** Do the version and changelog updates on a `chore/release-<version>` branch and merge it into `main` with `--no-ff` (branch workflow: `CLAUDE.md`). From here on, work on `main` after the merge.
+4. **Check.** `scripts/check.sh` passes. The GUI integration tests (`scripts/integration-test*.sh`; not run in CI) also pass.
+5. **Rehearsal** (optional; no notarization). `scripts/release.sh --dry-run`. It only tries assembly, ad-hoc signing and creating the `.zip` / `.dmg`. **Do not distribute these artifacts**.
+6. **The real release.**
 
    ```bash
    HYPERBUF_NOTARY_PROFILE=hyperbuf-notary scripts/release.sh
    ```
 
-   成果物は `dist/release/`(`HyperBuf-<版>.zip`、`HyperBuf-<版>.dmg`、`SHA256SUMS`)。署名の際に、キーチェーンへのアクセスの許可を尋ねられることがある。
+   The artifacts are in `dist/release/` (`HyperBuf-<version>.zip`, `HyperBuf-<version>.dmg`, `SHA256SUMS`). During signing, you may be asked to allow keychain access.
 
-7. **配布の前の確認。** §3「まっさらな Mac での確認」。
-8. **公開。** §4。
+7. **Check before distribution.** §3 "Verification on a clean Mac".
+8. **Publish.** §4.
 
-## 3. まっさらな Mac での確認(配布の前)
+## 3. Verification on a clean Mac (before distribution)
 
-公証の結果は、実際に、別の Mac(または、新しいユーザー)で確かめる。**Intel の Mac でも確かめる**(Universal の x86_64 の部分は、開発機で実行できないことがある)。
+Verify the notarization result on another Mac (or a new user) for real. **Also verify on an Intel Mac** (the x86_64 part of the Universal binary may not be runnable on the development machine).
 
-1. `.dmg` を、ブラウザや AirDrop など**隔離属性(quarantine)が付く経路**で渡す。手元で再現するなら、`xattr -w com.apple.quarantine "0081;$(printf %x $(date +%s));Safari;" <ファイル>`。
-2. `.dmg` を開き、`HyperBuf.app` を `/Applications` にドラッグして起動する。**Gatekeeper の警告が出ない**こと(「開発元を確認できません」が出たら失敗)。
-3. `spctl -a -vv -t exec /Applications/HyperBuf.app` が `accepted`、`source=Notarized Developer ID` になること。`codesign --verify --deep --strict` が通ること。
-4. 起動して、文書を開き、Mermaid・数式・コードブロックが描画されること。`hyperbuf` CLI(`Resources/bin/hyperbuf`)から、ファイルを開けること。外部通信がないこと(Little Snitch などで確認すると確実)。
-5. 初回起動の確認のダイアログ(「インターネットからダウンロードされたアプリ」)は、公証済みなら、正常に出てよい。
+1. Hand over the `.dmg` through a path that **sets the quarantine attribute**, such as a browser or AirDrop. To reproduce it locally: `xattr -w com.apple.quarantine "0081;$(printf %x $(date +%s));Safari;" <file>`.
+2. Open the `.dmg`, drag `HyperBuf.app` to `/Applications` and launch it. **No Gatekeeper warning appears** (a failure if "the developer cannot be verified" appears).
+3. `spctl -a -vv -t exec /Applications/HyperBuf.app` reports `accepted` and `source=Notarized Developer ID`. `codesign --verify --deep --strict` passes.
+4. Launch it, open a document, and confirm that Mermaid, math and code blocks render. Confirm that the `hyperbuf` CLI (`Resources/bin/hyperbuf`) can open a file. Confirm there is no external network traffic (checking with Little Snitch or similar is the most reliable).
+5. The confirmation dialog on first launch ("an app downloaded from the Internet") may appear normally for a notarized app.
 
-## 4. 公開(GitHub Releases)
+## 4. Publishing (GitHub Releases)
 
-**想定する手順(まだ実行したことがなく、未検証)。** ソースの公開と GitHub Releases への公開は、M8 の残りの作業である([migration-plan.md](../history/migration-plan.md))。公開前は、成果物を非公開の共有(関係者への配布)で渡す。
+**Intended procedure (never run yet; unverified).** Publishing the source and publishing to GitHub Releases are the remaining work of M8 ([migration-plan.md](../history/migration-plan.md)). Before publication, artifacts are handed over through private sharing (distribution to the people involved).
 
-1. 本番のビルドを作った `main` のコミットに、タグ(`v<版>`)を付けて、push する。
-
-   ```bash
-   git tag -a v<版> -m "HyperBuf <版>"
-   git push origin v<版>
-   ```
-
-2. GitHub Releases に、成果物と `SHA256SUMS` をアップロードする。リリースノートは、`CHANGELOG.md` の、その版の節を使う。
+1. Tag (`v<version>`) the `main` commit from which the real build was made, and push it.
 
    ```bash
-   awk '/^## \[<版>\]/{f=1;next} /^## \[/{f=0} f' CHANGELOG.md > /tmp/notes.md
-   gh release create v<版> dist/release/HyperBuf-<版>.zip dist/release/HyperBuf-<版>.dmg dist/release/SHA256SUMS \
-     --title "HyperBuf <版>" --notes-file /tmp/notes.md
+   git tag -a v<version> -m "HyperBuf <version>"
+   git push origin v<version>
    ```
 
-3. ダウンロードした `.dmg` が、`SHA256SUMS` と一致し、§3 の確認を通ること。
+2. Upload the artifacts and `SHA256SUMS` to GitHub Releases. For the release notes, use the section of `CHANGELOG.md` for that version.
 
-## 5. 未決事項
+   ```bash
+   awk '/^## \[<version>\]/{f=1;next} /^## \[/{f=0} f' CHANGELOG.md > /tmp/notes.md
+   gh release create v<version> dist/release/HyperBuf-<version>.zip dist/release/HyperBuf-<version>.dmg dist/release/SHA256SUMS \
+     --title "HyperBuf <version>" --notes-file /tmp/notes.md
+   ```
 
-リリースの手順に影響するもの。ほかの配布の残りの作業(Homebrew cask、ソースの公開に向けた整備など)は、[migration-plan.md](../history/migration-plan.md) の M8。
+3. The downloaded `.dmg` matches `SHA256SUMS` and passes the §3 verification.
 
-- **リリースの自動化(GitHub Actions)。** 署名の秘密を CI に置くかどうかの判断が要るため、手動のリリースから始めている。
-- **自動更新(Sparkle など)。** 外部通信を伴うため、「Local first」の方針との調整が要る。当面は、なし。
+## 5. Open items
+
+Items that affect the release procedure. The other remaining distribution work (the Homebrew cask, preparation for publishing the source, and so on) is M8 in [migration-plan.md](../history/migration-plan.md).
+
+- **Release automation (GitHub Actions).** Whether to keep the signing secrets in CI needs a decision, so releases start out manual.
+- **Automatic updates (Sparkle, for example).** They involve external network access, so they need to be reconciled with the "Local first" policy. None for now.

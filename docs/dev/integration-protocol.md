@@ -1,65 +1,65 @@
-# 連携プロトコル(CLI・Emacs 連携)
+# Integration protocol (CLI and Emacs integration)
 
-HyperBuf.app の外から、**ファイル(と行・見出し)を指定して文書を開く**ための共通の契約。機械可読な定義(JSON Schema)と、適合テスト用の共有の例は [`protocol/`](../../protocol/README.md)。ビューアから編集位置へ戻る逆方向の連携は [edit-location.md](edit-location.md)。ファイルを開くときのアクセス判定は [file-access.md](file-access.md)。検証と決定の経緯は [poc-integration-results.md](../history/poc-integration-results.md)。
+A common contract for **opening a document by specifying a file (and a line or heading)** from outside HyperBuf.app. The machine-readable definition (JSON Schema) and the shared examples for conformance tests are in [`protocol/`](../../protocol/README.md). The reverse direction, returning from the viewer to the edit location, is in [edit-location.md](edit-location.md). Access checks when opening a file are in [file-access.md](file-access.md). The evaluation and decisions behind this are in [poc-integration-results.md](../history/poc-integration-results.md).
 
-## 1. 目的と範囲
+## 1. Purpose and scope
 
-この契約を使う者は、次の三つ。
+The contract is used by three kinds of clients.
 
-- `hyperbuf` CLI(`cli/`)
-- Emacs 連携(`emacs/`)
-- その他の利用者(シェルのスクリプト、他のツール、ターミナルのハイパーリンクなど)
+- The `hyperbuf` CLI (`cli/`)
+- The Emacs integration (`emacs/`)
+- Other users (shell scripts, other tools, terminal hyperlinks, etc.)
 
-契約が扱うのは、次の四つの操作。
+The contract covers four operations.
 
-- 文書を「開く」(`open`)
-- 疎通の確認(`ping`)
-- 利用者が「エディタで編集」で指した位置の問い合わせ(`get-location`。[edit-location.md](edit-location.md))
-- いまの表示の問い合わせ(`get-view`)
+- "Open" a document (`open`)
+- Check connectivity (`ping`)
+- Query the location the user pointed to with "Edit in Emacs" (`get-location`; [edit-location.md](edit-location.md))
+- Query the current view (`get-view`)
 
-対象外:
+Out of scope:
 
-- 文書内容の編集。HyperBuf はビューアで、編集は Emacs などに任せる。
-- 検索、レイアウトの操作などの遠隔操作。
-- 標準入力からの表示(`git diff | hyperbuf -`)や、ターミナルのハイパーリンク(OSC 8)の拡張。
+- Editing document content. HyperBuf is a viewer, and editing is left to Emacs and the like.
+- Remote control such as search and layout operations.
+- Display from standard input (`git diff | hyperbuf -`) and extensions of terminal hyperlinks (OSC 8).
 
-### 利用シーン
+### Use cases
 
-| 利用者                   | 例                                                                                                    |
-| ------------------------ | ----------------------------------------------------------------------------------------------------- |
-| ターミナル               | `hyperbuf docs/design.md`、`hyperbuf docs/design.md:120`、`hyperbuf docs/design.md --anchor 設計方針` |
-| Emacs                    | 編集中の Markdown を、現在行つきでビューアに表示する(`M-x hyperbuf-open-file`)                        |
-| コーディングエージェント | 生成・更新した設計文書を、ユーザーのビューアで開く                                                    |
-| ターミナルのリンク       | エラー出力のファイル名・行番号から、クリックで開く                                                    |
+| User          | Example                                                                                               |
+| ------------- | ----------------------------------------------------------------------------------------------------- |
+| Terminal      | `hyperbuf docs/design.md`, `hyperbuf docs/design.md:120`, `hyperbuf docs/design.md --anchor 設計方針` |
+| Emacs         | Show the Markdown being edited in the viewer, at the current line (`M-x hyperbuf-open-file`)          |
+| Coding agent  | Open a design document it generated or updated in the user's viewer                                   |
+| Terminal link | Open by click from a file name and line number in error output                                        |
 
-## 2. 経路
+## 2. Routes
 
-| 経路              | 用途                                                                             |
-| ----------------- | -------------------------------------------------------------------------------- |
-| **ソケット(IPC)** | CLI・Emacs 連携の主経路。結果の応答、問い合わせ、確認の待ち合わせができる        |
-| URL スキーム      | アプリの起動(未起動のとき)、外部リンクやターミナルのハイパーリンクからの「開く」 |
+| Route            | Use                                                                                                               |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Socket (IPC)** | The main route for the CLI and Emacs integration. Supports result responses, queries and waiting for confirmation |
+| URL scheme       | Launching the app (when it is not running), and "open" from external links and terminal hyperlinks                |
 
-- ソケットは、**アプリが起動している間だけ存在する。** クライアントは、接続できなければ URL スキーム(`hyperbuf://ping`)でアプリを起動し、ソケットが現れるまで待ってから再接続する。
-- ブラウザは Unix ドメインソケットに接続できないため、**Web 由来の要求はソケットには来ない。** URL スキームは、Web ページ・メール・文書のリンクからも起動されうるので、要求の出所が絞られるソケットを主経路にしている。
+- The socket **exists only while the app is running.** If a client cannot connect, it launches the app through the URL scheme (`hyperbuf://ping`), waits for the socket to appear, and reconnects.
+- A browser cannot connect to a Unix domain socket, so **requests originating from the web never arrive on the socket.** The URL scheme can also be triggered from web pages, mail and links in documents, so the socket, whose request origin is limited, is the main route.
 
-## 3. ソケット
+## 3. Socket
 
-### 3.1 トランスポート
+### 3.1 Transport
 
-| 項目             | 内容                                                                                                                                 |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| 種類             | Unix ドメインソケット(ストリーム)                                                                                                    |
-| パス             | `~/Library/Application Support/HyperBuf/hyperbuf.sock`。`sun_path` が 103 バイトを超える場合は、`$TMPDIR/hyperbuf-<uid>.sock`        |
-| 権限             | ディレクトリ `0700`、ソケット `0600`                                                                                                 |
-| 接続元の確認     | 接続ごとに、相手のユーザー ID(`getpeereid`)が、アプリと同じかを確認する。異なれば切断する                                            |
-| 単一インスタンス | 起動時に既存のソケットに接続を試み、応答があれば、すでに起動中とみなして、終了する。応答がなければ古いソケットとして削除して作り直す |
-| 差し替え         | 環境変数 `HYPERBUF_SOCKET_PATH`([debug-environment.md](debug-environment.md))                                                        |
+| Item            | Contents                                                                                                                                                                   |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type            | Unix domain socket (stream)                                                                                                                                                |
+| Path            | `~/Library/Application Support/HyperBuf/hyperbuf.sock`. If `sun_path` would exceed 103 bytes, `$TMPDIR/hyperbuf-<uid>.sock`                                                |
+| Permissions     | Directory `0700`, socket `0600`                                                                                                                                            |
+| Peer check      | For each connection, checks that the peer's user ID (`getpeereid`) is the same as the app's. Disconnects otherwise                                                         |
+| Single instance | At launch, tries to connect to the existing socket; if there is a response, considers the app already running and exits. If not, deletes the stale socket and recreates it |
+| Override        | The environment variable `HYPERBUF_SOCKET_PATH` ([debug-environment.md](debug-environment.md))                                                                             |
 
-### 3.2 メッセージ
+### 3.2 Messages
 
-UTF-8 の JSON Lines(1 行 1 メッセージ)。1 つの接続で、要求と応答を順に交換する。1 行の上限は 1 MiB(超えると接続を閉じる)。
+UTF-8 JSON Lines (one message per line). Requests and responses are exchanged in order over one connection. The limit for one line is 1 MiB (the connection is closed if exceeded).
 
-要求:
+Request:
 
 ```json
 {
@@ -71,172 +71,172 @@ UTF-8 の JSON Lines(1 行 1 メッセージ)。1 つの接続で、要求と応
 }
 ```
 
-応答:
+Response:
 
 ```json
 {"v":1,"id":"1","ok":true,"result":{"path":"/abs/doc.md"}}
 {"v":1,"id":"1","ok":false,"error":{"code":"outside-project","message":"…"}}
 ```
 
-- 応答は要求の `id` で対応づける。同じ接続で複数の要求を並行してもよい。
-- 未知のフィールドは無視する。未知の操作は `unknown-op` で応答する。
-- 定義の正本は `protocol/schema/request.schema.json` と `response.schema.json`。
+- A response is matched to its request by the request's `id`. Multiple requests may be in flight on the same connection.
+- Unknown fields are ignored. An unknown operation is answered with `unknown-op`.
+- The source of truth for the definitions is `protocol/schema/request.schema.json` and `response.schema.json`.
 
-### 3.3 操作
+### 3.3 Operations
 
-| 操作           | 内容                                                                                                               | 応答の `result`                                                                        |
-| -------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| `ping`         | 疎通とバージョンの確認                                                                                             | `{ "version", "pid", "protocol": 1 }`                                                  |
-| `open`         | 文書を開く(§4)。警告パスの確認(ミニバッファ)が必要なときは、利用者の回答まで応答を保留する(既定 30 秒で `timeout`) | `{ "path": 開いた文書の絶対パス }`                                                     |
-| `get-location` | 利用者が「エディタで編集」で指した位置を返す([edit-location.md](edit-location.md) §5)。まだなければ `null`         | `{ "location": ペイロード または null }`                                               |
-| `get-view`     | いまの表示(どの文書の、どのあたりか)を返す。選択中の window のもの                                                 | `{ "view": { "path", "anchor", "scrollTop", "history", "absolutePath" } または null }` |
+| Operation      | Description                                                                                                                                                            | Response `result`                                                                  |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `ping`         | Check connectivity and version                                                                                                                                         | `{ "version", "pid", "protocol": 1 }`                                              |
+| `open`         | Open a document (§4). When a warn path confirmation (in the minibuffer) is needed, the response is held until the user answers (`timeout` after 30 seconds by default) | `{ "path": absolute path of the opened document }`                                 |
+| `get-location` | Return the location the user pointed to with "Edit in Emacs" ([edit-location.md](edit-location.md) §5). `null` if there is none yet                                    | `{ "location": payload or null }`                                                  |
+| `get-view`     | Return the current view (which document, and roughly where). That of the selected window                                                                               | `{ "view": { "path", "anchor", "scrollTop", "history", "absolutePath" } or null }` |
 
-`get-view` の `history` は `<現在位置>/<件数>` の文字列。`absolutePath` は、実ファイルの文書に付く(仮想 buffer には付かない)。
+The `history` of `get-view` is a string `<current position>/<count>`. `absolutePath` is attached for documents that are real files (not for virtual buffers).
 
-### 3.4 エラーコード
+### 3.4 Error codes
 
-| エラーコード          | 意味                                                     |
-| --------------------- | -------------------------------------------------------- |
-| `bad-request`         | 形式の誤り、必須項目の欠落、検証の失敗(§4.2)             |
-| `unsupported-version` | 契約のバージョンが未対応                                 |
-| `unknown-op`          | 操作が未対応                                             |
-| `not-found`           | ファイルがない                                           |
-| `not-markdown`        | `.md` ではない                                           |
-| `outside-project`     | 警告パスのファイルで、利用者が拒否した(名前は互換のため) |
-| `timeout`             | 利用者の回答が時間内になかった                           |
-| `stale`               | 位置が、古い表示に基づく                                 |
-| `internal`            | アプリ内部のエラー                                       |
+| Error code            | Meaning                                                                                   |
+| --------------------- | ----------------------------------------------------------------------------------------- |
+| `bad-request`         | Malformed request, missing required field, or failed validation (§4.2)                    |
+| `unsupported-version` | The contract version is not supported                                                     |
+| `unknown-op`          | The operation is not supported                                                            |
+| `not-found`           | The file does not exist                                                                   |
+| `not-markdown`        | Not a `.md` file                                                                          |
+| `outside-project`     | The file is under a warn path and the user denied it (the name is kept for compatibility) |
+| `timeout`             | The user did not answer in time                                                           |
+| `stale`               | The location is based on an outdated view                                                 |
+| `internal`            | Internal error in the app                                                                 |
 
-### 3.5 互換性
+### 3.5 Compatibility
 
-- `v` が未知のバージョンの場合は、要求を拒否して `unsupported-version` で応答する。
-- 追加のパラメータは、既存のものの意味を変えずに足す。未知のパラメータは無視する。
-- `outside-project` の名前は、プロジェクトという単位をなくす前のもので、互換のために残している。意味は「警告パスのため開かれなかった」。
+- If `v` is an unknown version, the request is rejected with `unsupported-version`.
+- Additional parameters are added without changing the meaning of existing ones. Unknown parameters are ignored.
+- The name `outside-project` dates from before the notion of a project was removed, and is kept for compatibility. Its meaning is "not opened because of a warn path".
 
-### 3.6 セキュリティ
+### 3.6 Security
 
-- 接続できるのは、**同じユーザーのプロセスだけ**(権限と接続元の確認)。ブラウザやネットワーク越しには到達しない。
-- 操作の集合は小さく固定し、副作用のある操作(ファイルの変更・削除、外部コマンドの実行)は含めない。
-- `get-location` の応答には文書の一部が含まれるため、接続元の確認を必須とする。
-- 要求の大きさ(1 行 1 MiB)・数の上限を設け、不正な形式の接続は閉じる。
-- 同一の接続の複数の要求は、並行して処理され、応答は 1 回だけ書かれる。クライアントが送信側を閉じても(半クローズ)、未応答の要求があるあいだは、接続を閉じない。
+- Only **processes of the same user** can connect (permissions and peer check). It is not reachable from a browser or over the network.
+- The set of operations is small and fixed, and does not include operations with side effects (modifying or deleting files, running external commands).
+- The response of `get-location` contains part of a document, so the peer check is mandatory.
+- Limits are set on request size (1 MiB per line) and count, and connections with a malformed format are closed.
+- Multiple requests on the same connection are processed concurrently, and each response is written exactly once. Even if the client closes its sending side (half-close), the connection is not closed while there are unanswered requests.
 
 ## 4. `open`
 
-### 4.1 パラメータ
+### 4.1 Parameters
 
-| パラメータ  | 必須     | 意味                                                                                                           |
-| ----------- | -------- | -------------------------------------------------------------------------------------------------------------- |
-| `v`         | いいえ   | 契約のバージョン。省略時は 1                                                                                   |
-| `path`      | **はい** | 開く Markdown の絶対パス。拡張子は `.md` のみ                                                                  |
-| `line`      | いいえ   | 元の Markdown の行番号(1 始まり)。行アンカー `line:N` として扱う                                               |
-| `anchor`    | いいえ   | 見出しなどのアンカー。`line` と同時に指定された場合は `anchor` を優先する                                      |
-| `timeoutMs` | いいえ   | 確認待ちの期限(ミリ秒)。既定は 30 秒                                                                           |
-| `target`    | いいえ   | **予約・未実装。** 表示先(`current` / `split-right` / `split-below` / `new-frame`)。受け取るが、現在は使わない |
-| `project`   | いいえ   | **予約・未実装。** 受け取るが、使わない(プロジェクトという単位がないため)                                      |
+| Parameter   | Required | Meaning                                                                                                                             |
+| ----------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `v`         | No       | Contract version. 1 if omitted                                                                                                      |
+| `path`      | **Yes**  | Absolute path of the Markdown to open. Only the `.md` extension                                                                     |
+| `line`      | No       | Line number in the original Markdown (1-based). Treated as the line anchor `line:N`                                                 |
+| `anchor`    | No       | An anchor such as a heading. If specified together with `line`, `anchor` takes precedence                                           |
+| `timeoutMs` | No       | Deadline for waiting on a confirmation (milliseconds). The default is 30 seconds                                                    |
+| `target`    | No       | **Reserved, unimplemented.** Where to show (`current` / `split-right` / `split-below` / `new-frame`). Accepted but currently unused |
+| `project`   | No       | **Reserved, unimplemented.** Accepted but unused (there is no notion of a project)                                                  |
 
-- 位置の指定(`line` / `anchor`)は、既存のアンカー(`path#見出し`、`path#line:N`。[interaction-model.md](interaction-model.md) §5)と同じ意味。
-- 表示先は、常に、**最後にアクティブだったフレームの選択中の window**。参照履歴に積まれ、Back で元に戻れる([buffer-model.md](buffer-model.md) §7)。表示中の文書と同じ文書の位置つき `open` は、履歴を積まず、位置だけを置き換える([interaction-model.md](interaction-model.md) §3)。
-- `target` と `project` は、スキーマと CLI の引数にあるが、アプリは何もしない。将来の拡張のために契約に残している。
+- A position specification (`line` / `anchor`) has the same meaning as the existing anchors (`path#heading`, `path#line:N`; [interaction-model.md](interaction-model.md) §5).
+- The destination is always the **selected window of the last active frame**. It is pushed onto the reference history and can be undone with Back ([buffer-model.md](buffer-model.md) §7). An `open` with a position for the same document that is already shown does not push onto the history and only replaces the position ([interaction-model.md](interaction-model.md) §3).
+- `target` and `project` exist in the schema and the CLI arguments, but the app does nothing with them. They are kept in the contract for future extension.
 
-### 4.2 検証
+### 4.2 Validation
 
-URL 経由もソケット経由も、同じ規則で検証する(`protocol/examples/open-validation.json` で、Swift・CLI・Emacs が共有する)。
+The URL route and the socket route are validated with the same rules (shared by Swift, the CLI and Emacs through `protocol/examples/open-validation.json`).
 
-- `path` は絶対パス、`.md` のみ。`..` を含むパス、制御文字を含むパスは拒否する。相対パスは拒否する(CLI が絶対パスに変換する)。
-- シンボリックリンクは、解決した実体で再検証する。
-- `line` は正の整数のみ。`anchor` は 200 文字まで(Unicode のコードポイントで数える)。DOM の検索に使うときは必ずエスケープする(`CSS.escape`)。
-- 検証に失敗した要求は、`bad-request` / `not-markdown` / `not-found` などで拒否する。
+- `path` must be an absolute path and `.md` only. Paths containing `..` and paths containing control characters are rejected. Relative paths are rejected (the CLI converts them to absolute paths).
+- A symbolic link is revalidated against the resolved target.
+- `line` must be a positive integer. `anchor` is up to 200 characters (counted in Unicode code points). Always escape it when using it for DOM lookup (`CSS.escape`).
+- A request that fails validation is rejected with `bad-request`, `not-markdown`, `not-found` and so on.
 
-### 4.3 アクセスの判定と確認
+### 4.3 Access checks and confirmation
 
-開くファイルが警告パスの下にあれば、ミニバッファで確認する。判定の規則、経路ごとの違い(URL スキームは、許可パスにないファイルを警告パスの外でも確認する)、記憶は [file-access.md](file-access.md)。
+If the file to open is under a warn path, it is confirmed in the minibuffer. The rules for the decision, the differences between routes (the URL scheme also confirms files not under an allow path even outside the warn paths), and remembering are in [file-access.md](file-access.md).
 
-- 確認は、**行き先のフレームのミニバッファ**に出る。
-- 確認の結果は、`open` の応答として返る(承認: 成功、拒否: `outside-project`、期限切れ: `timeout`)。期限が切れたときは、**画面に残っている確認も取り消し**、拒否とは区別して、`Integration: request timed out` と画面に出す。
-- 期限は要求の `timeoutMs`(既定 30 秒)。CLI は、既定で 3 秒、`--wait` で 60 秒を指定する。
+- The confirmation appears in the **minibuffer of the destination frame**.
+- The result of the confirmation is returned as the response of `open` (approved: success, denied: `outside-project`, expired: `timeout`). When the deadline passes, **the confirmation still on screen is also cancelled**, and, distinguished from a denial, `Integration: request timed out` is shown on screen.
+- The deadline is the request's `timeoutMs` (30 seconds by default). The CLI specifies 3 seconds by default and 60 seconds with `--wait`.
 
-### 4.4 位置の解決とエラーの通知
+### 4.4 Resolving the position and reporting errors
 
-- `anchor` / `line` は、描画後の DOM から該当要素を探す。見つからなければ、文書の先頭を開き、ミニバッファに通知する。
-- 失敗(ファイルがない、`.md` でない、拒否されたなど)は、ミニバッファに表示する。ダイアログは出さない。
+- `anchor` / `line` look up the matching element in the rendered DOM. If it is not found, the beginning of the document is opened and the minibuffer is notified.
+- Failures (the file does not exist, it is not `.md`, it was denied, etc.) are shown in the minibuffer. No dialog is shown.
 
-## 5. URL スキーム
+## 5. URL scheme
 
 ### 5.1 `hyperbuf://ping`
 
-アプリを起動するだけ(起動中なら何もしない)。CLI・Emacs が、アプリが未起動のときに使う。
+Only launches the app (does nothing if it is already running). Used by the CLI and Emacs when the app is not running.
 
 ### 5.2 `hyperbuf://open`
 
 ```
-hyperbuf://open?v=1&path=<絶対パス>[&line=<N>][&anchor=<ID>][&project=<絶対パス>][&target=<current|split-right|split-below|new-frame>]
+hyperbuf://open?v=1&path=<absolute path>[&line=<N>][&anchor=<ID>][&project=<absolute path>][&target=<current|split-right|split-below|new-frame>]
 ```
 
-- パラメータの意味と検証は §4。`path` はパーセントエンコードする。
-- ブラウザ上の任意のページなど、起点を特定できない経路からも起動できるため、許可パスにないファイルは確認する([file-access.md](file-access.md) §2)。
+- The meaning and validation of the parameters are in §4. `path` is percent-encoded.
+- It can be triggered from routes whose origin cannot be identified, such as an arbitrary page in a browser, so files not under an allow path are confirmed ([file-access.md](file-access.md) §2).
 
 ## 6. CLI
 
 ```
-hyperbuf [オプション] <ファイル>[:<行>] ...
+hyperbuf [options] <file>[:<line>] ...
 ```
 
-| 項目                   | 内容                                                                                                |
-| ---------------------- | --------------------------------------------------------------------------------------------------- |
-| 位置指定               | `file.md:120`(行番号)。`--line N`、`--anchor ID` でも指定できる(複数のファイルを渡すときは使えない) |
-| 複数のファイル         | 順に開き、最後のファイルを表示する(それ以前は buffer として残る)                                    |
-| ディレクトリ           | `hyperbuf DIR` は、`DIR/index.md`、なければ `DIR/README.md` を開く(どちらもなければ、失敗する)      |
-| `--target <…>`         | `current`(既定)、`split-right`、`split-below`、`new-frame`。**予約・未実装**(§4.1)                  |
-| `--wait`               | アプリ内の確認を、最大 60 秒待つ(既定は 3 秒)                                                       |
-| `--no-activate`        | アプリを起動するときに、前面に出さない                                                              |
-| `--print-url`          | 開かずに、組み立てた URL を出力する(確認・他ツールとの連携用)                                       |
-| `--version` / `--help` |                                                                                                     |
-| 廃止                   | `--project` は廃止した(指定すると、使い方の誤りになる)                                              |
+| Item                   | Contents                                                                                                                  |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Position               | `file.md:120` (line number). Can also be given with `--line N` and `--anchor ID` (not usable when passing multiple files) |
+| Multiple files         | Opened in order, and the last file is shown (the earlier ones remain as buffers)                                          |
+| Directory              | `hyperbuf DIR` opens `DIR/index.md`, or `DIR/README.md` if there is none (fails if neither exists)                        |
+| `--target <…>`         | `current` (default), `split-right`, `split-below`, `new-frame`. **Reserved, unimplemented** (§4.1)                        |
+| `--wait`               | Wait up to 60 seconds for a confirmation in the app (the default is 3 seconds)                                            |
+| `--no-activate`        | Do not bring the app to the front when launching it                                                                       |
+| `--print-url`          | Print the constructed URL instead of opening (for checking and for use with other tools)                                  |
+| `--version` / `--help` |                                                                                                                           |
+| Removed                | `--project` was removed (specifying it is a usage error)                                                                  |
 
-### 6.1 終了コード
+### 6.1 Exit codes
 
-| コード | 意味                                                         |
-| ------ | ------------------------------------------------------------ |
-| 0      | 成功                                                         |
-| 1      | 使い方の誤り                                                 |
-| 2      | ファイルの問題(ない・読めない・`.md` でない)                 |
-| 3      | アプリを起動できない                                         |
-| 4      | アプリに拒否された(警告パスで承認されなかった、期限切れなど) |
-| 5      | プロトコルの不一致、内部のエラー、応答を解釈できない         |
+| Code | Meaning                                                                        |
+| ---- | ------------------------------------------------------------------------------ |
+| 0    | Success                                                                        |
+| 1    | Usage error                                                                    |
+| 2    | File problem (missing, unreadable, not `.md`)                                  |
+| 3    | The app could not be launched                                                  |
+| 4    | Rejected by the app (not approved for a warn path, expired, etc.)              |
+| 5    | Protocol mismatch, internal error, or a response that could not be interpreted |
 
-### 6.2 流れ
+### 6.2 Flow
 
-1. ソケットに接続する。接続できなければ、`hyperbuf://ping`(URL スキーム)でアプリを起動し、最大 15 秒、ソケットの出現を待って再接続する。
-2. 要求を送り、応答を待つ。複数のファイルは、順に送る。
-3. 応答に従って終了コードを返す。`--wait` を付けない限り、アプリ内の確認待ちには長くは待たない(既定 3 秒)。
+1. Connect to the socket. If it cannot connect, launch the app with `hyperbuf://ping` (URL scheme), wait up to 15 seconds for the socket to appear, and reconnect.
+2. Send the request and wait for the response. Multiple files are sent in order.
+3. Return the exit code according to the response. Unless `--wait` is given, it does not wait long for a confirmation in the app (3 seconds by default).
 
-CLI と Emacs の要求は、すべてソケットを通る。起動に URL スキームを使うのは、`ping` だけである(最初のファイルを URL で渡して起動すると、URL スキームの確認が起動のたびに出てしまうため)。
+All CLI and Emacs requests go through the socket. The URL scheme is used for launching only for `ping` (if the first file were passed by URL to launch the app, the URL-scheme confirmation would appear on every launch).
 
 ## 7. Emacs
 
-`emacs/hyperbuf.el`(Emacs 29.1 以上)。使い方・設定は [`emacs/README.md`](../../emacs/README.md)。
+`emacs/hyperbuf.el` (Emacs 29.1 or later). Usage and settings are in [`emacs/README.md`](../../emacs/README.md).
 
-- **標準は直接ソケット**(`make-network-process` の `:family 'local`)。プロセス起動のコストがなく、`get-location` の往復が速い。`hyperbuf-transport` を `cli` にすると、`hyperbuf` CLI を呼ぶ。JSON は Emacs 組み込みの `json-serialize` / `json-parse-string`。
-- **入力の検証を、Emacs 側にも持つ**(`hyperbuf--validate-open`)。接続の前に、利用者に、すぐ分かる形でエラーを返す。規則がサーバーとずれないよう、`protocol/examples/open-validation.json` と `url.json` を共有して適合テストをする。
-- **アプリが起動していないとき:** `hyperbuf-launch-if-needed`(既定 t)なら、`hyperbuf://ping` でアプリを起動し(`open`)、`hyperbuf-launch-timeout`(既定 15 秒)まで、ソケットが現れるのを待って(`C-g` で中断できる)、ソケットで開く要求を送る。CLI と同じ流れで、結果(成功、拒否、期限切れ)は Emacs に返り、アクセス判定もソケットの規則で行う。nil なら、通知して終わる。
-- **未保存のバッファ:** ビューアはディスクを読むので、`hyperbuf-save-before-open`(既定 `ask`)で、開く前に保存を尋ねる。
-- **TRAMP のファイルは開かない**(手元のファイルだけを、ビューアが読む)。
-- **待ち時間:** アプリが `timeoutMs` で `timeout` を返すのを待つため、クライアントは、それに 2 秒の余白を足して待つ。
-- Emacs 側で見出しのアンカーは計算しない。行番号を渡し、アプリが該当ブロックへ解決する(GitHub 方式の見出し ID の計算を Emacs に持ち込まないため)。
+- **The default is to use the socket directly** (`make-network-process` with `:family 'local`). There is no process-launch cost, and the `get-location` round trip is fast. Setting `hyperbuf-transport` to `cli` calls the `hyperbuf` CLI instead. JSON uses Emacs's built-in `json-serialize` / `json-parse-string`.
+- **Input validation is also done on the Emacs side** (`hyperbuf--validate-open`). It returns an immediately understandable error to the user before connecting. To keep the rules from drifting from the server, conformance tests share `protocol/examples/open-validation.json` and `url.json`.
+- **When the app is not running:** if `hyperbuf-launch-if-needed` (default t), it launches the app with `hyperbuf://ping` (`open`), waits for the socket to appear up to `hyperbuf-launch-timeout` (default 15 seconds; can be interrupted with `C-g`), and sends the open request over the socket. The flow is the same as the CLI: the result (success, denial, expiry) is returned to Emacs, and access checks follow the socket's rules. If nil, it notifies and stops.
+- **Unsaved buffers:** the viewer reads the disk, so `hyperbuf-save-before-open` (default `ask`) asks whether to save before opening.
+- **TRAMP files are not opened** (the viewer reads only local files).
+- **Wait time:** the app returns `timeout` after `timeoutMs`, so the client waits for that plus a 2-second margin.
+- The Emacs side does not compute heading anchors. It passes a line number, and the app resolves it to the matching block (to avoid bringing the GitHub-style heading ID computation into Emacs).
 
-## 8. セキュリティ
+## 8. Security
 
-- **ファイルを開く範囲** は、警告パス・許可パス・記憶したパスで決まる([file-access.md](file-access.md))。
-- **内容の扱いは通常と同じ。** 開いた文書は、信頼しない入力として描画する。
-- **パスと入力の検証** は §4.2。
-- ソケット固有の保護(同一ユーザー、固定の操作、上限)は §3.6。
-- 逆方向の連携のうち、アプリが外部コマンドを実行する部分の権限設計は、[edit-location.md](edit-location.md) §7。
+- **The range of files that can be opened** is determined by warn paths, allow paths and remembered paths ([file-access.md](file-access.md)).
+- **Content is handled as usual.** An opened document is rendered as untrusted input.
+- **Path and input validation** is in §4.2.
+- Socket-specific protections (same user, fixed operations, limits) are in §3.6.
+- For the part of the reverse-direction integration where the app runs an external command, the permission design is in [edit-location.md](edit-location.md) §7.
 
-## 9. 未実装・未確認
+## 9. Unimplemented / unverified
 
-- `target` と `project` の処理(§4.1)。
-- 別のユーザーからの接続の拒否(`getpeereid`)の実機確認。同じユーザーの接続が通ることは確認したが、他ユーザーの接続を拒否する経路は、別のアカウントが要るため未確認。
-- 二重起動を検出したときに、既存のインスタンスを前面に出すこと(今は、終了するだけ)。
-- 署名・公証したアプリでの、ソケットの作成と接続の確認(変わらない想定)。
-- 確認待ち中に、別の `open` が来たときの扱い(待たせる、並行させる、拒否する)。今は、並行して処理する。
+- Handling of `target` and `project` (§4.1).
+- Real-device verification of rejecting connections from another user (`getpeereid`). It was confirmed that connections from the same user pass, but the path that rejects another user's connection is unverified because it needs a separate account.
+- Bringing the existing instance to the front when a duplicate launch is detected (currently it just exits).
+- Verifying socket creation and connection in the signed and notarized app (expected to be unchanged).
+- Handling of another `open` arriving while waiting for a confirmation (make it wait, run concurrently, or reject). Currently it is processed concurrently.

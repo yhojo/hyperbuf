@@ -12,14 +12,14 @@ HyperBuf の連携プロトコル(Unix ドメインソケット・URL スキー�
 
 ## 共有の例
 
-| ファイル               | 内容                                                                        | 使うもの                                                     |
-| ---------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `open-validation.json` | `open` 要求の検証(受け入れる・拒否する)                                     | JSON Schema のテスト、`swift/`(`HyperBufProtocol`)、`emacs/` |
-| `url.json`             | 要求と `hyperbuf://` URL の相互変換                                         | JSON Schema のテスト、`swift/`(`HyperBufProtocol`)、`emacs/` |
-| `framing.json`         | JSON Lines の切り出し(分割して届く入力、1 回に複数行、空行など)             | `swift/`(`HyperBufProtocol`)                                 |
-| `cli-args.json`        | `hyperbuf` CLI の引数の解釈                                                 | `cli/`                                                       |
-| `location.json`        | 位置のペイロード(`get-location` の `result.location`)                       | JSON Schema のテスト、`swift/`(`HyperBufProtocol`)           |
-| `location-check.json`  | エディタ側の照合の規則([edit-location.md](../docs/dev/edit-location.md) §6) | JSON Schema のテスト、`emacs/`                               |
+| ファイル               | 内容                                                                                | 使うもの                                                     |
+| ---------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `open-validation.json` | `open` 要求の検証(受け入れる・拒否する)                                             | JSON Schema のテスト、`swift/`(`HyperBufProtocol`)、`emacs/` |
+| `url.json`             | 要求と `hyperbuf://` URL の相互変換(`emacs/` は、起動用の `ping` の URL だけを使う) | JSON Schema のテスト、`swift/`(`HyperBufProtocol`)、`emacs/` |
+| `framing.json`         | JSON Lines の切り出し(分割して届く入力、1 回に複数行、空行など)                     | `swift/`(`HyperBufProtocol`)                                 |
+| `cli-args.json`        | `hyperbuf` CLI の引数の解釈                                                         | `cli/`                                                       |
+| `location.json`        | 位置のペイロード(`get-location` の `result.location`)                               | JSON Schema のテスト、`swift/`(`HyperBufProtocol`)           |
+| `location-check.json`  | エディタ側の照合の規則([edit-location.md](../docs/dev/edit-location.md) §6)         | JSON Schema のテスト、`emacs/`                               |
 
 例を壊すと、使っているすべてのテストが失敗する。
 

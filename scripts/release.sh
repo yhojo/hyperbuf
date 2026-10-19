@@ -55,8 +55,9 @@ fi
 echo "バージョン: $version / 署名: $identity / 出力: $out"
 
 # --- 検査と組み立て ---------------------------------------------------------------------------------
-step "検査(ライセンス表記・ライセンスの一覧)"
+step "検査(ライセンス表記・バージョンの表記・ライセンスの一覧)"
 scripts/check.sh license
+scripts/check.sh version
 (cd core && npm ci --silent && node scripts/licenses.mjs check)
 
 step "組み立て(release ビルド)"

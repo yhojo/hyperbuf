@@ -13,8 +13,8 @@ When adding documents, follow the README's language (Japanese) unless told other
 Everything runs from the repo root through one script (same as CI, `.github/workflows/ci.yml`; the GUI integration tests below are not run in CI):
 
 ```bash
-scripts/check.sh            # all: core, protocol, app, cli, emacs
-scripts/check.sh core       # or: protocol | app | cli | emacs
+scripts/check.sh            # all: license, version, core, protocol, app, cli, emacs
+scripts/check.sh core       # or: license | version | protocol | app | cli | emacs
 ```
 
 Per component (run in the component directory):

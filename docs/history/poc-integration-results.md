@@ -1,6 +1,6 @@
 # Integration PoC 結果(連携プロトコル)
 
-状態: **結果報告・決定済み** — 実施日 2026-10-08〜09。ブランチ: `poc/integration`(`1104b6e`、`fc681bd`)。現行の契約は [integration-protocol.md](../dev/integration-protocol.md)、逆方向の連携の現行仕様は [edit-location.md](../dev/edit-location.md)。ここには、そこに至るまでの検証と決定の経緯を残す。
+状態: **結果報告・決定済み** — 実施日 2026-10-08〜09。ブランチ: `poc/integration`(`af5ddee`、`c03cd2c`)。現行の契約は [integration-protocol.md](../dev/integration-protocol.md)、逆方向の連携の現行仕様は [edit-location.md](../dev/edit-location.md)。ここには、そこに至るまでの検証と決定の経緯を残す。
 
 ## 1. 目的と範囲
 

@@ -112,7 +112,7 @@ Documents are split by audience under `docs/`:
 - Branch names are `<type>/<short description>` (for example `feat/split-window`, `fix/scroll-restore`, `docs/branch-rules`). The type follows Conventional Commits (feat, fix, docs, refactor, test, chore).
 - Commit messages follow Conventional Commits (`type: summary`). The summary may be in Japanese.
 - PoCs are done on `poc/<theme>` branches. Their code is not merged into `main` in principle; only the design documents that summarize the results are brought in. PoC branches are kept, not deleted.
-- Never rewrite the history of `main` (no force push, …).
+- Never rewrite the history of `main` (no force push, …). The only exception so far: on 2026-10-19, before the source was published, the author e-mail address of every commit and tag was replaced by the GitHub noreply address (see `docs/history/README.md`).
 - User-visible changes (features, behavior changes, fixes) are written in English under `[Unreleased]` in `CHANGELOG.md` when merging (the release procedure is in `docs/dev/release.md`).
 
 ## Repository layout (monorepo)

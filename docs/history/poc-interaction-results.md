@@ -10,9 +10,9 @@
 
 | ブランチ | 内容 | コミット |
 | --- | --- | --- |
-| `poc/interaction-web` | 共有 Web コア(操作モデル・キー処理・最小描画・サンプル文書・ユニットテスト) | `4856b04` |
-| `poc/swiftui-wkwebview` | SwiftUI + WKWebView シェル(上記から派生) | `0895172` |
-| `poc/tauri-shell` | Tauri 2 シェル(上記から派生) | `11a9728` |
+| `poc/interaction-web` | 共有 Web コア(操作モデル・キー処理・最小描画・サンプル文書・ユニットテスト) | `278ba60` |
+| `poc/swiftui-wkwebview` | SwiftUI + WKWebView シェル(上記から派生) | `758d5a0` |
+| `poc/tauri-shell` | Tauri 2 シェル(上記から派生) | `7ad84e8` |
 
 共通の設計:
 

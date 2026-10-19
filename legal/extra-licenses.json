@@ -3,32 +3,32 @@
   "assets": [
     {
       "name": "KaTeX fonts",
-      "files": "KaTeX_*.woff2 / .woff / .ttf (core/dist に出る数式のフォント。KaTeX のパッケージに含まれる)",
+      "files": "KaTeX_*.woff2 / .woff / .ttf (the math fonts that appear in core/dist; part of the KaTeX package)",
       "license": "OFL-1.1",
       "copyright": "Copyright (c) 2009-2010, Design Science, Inc. (<www.mathjax.org>), Copyright (c) 2014-2018 Khan Academy (<www.khanacademy.org>), with Reserved Font Name KaTeX_Main, KaTeX_AMS, KaTeX_Caligraphic, KaTeX_Fraktur, KaTeX_Math, KaTeX_SansSerif, KaTeX_Script, KaTeX_Size1-4, KaTeX_Typewriter.",
       "source": "https://github.com/KaTeX/KaTeX",
       "textFile": "legal/OFL-1.1.txt",
-      "note": "フォントのファイルに埋め込まれたライセンス表記(SIL Open Font License 1.1)に従う。フォントを単体で販売しない。改変していない(予約された名前の制限は、改変版のときだけ)。"
+      "note": "Follows the license notice embedded in the font files (SIL Open Font License 1.1). The fonts are not sold on their own and are not modified (the Reserved Font Name restriction applies only to modified versions)."
     }
   ],
   "overrides": {
     "dompurify": {
       "license": "Apache-2.0",
-      "reason": "(MPL-2.0 OR Apache-2.0) の二重ライセンス。Apache-2.0 を選ぶ(利用者が選べる)。"
+      "reason": "Dual-licensed (MPL-2.0 OR Apache-2.0). Apache-2.0 is chosen (the user may choose)."
     },
     "khroma": {
       "license": "MIT",
-      "reason": "package.json に license の欄がないが、同梱の license ファイルは MIT。"
+      "reason": "package.json has no license field, but the bundled license file is MIT."
     },
     "remark-math": {
       "license": "MIT",
       "copyright": "Junyoung Choi <fluke8259@gmail.com> (https://rokt33r.github.io)",
-      "reason": "パッケージに license ファイルがない。package.json の license(MIT)と author、README の「MIT © Junyoung Choi」から、MIT の標準の文面を補う(年は、パッケージから分からないので書かない)。"
+      "reason": "The package has no license file. The standard MIT text is supplied from the license in package.json, the author, and \"MIT © Junyoung Choi\" in the README (no year is written because the package does not state one)."
     },
     "rehype-katex": {
       "license": "MIT",
       "copyright": "Junyoung Choi <fluke8259@gmail.com> (https://rokt33r.github.io)",
-      "reason": "パッケージに license ファイルがない。package.json の license(MIT)と author、README の「MIT © Junyoung Choi」から、MIT の標準の文面を補う(年は、パッケージから分からないので書かない)。"
+      "reason": "The package has no license file. The standard MIT text is supplied from the license in package.json, the author, and \"MIT © Junyoung Choi\" in the README (no year is written because the package does not state one)."
     }
   }
 }

@@ -148,7 +148,7 @@ async function collect() {
       const template = readFileSync(join(repo, "legal/MIT-template.txt"), "utf8");
       last.files = [
         {
-          file: "(補った MIT の文面)",
+          file: "(MIT license text supplied by HyperBuf)",
           text: template.replace("{{COPYRIGHT}}", override.copyright).trim(),
         },
       ];
@@ -181,12 +181,13 @@ function summary(data) {
   const gcounts = new Map();
   for (const g of data.grammars) gcounts.set(g.spdx, (gcounts.get(g.spdx) ?? 0) + g.files.length);
   const lines = [
-    "# サードパーティのライセンス(自動生成)",
+    "<!-- 自動生成: core/scripts/licenses.mjs。直接編集しない(`npm run licenses` で再生成する。`npm run check` が、最新かを検査する)。アプリに同梱する全文つきの `THIRD-PARTY-NOTICES.txt` は、`app/macos/scripts/make-app.sh` が、同じスクリプト(`notices`)で生成する -->",
     "",
-    "`node core/scripts/licenses.mjs summary` で生成する。**手で編集しない**(`npm run check` が、最新かを検査する)。",
-    "アプリに同梱する全文つきの `THIRD-PARTY-NOTICES` は、`app/macos/scripts/make-app.sh` が、同じスクリプトで生成する。",
+    "# サードパーティのライセンス",
     "",
-    "対象は、Web コア(`core/dist`)のバンドルに実際に入るもの。Swift 側(アプリ・CLI・プロトコル)は、サードパーティの依存を持たない。",
+    "HyperBuf が同梱している、サードパーティのソフトウェアのライセンスの一覧です。著作権表示とライセンスの全文は、アプリメニューの `Show Third-Party Licenses` で開く `THIRD-PARTY-NOTICES.txt`(アプリに同梱)で読めます。",
+    "",
+    "対象は、Web コア(`core/dist`)のバンドルに実際に入るものです。Swift 側(アプリ・CLI・プロトコル)は、サードパーティの依存を持ちません。",
     "",
     `## 集計(npm のパッケージ ${data.packages.length} 件)`,
     "",
@@ -227,11 +228,11 @@ function summary(data) {
 function notices(data) {
   const bar = "=".repeat(80);
   const out = [
-    "HyperBuf が同梱している、サードパーティのソフトウェアの著作権表示とライセンス",
+    "Copyright notices and licenses of the third-party software bundled with HyperBuf",
     "(THIRD-PARTY NOTICES)",
     "",
-    "HyperBuf は、下に挙げるソフトウェアを含んでいます。それぞれのライセンスの条件に従って、",
-    "著作権表示とライセンス文を、以下に再掲します。",
+    "HyperBuf includes the software listed below. In accordance with the terms of each",
+    "license, the copyright notices and license texts are reproduced below.",
     "",
   ];
   for (const p of data.packages) {
@@ -247,7 +248,7 @@ function notices(data) {
   }
   out.push(
     bar,
-    "starry-night の文法(TextMate grammars): バンドルに入ったものだけ",
+    "starry-night grammars (TextMate grammars): only those included in the bundle",
     "Source: https://github.com/wooorm/starry-night",
     "",
   );

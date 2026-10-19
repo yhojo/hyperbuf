@@ -1,9 +1,10 @@
-# サードパーティのライセンス(自動生成)
+<!-- 自動生成: core/scripts/licenses.mjs。直接編集しない(`npm run licenses` で再生成する。`npm run check` が、最新かを検査する)。アプリに同梱する全文つきの `THIRD-PARTY-NOTICES.txt` は、`app/macos/scripts/make-app.sh` が、同じスクリプト(`notices`)で生成する -->
 
-`node core/scripts/licenses.mjs summary` で生成する。**手で編集しない**(`npm run check` が、最新かを検査する)。
-アプリに同梱する全文つきの `THIRD-PARTY-NOTICES` は、`app/macos/scripts/make-app.sh` が、同じスクリプトで生成する。
+# サードパーティのライセンス
 
-対象は、Web コア(`core/dist`)のバンドルに実際に入るもの。Swift 側(アプリ・CLI・プロトコル)は、サードパーティの依存を持たない。
+HyperBuf が同梱している、サードパーティのソフトウェアのライセンスの一覧です。著作権表示とライセンスの全文は、アプリメニューの `Show Third-Party Licenses` で開く `THIRD-PARTY-NOTICES.txt`(アプリに同梱)で読めます。
+
+対象は、Web コア(`core/dist`)のバンドルに実際に入るものです。Swift 側(アプリ・CLI・プロトコル)は、サードパーティの依存を持ちません。
 
 ## 集計(npm のパッケージ 149 件)
 
@@ -16,10 +17,10 @@
 | BSD-2-Clause | 1 |
 
 - **MIT / ISC / BSD / Apache-2.0** など許容的なライセンスは、著作権表示とライセンス文を、配布物に含めれば足りる。
-- **dompurify**(Apache-2.0): (MPL-2.0 OR Apache-2.0) の二重ライセンス。Apache-2.0 を選ぶ(利用者が選べる)。
-- **khroma**(MIT): package.json に license の欄がないが、同梱の license ファイルは MIT。
-- **rehype-katex**(MIT): パッケージに license ファイルがない。package.json の license(MIT)と author、README の「MIT © Junyoung Choi」から、MIT の標準の文面を補う(年は、パッケージから分からないので書かない)。
-- **remark-math**(MIT): パッケージに license ファイルがない。package.json の license(MIT)と author、README の「MIT © Junyoung Choi」から、MIT の標準の文面を補う(年は、パッケージから分からないので書かない)。
+- **dompurify**(Apache-2.0): Dual-licensed (MPL-2.0 OR Apache-2.0). Apache-2.0 is chosen (the user may choose).
+- **khroma**(MIT): package.json has no license field, but the bundled license file is MIT.
+- **rehype-katex**(MIT): The package has no license file. The standard MIT text is supplied from the license in package.json, the author, and "MIT © Junyoung Choi" in the README (no year is written because the package does not state one).
+- **remark-math**(MIT): The package has no license file. The standard MIT text is supplied from the license in package.json, the author, and "MIT © Junyoung Choi" in the README (no year is written because the package does not state one).
 
 ## starry-night の文法(バンドルに入った 89 件)
 
@@ -37,7 +38,7 @@
 
 ## その他の同梱物
 
-- **KaTeX fonts**(OFL-1.1): フォントのファイルに埋め込まれたライセンス表記(SIL Open Font License 1.1)に従う。フォントを単体で販売しない。改変していない(予約された名前の制限は、改変版のときだけ)。
+- **KaTeX fonts**(OFL-1.1): Follows the license notice embedded in the font files (SIL Open Font License 1.1). The fonts are not sold on their own and are not modified (the Reserved Font Name restriction applies only to modified versions).
 
 ## パッケージの一覧
 

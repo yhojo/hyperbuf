@@ -120,6 +120,10 @@ macOS向けのシェル（SwiftUI + WKWebView）と、OSに依存しない共通
 - Back / Forward の履歴粒度（同一文書内の連続したアンカー移動を1エントリにまとめるか）。
 - `M-f` / `M-b` の割り当て。
 
+## Contributing and security
+
+バグ報告や要望は Issue で歓迎します。Pull Request は、先に Issue で相談してください。手順は [CONTRIBUTING.md](CONTRIBUTING.md)。脆弱性の報告は、公開の Issue ではなく、[SECURITY.md](SECURITY.md) の窓口へお願いします。
+
 ## License
 
 Apache-2.0（[LICENSE](LICENSE)、[NOTICE](NOTICE)）。`emacs/` は GPL-3.0-or-later（[emacs/LICENSE](emacs/LICENSE)）です。

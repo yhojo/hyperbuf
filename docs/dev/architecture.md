@@ -60,7 +60,11 @@ HyperBuf の構成と、技術選定の決定事項。各部の詳細は、リ�
 | 連携                    | **Unix ドメインソケット**(JSON Lines)+ `hyperbuf://` URL                                  | [integration-protocol.md](integration-protocol.md)                                                                                                                                            |
 | ライセンス              | 本体 Apache-2.0、`emacs/` は GPL-3.0-or-later                                             | [license-options.md](../history/license-options.md)                                                                                                                                           |
 
-### 3.2 未評価の候補
+### 3.2 実装上の注意
+
+- **検索の問い合わせを、`Process` の引数に渡さない。** macOS は、引数の濁点・半濁点を分解する(NFD にする)ため、日本語の検索語が壊れる。外部プロセスに検索語を渡すときは、標準入力から渡す。
+
+### 3.3 未評価の候補
 
 次は、必要になった時点で評価する。外部コマンドが絡むものは、権限の境界を先に決める。
 

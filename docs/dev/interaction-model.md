@@ -1,139 +1,139 @@
-# 操作モデル(window / frame / 参照履歴 / 入力)
+# Interaction model (window / frame / reference history / input)
 
-buffer を表示して行き来するための、window・frame・参照履歴・入力の仕組み。UI や実装技術に依存しない論理モデルとして定め、Web コア(`core/`)が実装する。
+The mechanisms for displaying and moving between buffers: windows, frames, reference history and input. This is a logical model independent of the UI and of implementation technology, and the Web core (`core/`) implements it.
 
-関連する文書:
+Related documents:
 
-- buffer(文書そのもの)の定義、名前、基準のディレクトリ、frame ごとの buffer: [buffer-model.md](buffer-model.md)
-- キー割り当ての一覧(自動生成): [keybindings.md](../user/keybindings.md)
-- セッションの復元: [session-restore.md](session-restore.md)
-- UI の言語と流儀: [ui-conventions.md](ui-conventions.md)
+- Definition of a buffer (the document itself), its name, the base directory, and buffers per frame: [buffer-model.md](buffer-model.md)
+- List of key bindings (generated): [keybindings.md](../user/keybindings.md)
+- Session restore: [session-restore.md](session-restore.md)
+- UI language and conventions: [ui-conventions.md](ui-conventions.md)
 
-## 1. 用語とモデル
+## 1. Terms and model
 
-| 概念   | 定義                                                                                                                                     |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Buffer | 開いている文書。表示位置は持たない([buffer-model.md](buffer-model.md))。ファイルを持たない**仮想 buffer** もある(§5)。                   |
-| Window | 分割ツリーの葉。**1 つの buffer を表示**し、閲覧位置(スクロール・アンカー)と**参照履歴**を持つ。                                         |
-| Frame  | macOS の 1 ウィンドウに相当。buffer の一覧、分割ツリー、「選択中の window」を持つ独立した作業場([buffer-model.md](buffer-model.md) §7)。 |
+| Concept | Definition                                                                                                                                                      |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Buffer  | An open document. It holds no view position ([buffer-model.md](buffer-model.md)). There are also **virtual buffers** that have no file (§5).                    |
+| Window  | A leaf of the split tree. It **shows one buffer** and holds the viewing position (scroll, anchor) and the **reference history**.                                |
+| Frame   | Corresponds to one macOS window. An independent workspace with a list of buffers, a split tree and a "selected window" ([buffer-model.md](buffer-model.md) §7). |
 
-関係:
+Relationships:
 
 ```
-Frame* ─┬─ Buffer* (開いた文書ごとに 1 つ)
-        └─ 分割ツリー ── Window* ──→ Buffer (参照)
-                           └─ 閲覧位置 + 参照履歴 (window 固有)
+Frame* ─┬─ Buffer* (one per open document)
+        └─ split tree ── Window* ──→ Buffer (reference)
+                           └─ viewing position + reference history (per window)
 ```
 
-- 同じ buffer を複数の window に表示できる。閲覧位置は window ごとに独立する。
-- 閲覧は編集を伴わないため、Emacs の buffer が持つ point / mark / 変更状態は持たない。
-- `C-x b` の候補は、最近使った順(MRU)に並べる。この順序は参照履歴とは別に管理する。
+- The same buffer can be shown in multiple windows. The viewing position is independent per window.
+- Viewing involves no editing, so there is no point / mark / modified state like an Emacs buffer has.
+- Candidates for `C-x b` are ordered by most recently used (MRU). This order is managed separately from the reference history.
 
-## 2. window の分割と大きさ
+## 2. Window splitting and size
 
-- 分割ツリーのノードは「分割(方向・比率・子)」または「window(葉)」。
-- `C-x 2` / `C-x 3` は葉を分割に置き換え、`C-x 0` / `C-x 1` は葉を取り除く。`C-x o` で次の window に移る。
-- window の大きさ(分割の比率)は、次のどちらかで変える。
-  - `C-x ^`(縦に広げる)、`C-x }`(横に広げる)、`C-x {`(横に狭める)、`C-x -`(`shrink-window-if-larger-than-buffer`: 文書より大きい window を、文書がちょうど収まる高さまで縮める。文書のほうが大きければ何もしない)。1 回の操作の量は、縦 48px・横 80px で、プレフィックス引数は未対応。
-  - モードラインのドラッグ(本体はその下の境界(縦のみ)、右端は右の境界(横のみ)。Emacs と同じ)。
-- 比率はセッションに保存される([session-restore.md](session-restore.md))。
-- window を分割するとき、新しい window に、分割元の参照履歴を複製する(§4.3)。
+- A node of the split tree is either a "split (direction, ratio, children)" or a "window (leaf)".
+- `C-x 2` / `C-x 3` replace a leaf with a split, and `C-x 0` / `C-x 1` remove leaves. `C-x o` moves to the next window.
+- The size of a window (the split ratio) is changed in one of two ways.
+  - `C-x ^` (enlarge vertically), `C-x }` (enlarge horizontally), `C-x {` (shrink horizontally), `C-x -` (`shrink-window-if-larger-than-buffer`: shrinks a window that is larger than its document to the height that just fits the document; does nothing if the document is larger). One operation changes the size by 48px vertically and 80px horizontally; prefix arguments are not supported.
+  - Dragging the mode line (the body drags the boundary below it (vertical only), and the right edge drags the boundary on the right (horizontal only), as in Emacs).
+- The ratio is saved in the session ([session-restore.md](session-restore.md)).
+- When a window is split, the reference history of the original window is copied to the new window (§4.3).
 
-## 3. 閲覧位置
+## 3. Viewing position
 
-window は、位置を次のいずれかで表す。
+A window represents its position in one of the following ways.
 
-- **アンカー**: 見出し ID など、文書内の意味的な位置。`path#見出し`、`path#line:N`(行アンカー。§5)。
-- **スクロールオフセット**: アンカーからの相対位置。
+- **Anchor**: a semantic position in the document, such as a heading ID. `path#heading`, `path#line:N` (line anchor; §5).
+- **Scroll offset**: a position relative to an anchor.
 
-文書がファイルの更新で再描画されるときは、画面の上端に近い id つきの要素と、そこからのずれを基準に、閲覧位置を保つ([buffer-model.md](buffer-model.md) §8)。
+When a document is re-rendered because the file was updated, the viewing position is kept relative to an element with an id near the top edge of the screen and the offset from it ([buffer-model.md](buffer-model.md) §8).
 
-外部連携(CLI・Emacs)の位置つき `open` が、表示中の文書を指すときは、参照履歴を積まず、位置だけを置き換える(Emacs の `goto-line` と同じ)。別の文書なら、通常どおり履歴に積む。モードラインには、バッファ名だけを出す(アンカーは出さない)。
+When an `open` with a position from an external integration (CLI, Emacs) points to the document already shown, it does not push onto the reference history and only replaces the position (the same as Emacs `goto-line`). If it points to a different document, it is pushed onto the history as usual. The mode line shows only the buffer name (not the anchor).
 
-## 4. 参照履歴(Back / Forward)
+## 4. Reference history (Back / Forward)
 
-Back / Forward は、参照履歴の前後移動である。buffer の切り替えも、参照として履歴に積む。
+Back / Forward move backward and forward through the reference history. A buffer switch is also pushed onto the history as a reference.
 
-### 4.1 構造
+### 4.1 Structure
 
-- **window ごと**に、ブラウザの履歴と同じ「列 + 現在位置」を持つ。
-- エントリは `{buffer, アンカー, スクロールオフセット}`。
-- Back した後に新しい参照を行うと、現在位置より先のエントリは破棄する(ブラウザと同じ)。
-- 現在のエントリと同じ参照(同じ文書の同じアンカー)は、重ねて積まない。
-- 履歴は、1 window あたり 100 件までセッションに保存する(多いときは、現在位置を含む新しい側に切る)。
+- Each **window** has a "list + current position", like a browser history.
+- An entry is `{buffer, anchor, scroll offset}`.
+- If a new reference is made after Back, the entries beyond the current position are discarded (as in a browser).
+- A reference identical to the current entry (the same anchor of the same document) is not pushed again.
+- The history is saved in the session up to 100 entries per window (when there are more, it is cut on the older side, keeping the newer side that includes the current position).
 
-### 4.2 エントリを積む操作
+### 4.2 Operations that push an entry
 
-| 操作                                        | 履歴に積む                           |
-| ------------------------------------------- | ------------------------------------ |
-| 文書内リンク・文書間リンクをたどる          | 積む                                 |
-| `C-c j`(`goto-heading`)で見出しを選んで移る | 積む                                 |
-| `C-c C-n` などの見出し間の移動              | 積まない(現在エントリの位置だけ更新) |
-| 全文検索の結果から開く                      | 積む                                 |
-| `C-x b` / `C-x C-f` で別の buffer を表示    | 積む                                 |
-| 通常のスクロール                            | 積まない(現在エントリの位置だけ更新) |
-| 文書内検索(`C-s`)                           | 積まない                             |
+| Operation                                                 | Pushed onto history                                       |
+| --------------------------------------------------------- | --------------------------------------------------------- |
+| Following an in-document or cross-document link           | Pushed                                                    |
+| Jumping to a heading chosen with `C-c j` (`goto-heading`) | Pushed                                                    |
+| Moving between headings, such as `C-c C-n`                | Not pushed (only the current entry's position is updated) |
+| Opening from a full-text search result                    | Pushed                                                    |
+| Showing another buffer with `C-x b` / `C-x C-f`           | Pushed                                                    |
+| Normal scrolling                                          | Not pushed (only the current entry's position is updated) |
+| In-document search (`C-s`)                                | Not pushed                                                |
 
-### 4.3 window の分割時
+### 4.3 When a window is split
 
-新しい window に、分割元の履歴を複製する(ブラウザのタブ複製に近い)。以降の履歴は window ごとに独立する。
+The history of the original window is copied to the new window (similar to duplicating a browser tab). After that, the history is independent per window.
 
-### 4.4 Back / Forward のキー
+### 4.4 Back / Forward keys
 
-- **`C-b` / `C-f`** を Back / Forward とする。編集における `C-f` / `C-b` が「文字の流れ」を泳ぐ操作であるのと同様に、HyperBuf では「参照の流れ」を泳ぐ操作として再利用する。
-- **`C-a` / `C-e`** を、履歴の先頭 / 最後へ移る操作(`beginning-of-history` / `end-of-history`)とする。`C-b` / `C-f` を行頭・行末へ広げたもので、すでに先頭 / 最後ならミニバッファに知らせる。
-- `Cmd+[` / `Cmd+]` を macOS 向けの別名として併用する。
-- カーソルキーの `←` / `→` も、別名として割り当てる(Emacs に不慣れな利用者のため。修飾キーつきは、割り当てない)。
-- 縦方向の移動(`C-n` / `C-p` / `C-v` / `M-v`)は文書内(空間)、`C-f` / `C-b` は参照の流れ(時間)と使い分ける。
-- `C-c` 系プレフィックスは、markdown-mode の outline-mode 風の見出し移動(`C-c C-n` / `C-c C-p` / `C-c C-f` / `C-c C-b` / `C-c C-u`)に割り当て、Back / Forward には使わない。
-- **`M-f` / `M-b` は予約する(未割り当て)。** 案: 同じ文書内のアンカー移動を飛ばして、前後の別の文書へ進む・戻る(Emacs の `C-f` → `M-f` のように、修飾キーで単位が広がる)。フィードバックのヒアリング中で、決まるまで割り当てない。
+- **`C-b` / `C-f`** are Back / Forward. Just as `C-f` / `C-b` in editing move through the "flow of characters", HyperBuf reuses them to move through the "flow of references".
+- **`C-a` / `C-e`** move to the first / last entry of the history (`beginning-of-history` / `end-of-history`). They extend `C-b` / `C-f` the way beginning / end of line extend them; if already at the first / last entry, the minibuffer says so.
+- `Cmd+[` / `Cmd+]` are also available as macOS aliases.
+- The cursor keys `←` / `→` are also assigned as aliases (for users unfamiliar with Emacs; combinations with modifier keys are not assigned).
+- Vertical movement (`C-n` / `C-p` / `C-v` / `M-v`) is within the document (space), and `C-f` / `C-b` is the flow of references (time).
+- The `C-c` prefix is assigned to markdown-mode's outline-mode-style heading movement (`C-c C-n` / `C-c C-p` / `C-c C-f` / `C-c C-b` / `C-c C-u`), and is not used for Back / Forward.
+- **`M-f` / `M-b` are reserved (unassigned).** Idea: skip anchor movement within the same document and go forward / back to another document (as `C-f` → `M-f` in Emacs, where a modifier key widens the unit). Feedback is still being collected, and they stay unassigned until it is decided.
 
-## 5. 仮想 buffer と行アンカー
+## 5. Virtual buffers and line anchors
 
-### 5.1 仮想 buffer
+### 5.1 Virtual buffers
 
-- **ファイルに対応しない buffer。** 内容はアプリが生成する。名前は `*…*`(Emacs の `*grep*` や `*Help*` と同じ慣習)。例: 検索結果 `*search: クエリ*`、ヘルプ `*Help: …*`。
-- 通常の buffer と同じ扱い。window に表示でき、参照履歴に積まれ、Back / Forward で行き来でき、`C-x b` の候補(MRU)にも出る。内容中のリンクで、実ファイルへ飛べる。
-- ファイル監視の対象外。同じ名前で再生成すると、内容が置き換わる(再検索)。セッションには保存しない。
-- 結果画面のための専用の仕組みを作らず、既存の操作モデルに乗せることが目的。
+- **Buffers that do not correspond to a file.** The content is generated by the app. The name is `*…*` (the same convention as Emacs `*grep*` and `*Help*`). Examples: search results `*search: query*`, help `*Help: …*`.
+- Treated like normal buffers. They can be shown in a window, are pushed onto the reference history, can be moved through with Back / Forward, and appear in the `C-x b` candidates (MRU). Links in the content can jump to real files.
+- Not watched as files. Regenerating with the same name replaces the content (a re-search). Not saved in the session.
+- The goal is to fit result screens into the existing interaction model, without building a dedicated mechanism for them.
 
-### 5.2 行アンカー
+### 5.2 Line anchors
 
-- `path#line:N` は、元の Markdown の N 行目(以前で最も近いブロック)を指す。見出しのアンカー(`path#見出し`)と同じ経路で開く。
-- 検索結果からの該当行へのジャンプと、CLI・Emacs 連携の「ファイルと行を指定して開く」([integration-protocol.md](integration-protocol.md))に使う。
+- `path#line:N` points to line N of the original Markdown (the nearest block at or before it). It is opened through the same route as a heading anchor (`path#heading`).
+- It is used for jumping to the matching line from search results, and for "open with a file and line" in the CLI / Emacs integration ([integration-protocol.md](integration-protocol.md)).
 
-## 6. 入力とコマンド
+## 6. Input and commands
 
-- 操作はすべて**名前付きコマンド**として定義し、キーマップはキー列からコマンドへの対応とする。`M-x` はコマンド名で実行する。
-- プレフィックス(`C-x` など)は状態機械で扱う。入力待ち中は画面に途中経過を表示する。
-- 検索や `C-x b` の候補選択、`M-x` などの入力は、**ダイアログを出さず、フレーム下部のミニバッファで行う**。
-- ミニバッファにフォーカスがあるときは、その入力用のキーマップを優先する。`C-f` / `C-b` などは文字移動に戻り、コマンド用キーとテキスト入力を競合させない(Emacs のミニバッファと同じ振る舞い)。
-- キーマップは利用者が変更できる(`config.json` の `keybindings`。[configuration.md](../user/configuration.md))。
+- Every operation is defined as a **named command**, and a keymap is a mapping from key sequences to commands. `M-x` runs a command by name.
+- Prefixes (such as `C-x`) are handled by a state machine. While waiting for input, the intermediate state is shown on screen.
+- Input for search, `C-x b` candidate selection, `M-x` and the like is done **in the minibuffer at the bottom of the frame, without showing a dialog**.
+- When the minibuffer has focus, its input keymap takes priority. `C-f` / `C-b` and the like go back to character movement, so command keys do not conflict with text input (the same behavior as the Emacs minibuffer).
+- Users can change the keymap (`keybindings` in `config.json`; [configuration.md](../user/configuration.md)).
 
-### 6.1 ミニバッファと日本語入力(IME)
+### 6.1 The minibuffer and Japanese input (IME)
 
-WKWebView の入力欄(`<input>`)で日本語を変換しながら、インクリメンタル検索を使うときの注意。自動テストの合成イベントでは再現できず、実機で見つかった。
+Notes for using incremental search while converting Japanese in a WKWebView input field (`<input>`). These cannot be reproduced with synthetic events in automated tests and were found on a real device.
 
-- **確定の Enter は `keyCode 229` で届く**(WebKit では、確定のあと)。これを `RET` として扱うと、確定と終了が同時に起きる。`isComposing` または `keyCode 229` の Enter / ESC は、ミニバッファでは無視する(Ctrl・Meta・Alt 付きは対象外)。変換中の Enter は確定だけを行い、次の Enter で終了する。
-- **確定のとき、入力が「空 → 確定した文字列」の順で、二度届く**。「いまの一致」の記憶を検索語に結びつけると、空の瞬間に消えて、先頭の一致に戻る。探し直す基準の位置は、検索語とは別に保持する。
-- **変換中の入力(`InputEvent.isComposing`)では、基準の位置を動かさない**。ローマ字入力の途中の「さ」の一致に引きずられると、変換後の語を、その位置より後ろから探してしまう。
-- **文書に選択を作る・消すと、入力欄のフォーカスが外れる**(WKWebView)。入力中のハイライトは CSS Custom Highlight API だけで描き、選択は、確定のあとに作る。
+- **The confirming Enter arrives with `keyCode 229`** (in WebKit, it comes after the composition has been committed). Treating it as `RET` makes confirmation and exit happen at once. In the minibuffer, Enter / ESC with `isComposing` or `keyCode 229` is ignored (except with Ctrl, Meta or Alt). An Enter during conversion only confirms, and the next Enter exits.
+- **On confirmation, the input arrives twice, as "empty → confirmed string"**. If the memory of the "current match" is tied to the search term, it is lost at the empty moment and returns to the first match. The base position for searching again is kept separately from the search term.
+- **During composition input (`InputEvent.isComposing`), the base position is not moved.** If it were dragged by the match for an intermediate "さ" in the middle of romaji input, the converted word would be searched from after that position.
+- **Creating or clearing a selection in the document takes focus away from the input field** (WKWebView). The highlight during input is drawn only with the CSS Custom Highlight API, and the selection is made after confirmation.
 
-### 6.2 `count-words`(`M-=`)
+### 6.2 `count-words` (`M-=`)
 
-選択範囲(なければ文書全体)の、行・単語・文字の数を、エコー領域に出す。
+Shows the number of lines, words and characters of the selection (the whole document if there is none) in the echo area.
 
-- 例: `Region has 3 lines, 42 words, 210 characters (180 without whitespace)`(選択なしは `Buffer has …`)。
-- **数える対象は、表示されているテキスト(描画後)**。元の Markdown ではない。ビューアなので、見た目を優先する。Markdown の記号や URL、画像、図(SVG)は数えず、コードブロック・表のセル・リンクの文字・数式は数える。元の Markdown の数は、Emacs の `count-words` で測る。
-- 行は、空でない行の数(段落・リスト項目・表の行・コードの行が、それぞれ 1 行)。単語は、`Intl.Segmenter` の単語分割(日本語などは、辞書による分割)。文字は、コードポイントの数で、行の区切りの改行を 1 つとして含み、空行は含めない。括弧の中は、空白(改行を含む)を除いた文字の数。
-- **選択中の字数を、モードラインにリアルタイムで出す機能は、実装しない。** 最小限の UI で十分、という Emacs の文化に沿った判断。必要なときに、`M-=` で数える。
+- Example: `Region has 3 lines, 42 words, 210 characters (180 without whitespace)` (without a selection, `Buffer has …`).
+- **What is counted is the displayed text (after rendering)**, not the original Markdown. As a viewer, appearance takes priority. Markdown symbols, URLs, images and diagrams (SVG) are not counted; code blocks, table cells, link text and math are counted. To measure the original Markdown, use Emacs `count-words`.
+- Lines are the number of non-empty lines (a paragraph, a list item, a table row and a line of code each count as one line). Words follow `Intl.Segmenter` word segmentation (dictionary-based for Japanese and similar). Characters are the number of code points, including one newline for each line break between lines and excluding blank lines. The number in parentheses counts the characters with all whitespace (newlines included) removed.
+- **Showing the character count of the selection in the mode line in real time is not implemented.** This follows the Emacs culture that a minimal UI is enough. Count with `M-=` when needed.
 
-## 7. 設計判断と未決事項
+## 7. Design decisions and open questions
 
-**閲覧画面にカーソルは表示しない方向。** コピーのためのテキスト選択の方法は、別途検討する。
+**The direction is not to show a cursor in the viewing screen.** How to select text for copying will be considered separately.
 
-**決めていないこと:**
+**Undecided:**
 
-- `M-f` / `M-b` の割り当て(§4.4)。
-- 履歴の粒度。同一文書内の連続したアンカー移動を 1 エントリにまとめるか(今は、アンカーごとに 1 エントリ)。
-- 拡張機構。
+- The assignment of `M-f` / `M-b` (§4.4).
+- The granularity of the history: whether to merge consecutive anchor movements within the same document into one entry (currently, one entry per anchor).
+- Extension mechanisms.

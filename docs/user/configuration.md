@@ -1,35 +1,35 @@
-# 設定(config.json)
+# Configuration (config.json)
 
-利用者が書く設定は、1 つのファイルにまとめます。
+All the settings you write live in a single file.
 
 ```
 ~/Library/Application Support/HyperBuf/config.json
 ```
 
-- なければ、標準のままです。アプリの起動時に読みます(変えたら、アプリを再起動します)。
-- JSON で書きます。**不正な項目は、無視して、理由を知らせます**(起動時のメッセージと、`C-h b` の一覧)。
-- 設定は、利用者が自分で書くものです。アプリは、設定ファイルを書き換えません。
-- アプリメニューの `Show Config File in Finder` で、`config.json`(なければ、置き場所のフォルダ)を Finder に表示します。
+- If the file does not exist, everything stays at its defaults. The app reads it at startup (restart the app after changing it).
+- Write it in JSON. **Invalid entries are ignored, and the reason is reported** (in a message at startup and in the `C-h b` list).
+- You write the settings yourself. The app never rewrites the configuration file.
+- `Show Config File in Finder` in the app menu shows `config.json` in Finder (or its folder if the file does not exist).
 
-## 設定キーの一覧
+## List of configuration keys
 
-| キー                     | 型              | 既定値                       | 内容                                        |
-| ------------------------ | --------------- | ---------------------------- | ------------------------------------------- |
-| `appearance`             | 文字列          | `"system"`                   | [外観](#外観appearance)                     |
-| `alpha`                  | 整数 2 つの配列 | `[100, 100]`                 | [フレームの透明度](#フレームの透明度alpha)  |
-| `mathUnescapeUnderscore` | 真偽値          | `true`                       | [文書の表示](#文書の表示)                   |
-| `followUpdates`          | 真偽値          | `false`                      | [文書の表示](#文書の表示)                   |
-| `modeLineVcsBranch`      | 真偽値          | `true`                       | [プロジェクト・ルート](#プロジェクトルート) |
-| `restoreSession`         | 真偽値          | `true`                       | [前回の状態の復元](#前回の状態の復元)       |
-| `warnPaths`              | 文字列の配列    | 組み込みの一覧(下を参照)     | [ファイルのアクセス](#ファイルのアクセス)   |
-| `allowPaths`             | 文字列の配列    | 組み込みの一覧(下を参照)     | [ファイルのアクセス](#ファイルのアクセス)   |
-| `projectIgnorePaths`     | 文字列の配列    | `[]`                         | [プロジェクト・ルート](#プロジェクトルート) |
-| `trustedUrls`            | 文字列の配列    | `[]`                         | [外部リンク](#外部リンク)                   |
-| `editorName`             | 文字列          | `"Emacs"`                    | [エディタの連携](#エディタの連携)           |
-| `editorCommand`          | 文字列の配列    | なし(エディタは呼び出さない) | [エディタの連携](#エディタの連携)           |
-| `keybindings`            | オブジェクト    | `{}`                         | [キー割り当て](#キー割り当てkeybindings)    |
+| Key                      | Type                | Default                          | Description                                                   |
+| ------------------------ | ------------------- | -------------------------------- | ------------------------------------------------------------- |
+| `appearance`             | string              | `"system"`                       | [Appearance](#appearance-appearance)                          |
+| `alpha`                  | array of 2 integers | `[100, 100]`                     | [Frame opacity](#frame-opacity-alpha)                         |
+| `mathUnescapeUnderscore` | boolean             | `true`                           | [Document display](#document-display)                         |
+| `followUpdates`          | boolean             | `false`                          | [Document display](#document-display)                         |
+| `modeLineVcsBranch`      | boolean             | `true`                           | [Project root](#project-root)                                 |
+| `restoreSession`         | boolean             | `true`                           | [Restoring the previous state](#restoring-the-previous-state) |
+| `warnPaths`              | array of strings    | built-in list (see below)        | [File access](#file-access)                                   |
+| `allowPaths`             | array of strings    | built-in list (see below)        | [File access](#file-access)                                   |
+| `projectIgnorePaths`     | array of strings    | `[]`                             | [Project root](#project-root)                                 |
+| `trustedUrls`            | array of strings    | `[]`                             | [External links](#external-links)                             |
+| `editorName`             | string              | `"Emacs"`                        | [Editor integration](#editor-integration)                     |
+| `editorCommand`          | array of strings    | none (the editor is not invoked) | [Editor integration](#editor-integration)                     |
+| `keybindings`            | object              | `{}`                             | [Key bindings](#key-bindings-keybindings)                     |
 
-## 例
+## Example
 
 ```json
 {
@@ -59,125 +59,125 @@
 }
 ```
 
-## 外観(`appearance`)
+## Appearance (`appearance`)
 
-| キー         | 型     | 意味                                                                                                                         |
-| ------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `appearance` | 文字列 | `"system"`(OS の設定に従う。**既定**)、`"light"`、`"dark"`。`light` / `dark` は、OS の設定に関係なく、アプリだけを固定します |
+| Key          | Type   | Meaning                                                                                                                                          |
+| ------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `appearance` | string | `"system"` (follow the OS setting; the **default**), `"light"`, `"dark"`. `light` / `dark` fix the app's appearance regardless of the OS setting |
 
-- ウィンドウ・メニュー・スクロールバー・文書の表示のすべてが、これに従います。
-- `system` のとき、アプリの動作中に OS の外観が切り替わっても、追従します。文書・コード・数式・画面の部品は、そのまま切り替わり、図(Mermaid)は、新しい外観で描き直します(閲覧位置は保ちます)。
-- 配色は、GitHub に近いもの 1 組(ライトとダーク)だけです。利用者が色を定義する仕組み(テーマ)は、ありません。
-- **画像(PNG・SVG)の色は、変えません。** 透明な背景に、暗い線や文字だけで描かれた図は、ダークでは見えにくいことがあります(GitHub のダーク表示と同じ限界です)。
+- Windows, menus, scroll bars and document display all follow it.
+- With `system`, the app follows the OS appearance even if it switches while the app is running. Documents, code, math and UI parts switch as they are, and diagrams (Mermaid) are redrawn in the new appearance (the reading position is kept).
+- There is only one color scheme (light and dark variants), close to GitHub's. There is no mechanism (theme) for defining your own colors.
+- **Image (PNG, SVG) colors are not changed.** A diagram drawn only with dark lines or text on a transparent background can be hard to see in dark mode (the same limitation as GitHub's dark display).
 
-## フレームの透明度(`alpha`)
+## Frame opacity (`alpha`)
 
-| キー    | 型              | 意味                                                                                                                                        |
-| ------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `alpha` | 整数 2 つの配列 | `[前面, それ以外]`。パーセント(10〜100。**既定は `[100, 100]`**、透過なし)。Emacs の `(set-frame-parameter nil 'alpha '(80 65))` と同じです |
+| Key     | Type                | Meaning                                                                                                                                                  |
+| ------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `alpha` | array of 2 integers | `[front, other]`. Percentages (10 to 100; **the default is `[100, 100]`**, no transparency). Same as Emacs's `(set-frame-parameter nil 'alpha '(80 65))` |
 
-- 例: `"alpha": [80, 65]` は、前面のフレームを 80%、背面のフレーム(アプリが背面のときの、すべてのフレームを含む)を 65% の不透明度にします。
-- **ウィンドウ全体**の透明度です。文字や画像も、同じだけ透けます(背景だけを透かす方式は、ありません)。
-- 全フレームに、同じ値を適用します。
-- アクセシビリティの「透明度を下げる」がオンのあいだは、設定に関係なく、不透明にします。
-- 範囲外の値・形の違う値は、無視して(不透明のまま)、`C-h b` の「設定の問題」に出します。
+- Example: `"alpha": [80, 65]` makes the frontmost frame 80% opaque and background frames (including all frames while the app is in the background) 65% opaque.
+- This is the opacity of the **whole window**. Text and images become equally see-through (there is no way to make only the background transparent).
+- The same value is applied to all frames.
+- While the accessibility option "Reduce transparency" is on, frames are opaque regardless of this setting.
+- Out-of-range or wrongly shaped values are ignored (the frame stays opaque) and reported under "settings problems" in `C-h b`.
 
-## 文書の表示
+## Document display
 
-| キー                     | 型     | 意味                                                                                           |
-| ------------------------ | ------ | ---------------------------------------------------------------------------------------------- |
-| `mathUnescapeUnderscore` | 真偽値 | 数式の中の `\_` を `_` に戻して描画するか。**既定は `true`**                                   |
-| `followUpdates`          | 真偽値 | 外部でファイルが更新されたとき、最初に変わった場所へ移るか。**既定は `false`**(閲覧位置を保つ) |
+| Key                      | Type    | Meaning                                                                                                                              |
+| ------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `mathUnescapeUnderscore` | boolean | Whether to turn `\_` in math back into `_` before rendering. **The default is `true`**                                               |
+| `followUpdates`          | boolean | Whether to jump to the first changed place when a file is updated externally. **The default is `false`** (keep the reading position) |
 
-- `mathUnescapeUnderscore`: Marked 2 などは、Markdown のバックスラッシュのエスケープを外してから数式を描画するので、`$x\_1$` は添字の `x_1` になります。TeX では `\_` は「文字としての下線」ですが、この互換があると、Markdown の都合で `_` を `\_` と書いた数式が、そのまま読めます。`\text{…}`・`\mathrm{…}` などの引数の中の `\_` は、文字の下線のまま残します。`false` にすると、TeX の規則どおりにします。
-- `followUpdates`: `C-x x u`(`toggle-follow-updates`)で、その場で切り替えられます(切り替えは、アプリの終了までです。設定は変わりません)。オンのあいだ、モードラインに `[Follow]` と出ます。移った先は、一瞬、強調されます。
+- `mathUnescapeUnderscore`: Marked 2 and similar tools remove Markdown backslash escapes before rendering math, so `$x\_1$` becomes the subscript `x_1`. In TeX, `\_` is "an underscore as a character", but with this compatibility, math in which `_` was written as `\_` for Markdown's sake reads as intended. A `\_` inside the arguments of `\text{…}`, `\mathrm{…}` and the like stays a literal underscore. With `false`, TeX rules apply exactly.
+- `followUpdates`: you can toggle it on the spot with `C-x x u` (`toggle-follow-updates`) (the toggle lasts until the app quits and does not change the setting). While it is on, `[Follow]` appears in the mode line. The place jumped to is briefly highlighted.
 
-## 前回の状態の復元
+## Restoring the previous state
 
-| キー             | 型     | 意味                                                                      |
-| ---------------- | ------ | ------------------------------------------------------------------------- |
-| `restoreSession` | 真偽値 | 前回の状態を復元し、保存するか。**既定は `true`**(`false` のときだけ無効) |
+| Key              | Type    | Meaning                                                                                                |
+| ---------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| `restoreSession` | boolean | Whether to restore and save the previous state. **The default is `true`** (disabled only with `false`) |
 
-- `false` のあいだは、復元もしないし、保存もしません(それまでの保存は、そのまま残ります)。
-- 復元する内容と保存の仕組みは、[session-restore.md](../dev/session-restore.md) にあります。
+- While it is `false`, nothing is restored and nothing is saved (what was saved earlier is left as it is).
+- What is restored and how it is saved are described in [session-restore.md](../dev/session-restore.md).
 
-## ファイルのアクセス
+## File access
 
-警告パスの下のファイルは、リンクや外部連携から開くときに、ミニバッファで確認します。それ以外は、確認なしで開きます。
+When you open a file under a warn path from a link or an external integration, the app asks for confirmation in the minibuffer. Everything else opens without confirmation.
 
-| キー         | 型           | 意味                                                                                                        |
-| ------------ | ------------ | ----------------------------------------------------------------------------------------------------------- |
-| `warnPaths`  | 文字列の配列 | 警告パス。この下のファイルを開くときは、確認します。**書いたら、既定の一覧を置き換えます**。`[]` で警告なし |
-| `allowPaths` | 文字列の配列 | 許可パス。警告パスの下で、確認を省く場所です。**書いたら、既定の一覧を置き換えます**                        |
+| Key          | Type             | Meaning                                                                                                                               |
+| ------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `warnPaths`  | array of strings | Warn paths. Opening a file under one asks for confirmation. **If you write it, it replaces the default list**. `[]` means no warnings |
+| `allowPaths` | array of strings | Allow paths. Places under a warn path where the confirmation is skipped. **If you write it, it replaces the default list**            |
 
-- 既定の警告パス: `/usr`、`/opt`、`/tmp`、`/var`、`/etc`、`/System`、`/Library`、`~/.ssh`、`~/.aws`、`~/.gnupg`、`~/Library`。既定の許可パス: `~/Library/Mobile Documents`(iCloud Drive)。
-- 絶対パス、または `~/…` で書きます。シンボリックリンクは解決して照合します(`/tmp` は `/private/tmp` として扱います)。相対パス、型の違うもの、空のものは無視して、理由を `C-h b` の「設定の問題」に出します。
-- **一番長く一致したものが勝ちます**(より具体的な指定が優先です)。許可と警告が同じパスなら、警告として扱い、設定の問題として報告します。
-- **自分で打った・選んだパス(`C-x C-f`、`C-x p f`)は、判定しません。** 判定の対象は、リンクのクリック、外部連携(CLI・Emacs・URL スキーム)、文書が参照する画像です。
-- 警告パスのファイルを承認すると、そのファイルのディレクトリ以下が「記憶したパス」になり、次からは確認しません(保存先は `~/Library/Application Support/HyperBuf/trusted-roots.json`)。記憶は `M-x forget-remembered-path` で取り消せます。
-- 判定の詳しい規則は、[file-access.md](../dev/file-access.md) にあります。
+- Default warn paths: `/usr`, `/opt`, `/tmp`, `/var`, `/etc`, `/System`, `/Library`, `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/Library`. Default allow path: `~/Library/Mobile Documents` (iCloud Drive).
+- Write absolute paths or `~/…`. Symbolic links are resolved before matching (`/tmp` is treated as `/private/tmp`). Relative paths, values of the wrong type and empty values are ignored, and the reason is reported under "settings problems" in `C-h b`.
+- **The longest match wins** (the more specific entry takes precedence). If an allow path and a warn path are the same, it is treated as a warn path and reported as a settings problem.
+- **Paths you type or choose yourself (`C-x C-f`, `C-x p f`) are not judged.** What is judged is link clicks, external integrations (CLI, Emacs, URL scheme) and images referenced by a document.
+- When you approve a file under a warn path, everything under that file's directory becomes a "remembered path" and you are not asked again (stored in `~/Library/Application Support/HyperBuf/trusted-roots.json`). You can undo a remembered path with `M-x forget-remembered-path`.
+- The detailed rules for the judgment are in [file-access.md](../dev/file-access.md).
 
-## プロジェクト・ルート
+## Project root
 
-`C-x p f` / `C-x p g` / `C-x p b` / `C-x p k` は、いま見ているバッファのディレクトリから親へさかのぼり、最初に VCS の目印(`.git`・`.hg`・`.svn`・`.bzr`・`_darcs`・`.jj`)があるディレクトリを、プロジェクト・ルートにします。見つからなければ、バッファのディレクトリ自身です。`~` と `/` は、ルートにしません。求め方の詳細は [buffer-model.md](../dev/buffer-model.md) §6 にあります。
+`C-x p f` / `C-x p g` / `C-x p b` / `C-x p k` start from the directory of the buffer you are viewing and go up through its parents. The first directory that has a VCS marker (`.git`, `.hg`, `.svn`, `.bzr`, `_darcs`, `.jj`) becomes the project root. If none is found, it is the buffer's own directory. `~` and `/` are never used as a root. The details of how the root is determined are in [buffer-model.md](../dev/buffer-model.md) §6.
 
-| キー                 | 型           | 意味                                                                                                                   |
-| -------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| `projectIgnorePaths` | 文字列の配列 | ルートにしないディレクトリ。目印があっても飛ばして、さらに上をさがします。完全一致です(下のディレクトリには効きません) |
-| `modeLineVcsBranch`  | 真偽値       | モードラインに、Git のブランチ名を出すか。**既定は `true`**                                                            |
+| Key                  | Type             | Meaning                                                                                                                                                                                 |
+| -------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `projectIgnorePaths` | array of strings | Directories that are never used as a root. They are skipped even if they have a marker, and the search continues upward. Exact match only (it does not apply to directories below them) |
+| `modeLineVcsBranch`  | boolean          | Whether to show the Git branch name in the mode line. **The default is `true`**                                                                                                         |
 
-- 絶対パス、または `~/…` で書きます。相対パス、型の違うものは無視して、理由を `C-h b` の「設定の問題」に出します。
-- `modeLineVcsBranch`: バッファのプロジェクト・ルートが Git のリポジトリなら、モードラインの `[History N/M]` の右に、ブランチ名を出します(detached HEAD は、短縮ハッシュ 7 桁)。**`git` コマンドは実行せず、`.git/HEAD` を直接読みます。** ファイルの更新状態(Emacs の `-` / `:` / `@`)は出しません。ブランチの切り替えは、バッファを開き直したとき、ファイルが再読み込みされたとき、アプリがアクティブになったときに反映します。Git 以外の VCS と、プロジェクト・ルートのないバッファでは、何も出しません。
-- 一覧と検索は、隠しファイルと `node_modules` を除きます。`.gitignore` は読みません。
+- Write absolute paths or `~/…`. Relative paths and values of the wrong type are ignored, and the reason is reported under "settings problems" in `C-h b`.
+- `modeLineVcsBranch`: if the buffer's project root is a Git repository, the branch name is shown to the right of `[History N/M]` in the mode line (for a detached HEAD, the 7-character short hash). **It does not run the `git` command; it reads `.git/HEAD` directly.** The file's modification state (Emacs's `-` / `:` / `@`) is not shown. A branch switch is reflected when you reopen the buffer, when the file is reloaded, and when the app becomes active. Nothing is shown for VCSs other than Git, or for buffers without a project root.
+- Listing and searching exclude hidden files and `node_modules`. `.gitignore` is not read.
 
-## 外部リンク
+## External links
 
-文書の中の `http` / `https` のリンクを選ぶと(クリック、`RET`)、既定のブラウザで開きます。**毎回、確認します**(`yes` / `no` / `always`)。
+When you select an `http` / `https` link in a document (click, `RET`), it opens in your default browser. **The app asks every time** (`yes` / `no` / `always`).
 
-| キー          | 型           | 意味                                                                                      |
-| ------------- | ------------ | ----------------------------------------------------------------------------------------- |
-| `trustedUrls` | 文字列の配列 | 確認なしで開く URL のパターン。`*` は任意の文字列。`http://` または `https://` で始めます |
+| Key           | Type             | Meaning                                                                                                 |
+| ------------- | ---------------- | ------------------------------------------------------------------------------------------------------- |
+| `trustedUrls` | array of strings | URL patterns that open without confirmation. `*` matches any string. Start with `http://` or `https://` |
 
-- `always` と答えたサイト(`scheme://host[:port]`)は、`~/Library/Application Support/HyperBuf/trusted-sites.json` に記憶します。`M-x forget-remembered-site` で取り消せます。
-- `mailto:` は、毎回、確認します(`always` はありません)。それ以外のスキーム(`file:`・`javascript:` など)は、開きません。
-- ユーザー名・パスワードを含む URL(`https://example.com@evil.example/`)、制御文字を含む URL、2048 文字を超える URL は、確認もせず、開きません。
-- ブラウザを開く判断は、アプリ(Swift)が、もう一度、確かめます(Web 側の判断は信用しません)。
+- Sites (`scheme://host[:port]`) for which you answered `always` are remembered in `~/Library/Application Support/HyperBuf/trusted-sites.json`. You can undo that with `M-x forget-remembered-site`.
+- `mailto:` is confirmed every time (there is no `always`). Other schemes (`file:`, `javascript:` and so on) are not opened.
+- URLs that contain a user name or password (`https://example.com@evil.example/`), URLs that contain control characters, and URLs longer than 2048 characters are not opened, and no confirmation is asked.
+- The app (Swift) checks the decision to open the browser again (it does not trust the Web side's decision).
 
-## エディタの連携
+## Editor integration
 
-右クリックメニューの `Edit in <editorName>`(または `C-c e`)で、指した場所を記録し、`editorCommand` を実行します。
+`Edit in <editorName>` in the context menu (or `C-c e`) records the pointed place and runs `editorCommand`.
 
-| キー            | 型                  | 意味                                                                                         |
-| --------------- | ------------------- | -------------------------------------------------------------------------------------------- |
-| `editorName`    | 文字列(40 文字まで) | メニューに出す名前。既定は `Emacs`                                                           |
-| `editorCommand` | 文字列の配列        | 実行するコマンド。**先頭は、実在する実行可能な絶対パス**。引数は 16 個まで、各 1024 文字まで |
+| Key             | Type                         | Meaning                                                                                                                                 |
+| --------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `editorName`    | string (up to 40 characters) | The name shown in the menu. The default is `Emacs`                                                                                      |
+| `editorCommand` | array of strings             | The command to run. **The first element is an existing executable's absolute path**. At most 16 arguments, each at most 1024 characters |
 
-- コマンドは、**ここに書いた固定のもの**だけを、シェルを介さずに実行します。**文書の内容・選択・パス・位置は、引数にも環境にも含めません**(エディタが、`get-location` で取りに来ます)。
-- `editorCommand` がなければ、エディタは呼び出さず、位置を記録するだけです(メニューは `Record Location for Editor`。エディタで `M-x hyperbuf-visit-location`)。
-- 不正なコマンド(相対パス、存在しない、実行できない、配列でない、など)は、無視します(エディタは、呼び出しません)。
+- Only the **fixed command you write here** is run, without a shell. **No document content, selection, path or position is included in the arguments or the environment** (the editor fetches the position with `get-location`).
+- Without `editorCommand`, the editor is not invoked and the position is only recorded (the menu item is `Record Location for Editor`; in the editor, use `M-x hyperbuf-visit-location`).
+- An invalid command (a relative path, nonexistent, not executable, not an array, and so on) is ignored (the editor is not invoked).
 
-連携の仕組みは [edit-location.md](../dev/edit-location.md)、Emacs 側は [`emacs/README.md`](../../emacs/README.md) にあります。
+How the integration works is described in [edit-location.md](../dev/edit-location.md); the Emacs side is in [`emacs/README.md`](../../emacs/README.md).
 
-## キー割り当て(`keybindings`)
+## Key bindings (`keybindings`)
 
-標準の割り当て([keybindings.md](keybindings.md))に、重ねます。
+This layers on top of the default bindings ([keybindings.md](keybindings.md)).
 
 ```json
-"keybindings": { "<キー列>": "<コマンド名>" | null, ... }
+"keybindings": { "<key sequence>": "<command name>" | null, ... }
 ```
 
-| 値                 | 意味                                                                                 |
-| ------------------ | ------------------------------------------------------------------------------------ |
-| コマンド名(文字列) | そのキー列に、コマンドを割り当てます。同じキー列の、標準の割り当ては、置き換わります |
-| `null`             | そのキー列の、標準の割り当てを外します                                               |
+| Value                 | Meaning                                                                                             |
+| --------------------- | --------------------------------------------------------------------------------------------------- |
+| Command name (string) | Assigns the command to that key sequence. The default binding for the same key sequence is replaced |
+| `null`                | Removes the default binding for that key sequence                                                   |
 
-- **コマンド名**は、`M-x` の候補と同じです。一覧と説明は、[keybindings.md](keybindings.md)(または、アプリで `C-h b`)にあります。
-- **キー列の書き方:** スペースで区切って、最大 4 つ。1 つのキーは、修飾キーを `C-` `M-` `s-` `S-` の**順**に並べて、本体(1 文字、または `RET` `ESC` `TAB` `SPC` `DEL` `up` `down` `left` `right`)です。例: `C-x 2`、`M-x`、`s-[`、`S-TAB`、`C-M-s`。
-- **処理の順序は、書いた順に依存しません:** 解除(`null`)が先で、割り当ては、キー列の順です。
-- **無視される設定**(理由は、`C-h b` の「設定の問題」に出ます):
-  - 不明なコマンド名。
-  - 不正なキー表記(`Ctrl-x`、`M-C-x` など)。
-  - 割り当てのないキー列の解除。
-  - **`C-g`**: 取り消しに予約されています(変えられません)。
-  - プレフィックスとの衝突: 同じキー列を、コマンドと、プレフィックス(`C-x` の `2` など、下に続くキーがある)の両方にはできません。`C-x` を、コマンドにしたいときは、先に、`C-x` で始まる割り当てをすべて `null` で外します。
-- 入力欄(ミニバッファ)の中のキーは、この設定の対象外です(確定・取消・候補の選択・履歴は、固定です)。
+- **Command names** are the same as the `M-x` candidates. The list and descriptions are in [keybindings.md](keybindings.md) (or `C-h b` in the app).
+- **How to write a key sequence:** separate keys with spaces, up to 4. One key is the modifiers in the **order** `C-` `M-` `s-` `S-`, followed by the base key (one character, or `RET` `ESC` `TAB` `SPC` `DEL` `up` `down` `left` `right`). Examples: `C-x 2`, `M-x`, `s-[`, `S-TAB`, `C-M-s`.
+- **Processing order does not depend on the order you write entries in:** removals (`null`) come first, then assignments in key-sequence order.
+- **Settings that are ignored** (the reason appears under "settings problems" in `C-h b`):
+  - Unknown command names.
+  - Invalid key notation (`Ctrl-x`, `M-C-x`, and so on).
+  - Removing a key sequence that has no binding.
+  - **`C-g`**: reserved for cancel (it cannot be changed).
+  - Conflicts with a prefix: the same key sequence cannot be both a command and a prefix (such as `C-x`, which has keys such as `2` following it). To make `C-x` a command, first remove every binding that starts with `C-x` using `null`.
+- Keys inside the input field (minibuffer) are outside the scope of this setting (confirm, cancel, candidate selection and history are fixed).

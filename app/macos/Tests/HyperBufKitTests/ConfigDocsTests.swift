@@ -4,7 +4,7 @@
 import Foundation
 import Testing
 
-/// docs/user/configuration.md の「設定キーの一覧」が、コードが読む設定のキーと一致することを検査する。
+/// docs/user/configuration.md の「List of configuration keys」が、コードが読む設定のキーと一致することを検査する。
 /// 設定のキーを足す・消すときは、一覧表も直す。
 @Suite struct ConfigDocsTests {
     /// このファイルから、リポジトリのルート(app/macos/Tests/HyperBufKitTests/<file> から 5 つ上)を求める。
@@ -26,10 +26,10 @@ import Testing
         }
     }
 
-    /// 文書の「設定キーの一覧」の表にあるキー。
+    /// 文書の「List of configuration keys」の表にあるキー。
     private static func documentedKeys() throws -> Set<String> {
         let doc = try read("docs/user/configuration.md")
-        guard let start = doc.range(of: "## 設定キーの一覧") else { return [] }
+        guard let start = doc.range(of: "## List of configuration keys") else { return [] }
         let rest = doc[start.upperBound...]
         let section = rest.range(of: "\n## ").map { String(rest[..<$0.lowerBound]) } ?? String(rest)
         return Set(try matches(#"^\| `([A-Za-z]+)`\s*\|"#, in: section))

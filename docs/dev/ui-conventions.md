@@ -1,34 +1,35 @@
-# UI の言語と流儀
+# UI Language and Conventions
 
-アプリが出す文言の言語と、macOS の流儀・Emacs の流儀の使い分け。操作モデルは [interaction-model.md](interaction-model.md)。
+The language of the text the app shows, and how the macOS conventions and the Emacs conventions are divided. For the interaction model, see [interaction-model.md](interaction-model.md).
 
-## 1. UI の文言は英語に固定する
+## 1. UI text is fixed to English
 
-UI の文言は、英語に固定する(ローカライズしない)。
+UI text is fixed to English (not localized).
 
-- 対象は、アプリが出す文言のすべて: メニュー、モードライン、エコー領域、ミニバッファのプロンプト、コマンドの説明(`M-x`・`C-h b`)、確認・エラーの文、CLI の usage とエラー、Emacs パッケージ(`emacs/`)のメッセージと docstring。
-- 理由:
-  - Emacs の語彙(buffer / window / frame / mode line / minibuffer / echo area)は英語で、キーやコマンド名とも揃う。
-  - 検索して、世界中の知見を共有しやすい。
-  - 二言語の文言を保守しない(小さな体制で、ずれが出ない)。
-- **扱う内容(文書の本文、ファイル名、アンカー、検索語、ミニバッファでの入力)は、国際化されている**(日本語を含む)。固定するのは、アプリ自身の文言だけ。
-- `.lproj` / `.strings` / `NSLocalizedString` は使わない。新しい文言は、最初から英語で書く(日本語の文言を直書きしない)。
-- OS が出す標準の UI(ファイルを開くパネルなど)は、システムのロケールに従う。
+- This covers all text the app shows: menus, the mode line, the echo area, minibuffer prompts, command descriptions (`M-x`, `C-h b`), confirmation and error messages, the CLI's usage and errors, and the messages and docstrings of the Emacs package (`emacs/`).
+- Reasons:
+  - The Emacs vocabulary (buffer / window / frame / mode line / minibuffer / echo area) is English, and matches the key and command names.
+  - It makes it easy to search and to share knowledge from around the world.
+  - Two languages of text are not maintained (with a small team, this keeps them from drifting apart).
+- **The content handled (document bodies, file names, anchors, search terms, and input in the minibuffer) is internationalized** (including Japanese). Only the app's own text is fixed.
+- `.lproj` / `.strings` / `NSLocalizedString` are not used. New text is written in English from the start (Japanese text is not hard-coded).
+- The standard UI shown by the OS (such as the open-file panel) follows the system locale.
 
-## 2. macOS の流儀と Emacs の流儀を、場所で分ける
+## 2. Separating the macOS and Emacs conventions by place
 
-| 場所                                                           | 流儀       | 具体                                                                                                                                        |
-| -------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| メニューバー、ダイアログ、右クリックメニュー                   | macOS      | 標準の構成(App / File / Edit / Window)と標準のショートカット(`Cmd-N`・`Cmd-W`・`Cmd-M` など)。文言は macOS の英語表記(Title Case)           |
-| フレーム(macOS のウィンドウ)の切り替え                         | macOS      | 専用のメニューは持たず、Window メニューに、開いているフレームを `Cmd-1`〜`Cmd-9` つきで並べる(前面に印)。開いていない番号では、何も起きない |
-| フレームの中(モードライン、エコー領域、ミニバッファ、キー操作) | Emacs      | `C-x …` / `M-x` のキー、コマンド名、用語(buffer / window / frame)。エコーの文は、Emacs と同じ体裁(先頭は大文字、文末に句点を付けない)       |
-| 外部との連携(CLI、`hyperbuf://`、Emacs パッケージ)             | 双方の慣習 | CLI は UNIX の慣習(usage、終了コード)。Emacs パッケージは Emacs の慣習(`user-error`、docstring の 1 行目は完結した文)                       |
+| Place                                                             | Convention       | Specifics                                                                                                                                                              |
+| ----------------------------------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Menu bar, dialogs, context menus                                  | macOS            | The standard structure (App / File / Edit / Window) and standard shortcuts (`Cmd-N`, `Cmd-W`, `Cmd-M`, and so on). Text uses macOS English style (Title Case)          |
+| Switching frames (macOS windows)                                  | macOS            | There is no dedicated menu; the Window menu lists the open frames with `Cmd-1` to `Cmd-9` (the frontmost is marked). Nothing happens for a number that is not open     |
+| Inside a frame (mode line, echo area, minibuffer, key operations) | Emacs            | The `C-x …` / `M-x` keys, command names, and terms (buffer / window / frame). Echo messages follow Emacs style (start with a capital letter, no period at the end)     |
+| Integration with the outside (CLI, `hyperbuf://`, Emacs package)  | Both conventions | The CLI follows UNIX conventions (usage, exit codes). The Emacs package follows Emacs conventions (`user-error`; the first line of a docstring is a complete sentence) |
 
-- 目安: **メニューバーとダイアログは macOS、フレームの中は Emacs。** Cmd キーのショートカットは macOS の標準に使い、Emacs のキー(`C- / M-`)と衝突させない。
-- **用語のずれは、受け入れる。** Emacs の frame は、macOS では「ウィンドウ」なので、Window メニューに並ぶのは frame である。メニューは macOS の言葉、ヘルプや文書は Emacs の言葉で書く。
-- Window メニューの項目の表示(`HyperBuf [N]`)は、当面、ウィンドウのタイトルと同じ。あるべき形は、引き続き検討する。
+- Rule of thumb: **the menu bar and dialogs are macOS; inside a frame is Emacs.** Cmd-key shortcuts are used for the macOS standard and do not collide with Emacs keys (`C- / M-`).
+- **The terminology mismatch is accepted.** An Emacs frame is a "window" on macOS, so what the Window menu lists is frames. Menus use macOS words; help and documents are written in Emacs words.
+- The display of Window menu items (`HyperBuf [N]`) is, for the time being, the same as the window title. The ideal form is still under consideration.
 
-## 3. 文書の言語
+## 3. Language of documents
 
-- 利用者向けの文書は、英語を主にする。Emacs の info のように、ロケールに沿った翻訳を後から足す形が望ましいが、予定は決めていない。
-- 設計文書(`docs/`)とコードのコメントは、公開前の英訳のフェーズまでは、日本語のまま。`emacs/` は、UI に影響するため、先に英語にしている。
+- `README.md`, `docs/user/` and `docs/dev/` are written in English, like the UI text and `emacs/`. A form like Emacs info, with translations following the locale added later, is desirable for the user documents, but no plan has been decided.
+- `docs/history/` keeps the records in Japanese, as they were at the time, with an English summary in its `README.md`.
+- Source code comments, test names and the output of the repository scripts are still mostly Japanese; new ones may be written in English.

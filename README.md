@@ -4,129 +4,129 @@
 >
 > **No tabs. Just buffers.**
 
-HyperBufは、大量のMarkdownドキュメントを、キーボード主体で自在に読み進めるためのmacOS向けドキュメントビューアです(エディタではありません)。
+HyperBuf is a macOS document viewer for reading large numbers of Markdown documents freely and mostly from the keyboard (it is not an editor).
 
-単なるMarkdownプレビューアではありません。Emacsに由来する **buffer / window / frame** の考え方と、Webブラウザのような参照履歴を組み合わせ、ドキュメントを「一枚ずつ開く」のではなく、**横断し、比較し、行き来する**ための道具です。
+It is more than a Markdown previewer. It combines the **buffer / window / frame** model that comes from Emacs with a browser-like reference history, so that instead of opening documents "one at a time" you can **move across them, compare them and go back and forth**.
 
-**状態:** v0.1.2(2026-10-19)。関係者への非公開の配布の段階で、フィードバックを集めています。Developer ID署名・公証済みのUniversal(arm64 + x86_64)ビルドで、macOS 14以上が対象です。名称の商標の確認の結果、一般公開は行わず、希望者への限定的な配布にとどめています(公開に必要な手続きは、準備として実施します)。
+**Status:** v0.1.2 (2026-10-19). It is in a limited distribution stage and feedback is being collected. The builds are Developer ID signed and notarized Universal (arm64 + x86_64) builds, and macOS 14 or later is required. Because of the result of a trademark check on the name, the project is not made public; it is distributed only to people who ask for it (the steps needed for a public release are still carried out as preparation).
 
-## 名前の由来
+## Where the name comes from
 
-**HyperBuf** は、**Hyper**text(相互にリンクされた文書)と、(Emacs の)**Buf**fer を合わせた名前です。リンクでつながったたくさんの文書を、Emacs の buffer のように、気軽に開き、切り替え、行き来する、という意味を込めています。
+**HyperBuf** combines **Hyper**text (documents linked to each other) and (Emacs) **Buf**fer. It stands for opening, switching between and moving around many linked documents as casually as buffers in Emacs.
 
 ## Why HyperBuf?
 
-Markdownビューアは数多く存在します。しかし、技術者が数十〜数百の相互参照された設計文書を読む際の操作性、拡張記法の再現性、キーボードでの自在な移動を一貫して重視した製品には、まだ挑戦の余地があります。
+There are many Markdown viewers. But there is still room for one that consistently values what engineers need when they read dozens to hundreds of cross-referenced design documents: operability, faithful rendering of extended syntax, and free movement from the keyboard.
 
-HyperBufは、ハッカー文化に根差した **使い込める道具** を目指します。表面的なレトロ趣味ではなく、予測可能な操作、透明性、構成可能性、既存のツールとの共存を重視します。
+HyperBuf aims to be **a tool you can live in**, rooted in hacker culture. Not retro for its own sake, but predictable operation, transparency, configurability and coexistence with existing tools.
 
 ## Principles
 
-- **Keyboard first. Mouse optional.** — 主要な閲覧操作はキーボードで完結する。マウス操作も排除しない。
-- **No tabs. Just buffers.** — ドキュメントの実体（buffer）と表示領域（window）を分離する。
-- **Navigation is a first-class feature.** — 文書間の参照、戻る／進む、見出しジャンプ、検索を中心機能として設計する。
-- **Files are yours.** — プレーンなMarkdownと既存のディレクトリ構造を尊重し、独自形式への移行を要求しない。
-- **Render what engineers write.** — GFM、SVG、数式、図表、コードなど、実務で使われる表現への対応を重視する。
-- **Extensible by design.** — 拡張しやすく、設定や動作が理解できる構造を目指す。
-- **Local first.** — 基本的な閲覧はオフラインで完結し、意図しない外部通信を行わない。
-- **Mac outside, Emacs inside.** — メニューバーやダイアログは macOS の流儀、フレームの中（キー操作・モードライン・ミニバッファ）はEmacsの流儀で作る。アプリ自身の文言は英語に固定し（ローカライズしない）、扱う文書やファイル名は国際化されている。詳細は [docs/dev/ui-conventions.md](docs/dev/ui-conventions.md)。
+- **Keyboard first. Mouse optional.** — The main reading operations can be done entirely from the keyboard. The mouse is not excluded either.
+- **No tabs. Just buffers.** — Separate the document itself (buffer) from the area that shows it (window).
+- **Navigation is a first-class feature.** — References between documents, Back / Forward, heading jumps and search are designed as core features.
+- **Files are yours.** — Respect plain Markdown and the existing directory structure; never require a move to a proprietary format.
+- **Render what engineers write.** — Emphasize support for what is used in practice: GFM, SVG, math, diagrams, code.
+- **Extensible by design.** — Aim for a structure that is easy to extend and whose settings and behavior can be understood.
+- **Local first.** — Basic reading works offline, and there is no unintended network traffic.
+- **Mac outside, Emacs inside.** — The menu bar and dialogs follow macOS conventions; inside the frame (key bindings, mode line, minibuffer) follows Emacs conventions. The text the app itself shows is fixed to English (not localized), while the documents and file names it handles are fully international. See [docs/dev/ui-conventions.md](docs/dev/ui-conventions.md).
 
 ## Features
 
-### 閲覧とナビゲーション
+### Reading and navigation
 
-- **buffer / window / frame。** 開いた文書（buffer）と表示領域（window）を分け、同じbufferを複数windowに表示して、それぞれ独立した閲覧位置を持てる。frame（macOSのウィンドウ）は独立した作業場で、`Cmd-1`〜`Cmd-9` で切り替える。詳細は [docs/dev/buffer-model.md](docs/dev/buffer-model.md)、[docs/dev/interaction-model.md](docs/dev/interaction-model.md)。
-- **参照履歴。** Back / Forward（`C-b` / `C-f`）は参照履歴の前後移動で、リンクや見出しジャンプ、`C-x b` によるbuffer切替も履歴に積まれる。履歴はwindowごとで、window分割時に複製される。
-- **プロジェクトを選ばない。** 現在のbufferのディレクトリ（Emacsの `default-directory`）を基準に、ファイルを開き、そのディレクトリ以下を一覧・全文検索する。`.git` などのあるディレクトリ（プロジェクト・ルート）以下を対象にするコマンドもある。
-- ファイル一覧、ファイル名の絞り込み、見出しナビゲーション、文書内検索、全文検索。検索結果は仮想bufferに出る。
-- 検索やbuffer選択などの入力は、ダイアログではなくframe下部のミニバッファで行う。キー割り当ては `config.json` で変更できる。
-- セッション（分割配置、参照履歴、閲覧位置）をframeごとに保存し、次回の起動で復元する。詳細は [docs/dev/session-restore.md](docs/dev/session-restore.md)。
+- **buffer / window / frame.** Separate the opened document (buffer) from the area that shows it (window); show the same buffer in several windows, each with its own reading position. A frame (a macOS window) is an independent workspace, switched with `Cmd-1` to `Cmd-9`. See [docs/dev/buffer-model.md](docs/dev/buffer-model.md) and [docs/dev/interaction-model.md](docs/dev/interaction-model.md).
+- **Reference history.** Back / Forward (`C-b` / `C-f`) move through the reference history; following links, heading jumps and buffer switches with `C-x b` are all pushed onto it. The history is per window and is copied when a window is split.
+- **No project to choose.** Everything is based on the directory of the current buffer (Emacs `default-directory`): files are opened from there and the tree below it is listed and searched. Some commands work on the project root (the nearest directory with `.git` or similar).
+- File list, file name filtering, heading navigation, search in the document and full-text search. Search results appear in a virtual buffer.
+- Input such as search or buffer selection is done in the minibuffer at the bottom of the frame, not in dialogs. Key bindings can be changed in `config.json`.
+- The session (window layout, reference history, reading position) is saved per frame and restored at the next launch. See [docs/dev/session-restore.md](docs/dev/session-restore.md).
 
-### レンダリング
+### Rendering
 
-- GitHub Flavored Markdown（GFM）とGitHubに準じた表示スタイル。
-- ローカルの画像（SVGを含む）、KaTeXによる数式、Mermaidの図、約90言語のシンタックスハイライト（[docs/user/syntax-highlighting.md](docs/user/syntax-highlighting.md)）。
-- 図のエラーは文書全体を止めず、その場所に表示する。
+- GitHub Flavored Markdown (GFM) with a GitHub-like style.
+- Local images (including SVG), math with KaTeX, Mermaid diagrams, and syntax highlighting for about 90 languages ([docs/user/syntax-highlighting.md](docs/user/syntax-highlighting.md)).
+- A diagram error does not stop the whole document; it is shown in place.
 
-### 開発ワークフローとの連携
+### Integration with the development workflow
 
-- Emacsやコーディングエージェントが更新したファイルを再読み込みし、閲覧位置を保つ。
-- `hyperbuf` コマンドと、Emacs連携（`emacs/`）から、ファイル・行・見出しを指定して開ける。ビューアで指した場所を、Emacsで正確に編集する連携もある（誤った場所を黙って編集させないよう、照合してから移動する）。仕様は [docs/dev/integration-protocol.md](docs/dev/integration-protocol.md)、[docs/dev/edit-location.md](docs/dev/edit-location.md)。
+- Reload files updated by Emacs or by coding agents, keeping the reading position.
+- Open a file at a line or heading from the `hyperbuf` command and from the Emacs integration (`emacs/`). There is also an integration that lets you edit exactly the place you pointed at in the viewer in Emacs (it verifies the location before moving, so that a wrong place is never edited silently). See [docs/dev/integration-protocol.md](docs/dev/integration-protocol.md) and [docs/dev/edit-location.md](docs/dev/edit-location.md).
 
-## はじめかた
+## Getting started
 
-ダウンロードした `.dmg` を開き、`HyperBuf.app` を `Applications` に移します。インストールと基本の操作は [docs/user/getting-started.md](docs/user/getting-started.md)（`.dmg` にも `README.md` として入っています）。
+Open the downloaded `.dmg` and move `HyperBuf.app` to `Applications`. Installation and the basic operations are in [docs/user/getting-started.md](docs/user/getting-started.md) (also included in the `.dmg` as `README.md`).
 
-### 主なキー
+### Main keys
 
 | Key | Command | Intent |
 | --- | --- | --- |
-| `C-x C-f` | `find-file` | ファイルを開く（基準のディレクトリから始まるパス補完） |
-| `C-x p f` | `project-find-file` | プロジェクト・ルート以下の文書を一覧にして開く |
-| `C-x b` | `switch-buffer` | 表示するbufferを切り替える |
-| `C-b` / `C-f` | `back` / `forward` | 参照履歴を前後移動 |
-| `C-a` / `C-e` | `beginning-of-history` / `end-of-history` | 参照履歴の先頭 / 最後へ移動 |
-| `C-s` / `C-r` | `isearch-forward` / `isearch-backward` | 文書内のインクリメンタル検索 |
-| `M-s g` / `C-x p g` | `search-project` / `project-find-regexp` | ディレクトリ以下 / プロジェクト・ルート以下の全文検索 |
-| `C-x 2` / `C-x 3` / `C-x 0` / `C-x 1` / `C-x o` | `split-below` ほか | windowの分割・閉じる・移動 |
-| `C-x 5 2` / `Cmd-1`…`Cmd-9` | `make-frame` ほか | frameの作成・切り替え |
-| `M-x` | `execute-command` | 名前からコマンドを実行 |
-| `C-h b` | `describe-bindings` | キー割り当ての一覧 |
+| `C-x C-f` | `find-file` | Open a file (path completion starting at the base directory) |
+| `C-x p f` | `project-find-file` | List and open the documents under the project root |
+| `C-x b` | `switch-buffer` | Switch the buffer that is shown |
+| `C-b` / `C-f` | `back` / `forward` | Move back / forward in the reference history |
+| `C-a` / `C-e` | `beginning-of-history` / `end-of-history` | Jump to the first / last entry of the reference history |
+| `C-s` / `C-r` | `isearch-forward` / `isearch-backward` | Incremental search in the document |
+| `M-s g` / `C-x p g` | `search-project` / `project-find-regexp` | Full-text search under the base directory / under the project root |
+| `C-x 2` / `C-x 3` / `C-x 0` / `C-x 1` / `C-x o` | `split-below` and others | Split, close and move between windows |
+| `C-x 5 2` / `Cmd-1`…`Cmd-9` | `make-frame` and others | Create and switch frames |
+| `M-x` | `execute-command` | Run a command by name |
+| `C-h b` | `describe-bindings` | List the key bindings |
 
-キー割り当ての全体は [docs/user/keybindings.md](docs/user/keybindings.md)（コードから自動生成）、設定の方法は [docs/user/configuration.md](docs/user/configuration.md)。
+All key bindings are in [docs/user/keybindings.md](docs/user/keybindings.md) (generated from the code); how to configure them is in [docs/user/configuration.md](docs/user/configuration.md).
 
-## ドキュメント
+## Documentation
 
-| 場所 | 対象 | 内容 |
+| Location | Audience | Contents |
 | --- | --- | --- |
-| [docs/user/](docs/user/) | 利用者 | はじめかた、キー割り当て、設定、シンタックスハイライトの対応言語、サードパーティのライセンス |
-| [docs/dev/](docs/dev/) | 開発者 | 現行の設計と仕様（アーキテクチャ、buffer / window / frame、アクセス判定、連携プロトコル、リリース） |
-| [docs/history/](docs/history/) | 開発の経緯 | PoCの結果、移行計画、計画変更ログ |
+| [docs/user/](docs/user/) | Users | Getting started, key bindings, configuration, languages supported by syntax highlighting, third-party licenses |
+| [docs/dev/](docs/dev/) | Developers | The current design and specification (architecture, buffer / window / frame, access rules, integration protocol, release) |
+| [docs/history/](docs/history/) | Development history | PoC results, the migration plan, the plan change log (mostly in Japanese) |
 
-構成と技術選定は [docs/dev/architecture.md](docs/dev/architecture.md)。変更履歴は [CHANGELOG.md](CHANGELOG.md)。
+For the structure and the technology choices see [docs/dev/architecture.md](docs/dev/architecture.md). For the change history see [CHANGELOG.md](CHANGELOG.md).
 
 ## Non-goals
 
-- フル機能のMarkdownエディタを作ること。編集はEmacsなど既存のエディタに委ねる。
-- 独自のノート保存形式、同期サービス、クラウドアカウントを必須にすること。
-- あらゆるMarkdown方言やプラグインを初日から完全サポートすること。
-- Gitクライアント、IDE、ナレッジ管理サービスの機能を丸ごと内包すること。
-- 見た目だけをEmacs風にして、操作モデルの本質を再現しないこと。
+- Building a full-featured Markdown editor. Editing is left to existing editors such as Emacs.
+- Requiring a proprietary note format, a sync service or a cloud account.
+- Fully supporting every Markdown dialect and plugin from day one.
+- Including whole Git clients, IDEs or knowledge-management services.
+- Making the look Emacs-like without reproducing the essence of the interaction model.
 
 ## Architecture
 
-macOS向けのシェル（SwiftUI + WKWebView）と、OSに依存しない共通のWebコア（TypeScript。unified / remark / rehype、KaTeX、Mermaid、starry-night）で構成します。シェルとWebコアの境界は `hyperbufHost` の契約だけです。他OSへ移植するときは、そのOSに最適なフレームワークでシェルを書き、Webコアを再利用します。選定の根拠と未評価の候補は [docs/dev/architecture.md](docs/dev/architecture.md)。
+HyperBuf consists of a macOS shell (SwiftUI + WKWebView) and an OS-independent shared Web core (TypeScript; unified / remark / rehype, KaTeX, Mermaid, starry-night). The only boundary between the shell and the Web core is the `hyperbufHost` contract. To port it to another OS, write a shell with the best framework for that OS and reuse the Web core. The reasons for the choices and the candidates not yet evaluated are in [docs/dev/architecture.md](docs/dev/architecture.md).
 
 ## Security baseline
 
-ローカルMarkdownも、外部リポジトリやAIエージェントが生成したものなら信頼できない入力として扱います。
+Local Markdown is treated as untrusted input when it comes from an external repository or was generated by an AI agent.
 
-- HTML/SVGや図表エンジンのスクリプト実行・外部参照を制限する。
-- ローカルファイルへのアクセス範囲と、外部コマンドの実行権限を明示的に管理する。
-- 外部への通信は原則として無効または利用者が把握できる形にする。
-- 拡張機構には権限と信頼境界を設ける。
+- Restrict script execution and external references in HTML/SVG and diagram engines.
+- Manage explicitly which local files may be accessed and which external commands may be run.
+- External network access is disabled in principle, or visible to the user.
+- Extension mechanisms get permissions and trust boundaries.
 
-実現方法は [docs/dev/architecture.md](docs/dev/architecture.md) §4、[docs/dev/file-access.md](docs/dev/file-access.md)。
+How this is realized: [docs/dev/architecture.md](docs/dev/architecture.md) §4 and [docs/dev/file-access.md](docs/dev/file-access.md).
 
 ## Open questions
 
-- 画像（SVGを含む）の拡大・縮小・パン操作。
-- 他OSへ移植する場合のシェル（macOSはSwiftUI + WKWebViewに決定済み。他OSは各プラットフォームに最適なフレームワークで、共通のWebコアを再利用する方針）。
-- コピーのためのテキスト選択をキーボードでどう行うか（閲覧画面へのカーソル表示は導入しない方向で、別途検討）。
-- GitHub互換表示の対象範囲をどう定義するか。
-- 図表プラグインをどの権限境界で実行するか（Graphviz等の外部コマンドを使う場合）。
-- 大きな文書の部分更新とスクロール位置維持をどう実現するか。
-- メモリ使用量の確認（リークの有無と内訳）。
-- Back / Forward の履歴粒度（同一文書内の連続したアンカー移動を1エントリにまとめるか）。
-- `M-f` / `M-b` の割り当て。
+- Zooming and panning of images (including SVG).
+- The shell for porting to other OSes (the macOS shell is decided: SwiftUI + WKWebView; for other OSes the policy is to use the best framework of each platform and reuse the shared Web core).
+- How to select text for copying from the keyboard (a cursor in the reading view will not be introduced; to be examined separately).
+- How to define the scope of GitHub-compatible rendering.
+- In which permission boundary diagram plugins run (when external commands such as Graphviz are used).
+- How to realize partial updates of large documents while keeping the scroll position.
+- A check of memory usage (leaks and breakdown).
+- The granularity of Back / Forward history (whether consecutive anchor moves within one document become one entry).
+- The assignment of `M-f` / `M-b`.
 
 ## Contributing and security
 
-バグ報告や要望は Issue で歓迎します。Pull Request は、先に Issue で相談してください。手順は [CONTRIBUTING.md](CONTRIBUTING.md)。脆弱性の報告は、公開の Issue ではなく、[SECURITY.md](SECURITY.md) の窓口へお願いします。
+Bug reports and requests are welcome as issues. Please discuss a pull request in an issue first; the steps are in [CONTRIBUTING.md](CONTRIBUTING.md). Please report vulnerabilities through the channel in [SECURITY.md](SECURITY.md), not in a public issue.
 
 ## License
 
-Apache-2.0（[LICENSE](LICENSE)、[NOTICE](NOTICE)）。`emacs/` は GPL-3.0-or-later（[emacs/LICENSE](emacs/LICENSE)）です。
+Apache-2.0 ([LICENSE](LICENSE), [NOTICE](NOTICE)). `emacs/` is GPL-3.0-or-later ([emacs/LICENSE](emacs/LICENSE)).
 
 ---
 

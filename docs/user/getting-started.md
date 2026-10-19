@@ -1,53 +1,53 @@
-# HyperBuf を使いはじめる
+# Getting started with HyperBuf
 
 > **Read like a hacker.**
 >
 > **No tabs. Just buffers.**
 
-HyperBuf は、大量の Markdown ドキュメントを、キーボード主体で自在に読み進めるための macOS 向けドキュメントビューアです(エディタではありません)。
+HyperBuf is a document viewer for macOS (not an editor) for reading through a large number of Markdown documents freely, mainly with the keyboard.
 
-Emacs に由来する **buffer / window / frame** の考え方と、Web ブラウザのような参照履歴を組み合わせ、ドキュメントを「一枚ずつ開く」のではなく、**横断し、比較し、行き来する**ための道具です。
+It combines the **buffer / window / frame** model that comes from Emacs with a browser-like reference history. It is a tool for **moving across, comparing and going back and forth between** documents, rather than opening them one at a time.
 
-## インストール
+## Installation
 
-1. このディスクイメージの `HyperBuf.app` を、`Applications` フォルダにドラッグします。
-2. `HyperBuf.app` を起動します。署名・公証済みなので、そのまま開けます。
-3. `C-x C-f`(Control + x、続けて Control + f)で、読みたい Markdown を開きます。
+1. Drag `HyperBuf.app` from this disk image to the `Applications` folder.
+2. Launch `HyperBuf.app`. It is signed and notarized, so it opens as is.
+3. Open the Markdown you want to read with `C-x C-f` (Control + x, then Control + f).
 
-必要な環境: macOS 14(Sonoma)以上(Apple シリコン・Intel のどちらも)。
+Requirements: macOS 14 (Sonoma) or later (both Apple silicon and Intel).
 
-## 考え方
+## Concepts
 
-- **buffer / window / frame。** 開いた文書が buffer、それを表示する領域が window、macOS のウィンドウが frame です。同じ buffer を複数の window に表示でき、それぞれが独立した閲覧位置を持ちます。frame は独立した作業場で、`Cmd-1`〜`Cmd-9` で切り替え、`C-x 5 2` で作ります。
-- **戻る / 進む(`C-b` / `C-f`)は、参照履歴の前後移動**です。リンクや見出しジャンプ、buffer の切り替えも、履歴に積まれます。
-- **「プロジェクトを選ぶ」操作はありません。** いま見ている文書のディレクトリ(Emacs の `default-directory`)を基準に、ファイルを開き、そのディレクトリ以下を一覧・全文検索します。
-- 検索や buffer の選択などの入力は、ダイアログではなく、frame 下部のミニバッファで行います。
+- **buffer / window / frame.** An opened document is a buffer, the area that displays it is a window, and a macOS window is a frame. The same buffer can be shown in several windows, and each keeps its own reading position. A frame is an independent workspace: switch between them with `Cmd-1` to `Cmd-9`, and create one with `C-x 5 2`.
+- **Back / Forward (`C-b` / `C-f`) move through the reference history.** Following links, jumping to headings and switching buffers are all pushed onto the history.
+- **There is no "choose a project" step.** The directory of the document you are viewing (Emacs's `default-directory`) is the base: files are opened relative to it, and everything under that directory can be listed and full-text searched.
+- Input such as searching or choosing a buffer is done not in dialogs but in the minibuffer at the bottom of the frame.
 
-## 基本の操作
+## Basic operations
 
-| キー                                  | 動作                                                               |
-| ------------------------------------- | ------------------------------------------------------------------ |
-| `C-x C-f`                             | ファイルを開く(パスの補完つき)                                     |
-| `C-x p f`                             | いまのディレクトリ(プロジェクトのルート)以下の文書を一覧にして開く |
-| `C-x b`                               | 開いている文書(buffer)を切り替える                                 |
-| `C-s` / `C-r`                         | 文書内を検索する                                                   |
-| `M-s g` / `C-x p g`                   | ディレクトリ以下 / プロジェクトのルート以下を全文検索する          |
-| `TAB` / `RET`                         | リンクを選ぶ / たどる                                              |
-| `C-b` / `C-f`(または `←` / `→`)       | 戻る / 進む(参照の履歴)                                            |
-| `C-a` / `C-e`                         | 履歴の先頭 / 最後へ移る                                            |
-| `C-c j`                               | 見出しを選んで移動する                                             |
-| `C-x 2` / `C-x 3` / `C-x 0` / `C-x o` | window の分割・閉じる・移動                                        |
-| `C-x ^` / `C-x }` / `C-x {` / `C-x -` | window の大きさを変える(モードラインのドラッグでも)                |
-| `M-x`                                 | コマンド名で実行                                                   |
-| `C-h b`                               | キー割り当ての一覧                                                 |
+| Key                                   | Action                                                                 |
+| ------------------------------------- | ---------------------------------------------------------------------- |
+| `C-x C-f`                             | Open a file (with path completion)                                     |
+| `C-x p f`                             | List and open documents under the current directory (the project root) |
+| `C-x b`                               | Switch among open documents (buffers)                                  |
+| `C-s` / `C-r`                         | Search within the document                                             |
+| `M-s g` / `C-x p g`                   | Full-text search under the directory / under the project root          |
+| `TAB` / `RET`                         | Select a link / follow it                                              |
+| `C-b` / `C-f` (or `←` / `→`)          | Back / Forward (reference history)                                     |
+| `C-a` / `C-e`                         | Go to the start / end of the history                                   |
+| `C-c j`                               | Choose a heading and jump to it                                        |
+| `C-x 2` / `C-x 3` / `C-x 0` / `C-x o` | Split, close and move between windows                                  |
+| `C-x ^` / `C-x }` / `C-x {` / `C-x -` | Resize windows (dragging the mode line also works)                     |
+| `M-x`                                 | Run a command by name                                                  |
+| `C-h b`                               | List of key bindings                                                   |
 
-`M-` は Option キーです。キー割り当ての全一覧は、アプリの中で `C-h b` を押すと見られます。
-設定(キー割り当て、ファイルのアクセス範囲、外部リンクなど)は、
-`~/Library/Application Support/HyperBuf/config.json` に書きます(アプリメニューの `Show Config File in Finder`から、Finder で開けます)。設定できる項目の一覧は、リポジトリの `docs/user/configuration.md` にあります。
+`M-` is the Option key. You can see the full list of key bindings by pressing `C-h b` in the app.
+Settings (key bindings, file access scope, external links and so on) are written in
+`~/Library/Application Support/HyperBuf/config.json` (you can open it in Finder from `Show Config File in Finder` in the app menu). The list of available settings is in `docs/user/configuration.md` in the repository.
 
-## コマンドラインから開く(`hyperbuf`)
+## Opening from the command line (`hyperbuf`)
 
-`hyperbuf` コマンドは、`HyperBuf.app` の中に入っています。ターミナルから使うには、パスの通ったところにリンクを作ります。
+The `hyperbuf` command is inside `HyperBuf.app`. To use it from a terminal, create a link in a directory on your path.
 
 ```bash
 sudo mkdir -p /usr/local/bin
@@ -55,36 +55,36 @@ sudo ln -s /Applications/HyperBuf.app/Contents/Resources/bin/hyperbuf /usr/local
 ```
 
 ```bash
-hyperbuf README.md            # 文書を開く
-hyperbuf docs/plan.md:120     # 120 行目を開く
+hyperbuf README.md            # open a document
+hyperbuf docs/plan.md:120     # open at line 120
 ```
 
-## Emacs から使う(`emacs/`)
+## Using it from Emacs (`emacs/`)
 
-`emacs/` フォルダの `hyperbuf.el` を、Emacs の `load-path` の通ったところに置きます(Emacs 29.1 以上)。
+Put `hyperbuf.el` from the `emacs/` folder somewhere on Emacs's `load-path` (Emacs 29.1 or later).
 
 ```elisp
-(add-to-list 'load-path "~/.emacs.d/lisp")   ; hyperbuf.el を置いた場所
+(add-to-list 'load-path "~/.emacs.d/lisp")   ; where you put hyperbuf.el
 (require 'hyperbuf)
 (global-set-key (kbd "C-c h o") #'hyperbuf-open-file)
 ```
 
-`hyperbuf-open-file` は、いま見ているファイルを、現在の行つきで HyperBuf に開きます(Emacs → HyperBuf)。
+`hyperbuf-open-file` opens the file you are viewing in HyperBuf, at the current line (Emacs → HyperBuf).
 
-### ビューアから Emacs で編集する(右クリックの `Edit in Emacs`)
+### Editing in Emacs from the viewer (right-click `Edit in Emacs`)
 
-ビューアで読んでいて、直したい箇所を見つけたら、その場所を、Emacs で開けます(HyperBuf → Emacs)。次の準備をします。
+When you find a place you want to fix while reading in the viewer, you can open that place in Emacs (HyperBuf → Emacs). Set it up as follows.
 
-1. **Emacs でサーバーを起動する。** `init.el` に、次を足します(すでに使っているなら不要)。
+1. **Start the server in Emacs.** Add the following to `init.el` (not needed if you already use it).
 
    ```elisp
    (require 'server)
    (unless (server-running-p) (server-start))
    ```
 
-   Emacs を起動したまま、`M-x server-start` でも構いません。
+   Running `M-x server-start` in a running Emacs also works.
 
-2. **HyperBuf に、呼び出すコマンドを教える。** `~/Library/Application Support/HyperBuf/config.json` に書きます(アプリメニューの `Show Config File in Finder`で、Finder に出せます。ファイルがなければ作ります)。
+2. **Tell HyperBuf which command to call.** Write it in `~/Library/Application Support/HyperBuf/config.json` (you can show it in Finder with `Show Config File in Finder` in the app menu; create the file if it does not exist).
 
    ```json
    {
@@ -98,23 +98,23 @@ hyperbuf docs/plan.md:120     # 120 行目を開く
    }
    ```
 
-   `emacsclient` のパスは、環境で違います。`which emacsclient` で確かめてください(Homebrew の Emacs なら `/opt/homebrew/bin/emacsclient`(Apple シリコン)か `/usr/local/bin/emacsclient`(Intel)。Emacs.app なら `/Applications/Emacs.app/Contents/MacOS/bin/emacsclient` など)。設定を変えたら、HyperBuf を再起動します。
+   The path of `emacsclient` differs by environment. Check it with `which emacsclient` (for Homebrew's Emacs, `/opt/homebrew/bin/emacsclient` (Apple silicon) or `/usr/local/bin/emacsclient` (Intel); for Emacs.app, something like `/Applications/Emacs.app/Contents/MacOS/bin/emacsclient`). After changing the settings, restart HyperBuf.
 
-3. **使う。** ビューアで、直したい文字列を選択して、**右クリック → `Edit in Emacs`**(または `C-c e`)を選びます。Emacs が前面に出て、その位置にカーソルが移ります。
+3. **Use it.** In the viewer, select the string you want to fix and choose **right-click → `Edit in Emacs`** (or `C-c e`). Emacs comes to the front and the cursor moves to that position.
 
-誤った場所を黙って編集させないために、移動の前に、必ず照合します。ファイルが、ビューアで見ていた内容から変わっているとき、位置の文字列が合わないときは、移動せずに知らせます。同じ文言が複数あって位置が決められないときは、ブロックの先頭へ移動して、そのことを知らせます。
+To avoid silently editing the wrong place, the position is always verified before moving. If the file has changed since what you saw in the viewer, or the string at the position does not match, Emacs does not move and tells you. If the same wording appears several times and the position cannot be determined, Emacs moves to the start of the block and tells you so.
 
-詳しくは、`emacs/README.md` を見てください。
+For details, see `emacs/README.md`.
 
-## 更新内容
+## What's changed
 
-版ごとの変更は、`CHANGELOG.md`(英語)にあります。ディスクイメージの中と、リポジトリのルートにあります。
+Changes for each version are in `CHANGELOG.md` (in English). It is in the disk image and at the root of the repository.
 
-## ライセンス
+## Licenses
 
-- HyperBuf 本体: Apache-2.0(`LICENSE.txt`、`NOTICE.txt`)。同梱するサードパーティのライセンスは、アプリの中(`HyperBuf.app/Contents/Resources/THIRD-PARTY-NOTICES.txt`)にあります。
-- `emacs/`(Emacs 連携): GPL-3.0-or-later(`emacs/LICENSE`)。アプリとは別のプログラムとして、同じディスクイメージに入れています。
+- HyperBuf itself: Apache-2.0 (`LICENSE.txt`, `NOTICE.txt`). The third-party licenses that are bundled are inside the app (`HyperBuf.app/Contents/Resources/THIRD-PARTY-NOTICES.txt`).
+- `emacs/` (the Emacs integration): GPL-3.0-or-later (`emacs/LICENSE`). It is included in the same disk image as a program separate from the app.
 
-## フィードバック
+## Feedback
 
-不具合や要望は、配布元の方にお知らせください。
+Please report problems and requests to the person who gave you HyperBuf.

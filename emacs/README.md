@@ -5,7 +5,7 @@ Emacs integration for HyperBuf (a keyboard-driven Markdown viewer for macOS). It
 - **Emacs → HyperBuf:** open the file you are editing in HyperBuf, at the current line.
 - **HyperBuf → Emacs:** mark a place in the viewer ("Edit in Emacs") and jump to exactly that place in Emacs, after verifying that it is the right one.
 
-Requires Emacs 29.1 or later. Specification (in Japanese): [`docs/dev/integration-protocol.md`](../docs/dev/integration-protocol.md) and [`docs/dev/edit-location.md`](../docs/dev/edit-location.md).
+Requires Emacs 29.1 or later. Specification: [`docs/dev/integration-protocol.md`](../docs/dev/integration-protocol.md) and [`docs/dev/edit-location.md`](../docs/dev/edit-location.md).
 
 ## Installation
 
@@ -50,7 +50,7 @@ On success, the range is highlighted briefly and the text the viewer pointed at 
 Emacs moves to the start of the block and says that the location is ambiguous and the whole block is shown (it never moves on a guess).
 
 To let the viewer call Emacs, write a fixed command in `~/Library/Application Support/HyperBuf/config.json`
-(the document content and location are not passed as arguments; see `docs/dev/edit-location.md` section 7, in Japanese).
+(the document content and location are not passed as arguments; see `docs/dev/edit-location.md` section 7).
 Emacs must be running a server (`(server-start)`).
 
 ```json

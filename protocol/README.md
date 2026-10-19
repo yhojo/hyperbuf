@@ -1,39 +1,39 @@
 # protocol/
 
-HyperBuf の連携プロトコル(Unix ドメインソケット・URL スキーム)の、機械可読な定義と、適合テスト用のデータ。
-仕様の本文は [`docs/dev/integration-protocol.md`](../docs/dev/integration-protocol.md)(逆方向の編集位置の連携は [`docs/dev/edit-location.md`](../docs/dev/edit-location.md))。
+The machine-readable definition of HyperBuf's integration protocol (Unix domain socket and URL scheme), and data for conformance tests.
+The specification itself is [`docs/dev/integration-protocol.md`](../docs/dev/integration-protocol.md) (the reverse direction, the edit location, is [`docs/dev/edit-location.md`](../docs/dev/edit-location.md)).
 
-| 場所        | 内容                                                                                                                                                                                                    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `schema/`   | 要求・応答・位置(`location`: エディタ連携)の JSON Schema(2020-12)                                                                                                                                       |
-| `examples/` | **共有の例。** 同じ例を、Swift のライブラリ・`cli/`・`emacs/`・JSON Schema のテストが使い、実装どうしの食い違いを検出する(下の表)                                                                       |
-| `swift/`    | アプリ(サーバー)と `cli/`(クライアント)が共有する Swift のライブラリ。`HyperBufProtocol`(型、`open` の検証、URL、JSON Lines の切り出し、ソケットのパス)と `HyperBufIPC`(`SocketServer`・`SocketClient`) |
-| `test/`     | JSON Schema と `examples/` が食い違っていないか、文書の表がスキーマと一致しているかの検査(Node + ajv)                                                                                                   |
+| Location    | Contents                                                                                                                                                                                                       |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `schema/`   | JSON Schema (2020-12) for requests, responses and locations (`location`: the editor integration)                                                                                                               |
+| `examples/` | **Shared examples.** The Swift library, `cli/`, `emacs/` and the JSON Schema tests use the same examples, so that differences between implementations are detected (see the table below)                       |
+| `swift/`    | The Swift libraries shared by the app (server) and `cli/` (client): `HyperBufProtocol` (types, `open` validation, URLs, JSON Lines framing, socket path) and `HyperBufIPC` (`SocketServer` and `SocketClient`) |
+| `test/`     | Checks that the JSON Schema and `examples/` do not disagree, and that the tables in the documents match the schema (Node + ajv)                                                                                |
 
-## 共有の例
+## Shared examples
 
-| ファイル               | 内容                                                                                | 使うもの                                                     |
-| ---------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `open-validation.json` | `open` 要求の検証(受け入れる・拒否する)                                             | JSON Schema のテスト、`swift/`(`HyperBufProtocol`)、`emacs/` |
-| `url.json`             | 要求と `hyperbuf://` URL の相互変換(`emacs/` は、起動用の `ping` の URL だけを使う) | JSON Schema のテスト、`swift/`(`HyperBufProtocol`)、`emacs/` |
-| `framing.json`         | JSON Lines の切り出し(分割して届く入力、1 回に複数行、空行など)                     | `swift/`(`HyperBufProtocol`)                                 |
-| `cli-args.json`        | `hyperbuf` CLI の引数の解釈                                                         | `cli/`                                                       |
-| `location.json`        | 位置のペイロード(`get-location` の `result.location`)                               | JSON Schema のテスト、`swift/`(`HyperBufProtocol`)           |
-| `location-check.json`  | エディタ側の照合の規則([edit-location.md](../docs/dev/edit-location.md) §6)         | JSON Schema のテスト、`emacs/`                               |
+| File                   | Contents                                                                                         | Used by                                                    |
+| ---------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| `open-validation.json` | Validation of `open` requests (accepted and rejected)                                            | JSON Schema tests, `swift/` (`HyperBufProtocol`), `emacs/` |
+| `url.json`             | Conversion between requests and `hyperbuf://` URLs (`emacs/` uses only the `ping` URL to launch) | JSON Schema tests, `swift/` (`HyperBufProtocol`), `emacs/` |
+| `framing.json`         | JSON Lines framing (split input, several lines at once, empty lines, ...)                        | `swift/` (`HyperBufProtocol`)                              |
+| `cli-args.json`        | Parsing of the arguments of the `hyperbuf` CLI                                                   | `cli/`                                                     |
+| `location.json`        | The location payload (`result.location` of `get-location`)                                       | JSON Schema tests, `swift/` (`HyperBufProtocol`)           |
+| `location-check.json`  | The editor-side verification rules ([edit-location.md](../docs/dev/edit-location.md) §6)         | JSON Schema tests, `emacs/`                                |
 
-例を壊すと、使っているすべてのテストが失敗する。
+If you break an example, every test that uses it fails.
 
-## 変更するとき
+## Making changes
 
-新しい操作・フィールド・エラーコードを足すときは、次を同時に更新する。
+When you add a new operation, field or error code, update the following together:
 
-1. `schema/`(正本)。
-2. `examples/`(受け入れる例と拒否する例)。
-3. `docs/dev/integration-protocol.md`(操作とエラーコードの表。`test/docs.test.mjs` がスキーマとの一致を検査する)。位置のペイロードなら `docs/dev/edit-location.md`。
-4. 実装: `swift/`、`cli/`、`emacs/`(`emacs/` は、検証の規則を自前で持つ)。
+1. `schema/` (the source of truth).
+2. `examples/` (examples that are accepted and examples that are rejected).
+3. `docs/dev/integration-protocol.md` (the tables of operations and error codes; `test/docs.test.mjs` checks that they match the schema). For the location payload, `docs/dev/edit-location.md`.
+4. The implementations: `swift/`, `cli/` and `emacs/` (`emacs/` has its own validation rules).
 
-## 検査
+## Checking
 
 ```bash
-scripts/check.sh protocol     # Node(整形・スキーマと例・文書の表)と Swift(protocol/swift)
+scripts/check.sh protocol     # Node (formatting, schema and examples, tables in the documents) and Swift (protocol/swift)
 ```

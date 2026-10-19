@@ -2,6 +2,25 @@
 
 プロジェクトの開始から、PoC を経て、リリース段階に至るまでの**記録**。当時の判断と検証を残すもので、**現在の状態に合わせて書き換えない**。現行の設計と仕様は [docs/dev/](../dev/)、利用者向けの説明は [docs/user/](../user/)。
 
+## Summary (English)
+
+This directory holds **records**: what was examined and decided from the start of the project, through the PoCs, to the release stage. The records are written in Japanese, as they were at the time, and are not rewritten to match the present. The current design and specification are in [docs/dev/](../dev/) (English), and the user documentation is in [docs/user/](../user/) (English).
+
+| Document | What it records |
+| --- | --- |
+| `architecture-evaluation.md` | The architecture evaluation before the PoCs (hypotheses) |
+| `poc-interaction-results.md` | Interaction PoC; the choice of SwiftUI + WKWebView for the macOS shell |
+| `poc-rendering-results.md` | Rendering PoC; the choice of the rendering stack |
+| `poc-navigation-results.md` | Project navigation PoC; search, file watching, virtual buffers |
+| `poc-integration-results.md` | Integration PoC; verification and decisions for the integration protocol |
+| `poc-frames-results.md` | Memory measurements for multiple frames |
+| `license-options.md` | The choice of the license (2026-10-10) |
+| `distribution-decisions.md` | Decisions and investigations while preparing distribution (M8) |
+| `migration-plan.md` | The plan from the PoCs to the real implementation, and the progress of the milestones (M0 to M8) |
+| `plan-change-log.md` | The log of changes to the plans and policies stated in the README |
+
+On 2026-10-19, before the planned publication, the author and committer e-mail address of every commit and tag was replaced by the GitHub noreply address. File contents did not change, but all commit hashes did; the hashes of the PoC branches that appear in these records were updated. The previous history is not published. (The project is finally not made public, because of the result of a trademark check; see `plan-change-log.md`.)
+
 ## 履歴の書き換え(2026-10-19)
 
 ソースの公開に先立って、すべてのブランチとタグのコミットについて、作者・コミッターのメールアドレスを GitHub の noreply アドレスに書き換えた。ファイルの内容は変わっていない(各ブランチの先頭のツリーが、書き換えの前後で同じことを確かめた)が、**コミットのハッシュはすべて変わった**。この README と各文書に出る PoC ブランチのコミットハッシュは、書き換え後のものに直してある。書き換えの前の履歴は、公開しない。

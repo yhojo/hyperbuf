@@ -1,77 +1,77 @@
-# 配布物の仕様
+# Distribution artifact specification
 
-HyperBuf の配布物(`.app`、`.zip`、`.dmg`)が何を含み、どう署名されているか。作り方と手順は [release.md](release.md)。経緯と調査の記録は [distribution-decisions.md](../history/distribution-decisions.md)。
+What the HyperBuf distribution artifacts (`.app`, `.zip`, `.dmg`) contain and how they are signed. How to build them and the procedure are in [release.md](release.md). The background and investigation records are in [distribution-decisions.md](../history/distribution-decisions.md).
 
-## 1. 配布の方式
+## 1. Distribution method
 
-- オープンソース(GitHub)と、**Developer ID 署名 + 公証**の直接配布。**Mac App Store は対象外**。
-- **サンドボックスなし**で設計する(ソケット、外部コマンドの実行、任意のディレクトリの読み取りを、制約なく扱うため)。権限の明示と最小化という方針は変わらない。
-- Bundle ID は `com.yhojo.hyperbuf`。最低の macOS は 14。
+- Open source (GitHub), plus direct distribution with **Developer ID signing and notarization**. The **Mac App Store is out of scope**.
+- Designed **without the sandbox** (so that sockets, running external commands, and reading arbitrary directories can be handled without restriction). The policy of making permissions explicit and minimal is unchanged.
+- The Bundle ID is `com.yhojo.hyperbuf`. The minimum macOS is 14.
 
-## 2. 成果物
+## 2. Artifacts
 
-`scripts/release.sh` が `dist/release/` に作る(置き場所は `HYPERBUF_RELEASE_DIR` で変える)。`<版>` は `app/macos/Sources/HyperBufKit/Version.swift` の `hyperBufVersion`。
+`scripts/release.sh` creates them in `dist/release/` (change the location with `HYPERBUF_RELEASE_DIR`). `<version>` is `hyperBufVersion` in `app/macos/Sources/HyperBufKit/Version.swift`.
 
-| ファイル            | 内容                                                                                            |
-| ------------------- | ----------------------------------------------------------------------------------------------- |
-| `HyperBuf-<版>.zip` | `HyperBuf.app`(署名・公証・ステープル済み)                                                      |
-| `HyperBuf-<版>.dmg` | `HyperBuf.app` と案内、ライセンス、Emacs 連携を含むディスクイメージ(署名・公証・ステープル済み) |
-| `SHA256SUMS`        | 上の 2 つのチェックサム                                                                         |
+| File                     | Content                                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `HyperBuf-<version>.zip` | `HyperBuf.app` (signed, notarized, stapled)                                                                          |
+| `HyperBuf-<version>.dmg` | A disk image containing `HyperBuf.app`, a guide, the licenses and the Emacs integration (signed, notarized, stapled) |
+| `SHA256SUMS`             | Checksums of the two files above                                                                                     |
 
-## 3. 対応するアーキテクチャ
+## 3. Supported architectures
 
-release ビルドは **Universal(arm64 と x86_64)**。Apple Silicon と Intel の Mac の両方で動く(`make-app.sh` が `swift build --arch arm64 --arch x86_64` でビルドする)。
+The release build is **Universal (arm64 and x86_64)**. It runs on both Apple Silicon and Intel Macs (`make-app.sh` builds it with `swift build --arch arm64 --arch x86_64`).
 
-- **最低の macOS は 14。** macOS 13 以前は対象外で、Intel の Mac のうち、macOS 14 に更新できないもの(2017 年の MacBook Pro など)も対象外となる。
-- 配布物が Universal かは、`lipo -archs HyperBuf.app/Contents/MacOS/HyperBuf` が `x86_64 arm64` を示すこと、同梱の CLI(`Contents/Resources/bin/hyperbuf`)も同様であることで確かめる。
-- 開発機が Apple Silicon で Rosetta がないと、x86_64 の部分は実行できない。**Intel の Mac での起動確認は、配布の前に行う**([release.md](release.md) の「まっさらな Mac での確認」)。
-- macOS 27 以降の SDK は、x86_64 を非推奨とする警告を出す。Apple が Intel の Mac のサポートを終えていくため、いずれ arm64 だけに戻す予定。
+- **The minimum macOS is 14.** macOS 13 and earlier are out of scope, and so are Intel Macs that cannot be updated to macOS 14 (a 2017 MacBook Pro, for example).
+- Whether an artifact is Universal is checked by `lipo -archs HyperBuf.app/Contents/MacOS/HyperBuf` showing `x86_64 arm64`, and likewise for the bundled CLI (`Contents/Resources/bin/hyperbuf`).
+- If the development machine is Apple Silicon without Rosetta, the x86_64 part cannot be run. **Verify launching on an Intel Mac before distribution** ("Verification on a clean Mac" in [release.md](release.md)).
+- SDKs for macOS 27 and later emit a warning that deprecates x86_64. Apple is winding down support for Intel Macs, so the build is planned to return to arm64 only eventually.
 
-## 4. 同梱するもの
+## 4. What is bundled
 
-### 4.1 `HyperBuf.app` の中
+### 4.1 Inside `HyperBuf.app`
 
-- `Contents/Resources/bin/hyperbuf`: CLI。`PATH` に通すには、シンボリックリンクを張る(Homebrew cask の `binary` でも張れる)。アプリの実行ファイル(`HyperBuf`)と、大文字小文字を区別しないファイルシステムで衝突しないよう、`MacOS/` ではなく `Resources/bin/` に置く。
-- `LICENSE.txt`、`NOTICE.txt`、`THIRD-PARTY-NOTICES.txt`: サードパーティの著作権表示とライセンスを含む。アプリメニューの `Show Third-Party Licenses` で開く。`THIRD-PARTY-NOTICES.txt` は `make-app.sh` が `core/scripts/licenses.mjs` で生成する(一覧: [third-party-licenses.md](../user/third-party-licenses.md))。
-- Web コア(`Contents/Resources/web`): `core/dist`。
+- `Contents/Resources/bin/hyperbuf`: the CLI. To put it on `PATH`, create a symbolic link (a Homebrew cask `binary` can also create it). It is placed in `Resources/bin/` rather than `MacOS/` so that it does not collide with the app's executable (`HyperBuf`) on a case-insensitive file system.
+- `LICENSE.txt`, `NOTICE.txt`, `THIRD-PARTY-NOTICES.txt`: these include third-party copyright notices and licenses. Open them with `Show Third-Party Licenses` in the app menu. `THIRD-PARTY-NOTICES.txt` is generated by `make-app.sh` with `core/scripts/licenses.mjs` (list: [third-party-licenses.md](../user/third-party-licenses.md)).
+- The Web core (`Contents/Resources/web`): `core/dist`.
 
-### 4.2 `.dmg` の中
+### 4.2 Inside the `.dmg`
 
-- `HyperBuf.app` と、`/Applications` へのリンク。
-- `LICENSE.txt`、`NOTICE.txt`、`CHANGELOG.md`(利用者が更新内容を確認できる)。
-- `README.md`: 利用者向けの案内。元は [getting-started.md](../user/getting-started.md)(概要、インストール、基本の操作、設定、`hyperbuf` コマンドのリンクの作り方、Emacs 連携)で、`release.sh` が `README.md` としてコピーする。単独で読めるよう、相対リンクは使わない。
-- `emacs/`: `hyperbuf.el`、`README.md`、`LICENSE`。`emacs/` は GPL-3.0-or-later で、アプリ(Apache-2.0)とは別のプログラムとして、自身のライセンスを添えて同梱する(集積であり、結合ではない)。
+- `HyperBuf.app` and a link to `/Applications`.
+- `LICENSE.txt`, `NOTICE.txt`, `CHANGELOG.md` (so that users can check what changed).
+- `README.md`: a guide for users. It originates from [getting-started.md](../user/getting-started.md) (overview, installation, basic operations, settings, how to create the link for the `hyperbuf` command, Emacs integration), and `release.sh` copies it as `README.md`. Relative links are not used so that it can be read on its own.
+- `emacs/`: `hyperbuf.el`, `README.md`, `LICENSE`. `emacs/` is GPL-3.0-or-later; it is bundled as a program separate from the app (Apache-2.0), with its own license attached (an aggregate, not a combination).
 
-## 5. 署名の設計
+## 5. Signing design
 
-- **Hardened Runtime**(`--options runtime`)と**セキュアタイムスタンプ**(`--timestamp`)。公証の要件。
-- **エンタイトルメントは付けない。** WebKit のレンダリング(JIT など)は、Apple の WebContent プロセスが行うため、アプリ本体に JIT の許可は要らない。外部コマンド(エディタの呼び出し)の実行、ソケット、ファイルの読み取りは、Hardened Runtime でも制限されない(サンドボックスなし)。
-- 署名の順は、内側(CLI)→ 外側(アプリ)。`--deep` は使わない。`.dmg` にも署名する。
-- 公証は、アプリ(`.zip` にして提出)と `.dmg` のそれぞれに行い、結果をステープルする。
-- 公証の認証情報は、キーチェーンのプロファイルとして保存したものだけを使う。スクリプトは、Apple ID、パスワード、API キーを受け取らない([release.md](release.md))。
+- **Hardened Runtime** (`--options runtime`) and a **secure timestamp** (`--timestamp`). Notarization requirements.
+- **No entitlements are added.** WebKit rendering (JIT and so on) is done by Apple's WebContent process, so the app itself needs no JIT permission. Running external commands (invoking the editor), sockets, and file reads are not restricted even under the Hardened Runtime (no sandbox).
+- The signing order is inside (CLI) to outside (app). `--deep` is not used. The `.dmg` is also signed.
+- Notarization is done for each of the app (submitted as a `.zip`) and the `.dmg`, and the results are stapled.
+- Only the notarization credentials stored as a keychain profile are used. The scripts do not receive an Apple ID, a password or an API key ([release.md](release.md)).
 
-## 6. ビルドの再現性と情報の漏えい対策
+## 6. Build reproducibility and preventing information leaks
 
-- release ビルドは、`-file-prefix-map` で、ソースの絶対パス(`/Users/…`)を `/hyperbuf` に置き換える(`make-app.sh`)。実行ファイルに、ビルドしたマシンのパスを残さない。
-- Web のバンドルとリソースに、個人のパス・秘密情報・ソースマップを含めない。
-- Bundle ID は、意図した公開の識別子である。
+- The release build replaces absolute source paths (`/Users/…`) with `/hyperbuf` using `-file-prefix-map` (`make-app.sh`), so no path of the build machine remains in the executable.
+- The Web bundle and resources contain no personal paths, secrets or source maps.
+- The Bundle ID is an intended public identifier.
 
-## 7. アイコン
+## 7. Icon
 
-- **既定のアイコン:** 「H」。`app/macos/Resources/AppIcon.icns`(確認用に `AppIcon-1024.png`)。HyperBuf の頭文字であり、作者の姓の頭文字でもある。
-- **元の画像:** `app/macos/Resources/source/hyperbuf-icon-original.icns`。暗い角丸の板が画像いっぱいに広がっていて、角の外側に地の色が焼き込まれ、透明な余白がない。macOS のアイコンは、透明な余白がないと、Dock や Finder で、他のアプリより大きく、角に四角い地が見える。
-- **既定のアイコンの作り方:**
+- **Default icon:** "H". `app/macos/Resources/AppIcon.icns` (and `AppIcon-1024.png` for checking). It is the initial of HyperBuf, and also the initial of the author's family name.
+- **Original image:** `app/macos/Resources/source/hyperbuf-icon-original.icns`. A dark rounded plate fills the whole image, the background color is baked in outside the corners, and there is no transparent margin. A macOS icon without a transparent margin looks larger than other apps in the Dock and Finder, and a square background is visible at the corners.
+- **How the default icon is made:**
 
   ```bash
   swift app/macos/scripts/icon-from-image.swift app/macos/Resources/source/hyperbuf-icon-original.icns app/macos/Resources
   ```
 
-  元の画像から、角の外側は透明、周囲に約 10% の余白、影つきの、標準のアイコンを作る(デザインは変えない)。結果(`AppIcon.icns`、`AppIcon-1024.png`)は、リポジトリに置く。
+  From the original image, this makes a standard icon with transparent corners, a margin of about 10% around it, and a shadow (the design is not changed). The results (`AppIcon.icns`, `AppIcon-1024.png`) are committed to the repository.
 
-- **代替のデザイン:** `app/macos/Resources/alternatives/split-windows/`(分割した 2 つの window)。`swift app/macos/scripts/make-icon.swift` が、コードから生成する。既定にはしていない。
-- **差し替え:** `HYPERBUF_ICON=<.icns のパス>` を指定して、`make-app.sh` または `release.sh` を実行する。成果物の置き場所を分けるなら、`HYPERBUF_RELEASE_DIR` も指定する。
-- アイコンの著作物は、リポジトリのほかの部分と同じく、Apache-2.0 で提供する(`LICENSE`)。ただし、商標(名前・ロゴとしての利用)は許諾しない(Apache-2.0 §6)。
+- **Alternative design:** `app/macos/Resources/alternatives/split-windows/` (two split windows). `swift app/macos/scripts/make-icon.swift` generates it from code. It is not the default.
+- **Replacing:** run `make-app.sh` or `release.sh` with `HYPERBUF_ICON=<path to .icns>`. To keep the artifacts in a separate location, also specify `HYPERBUF_RELEASE_DIR`.
+- The icon artwork is provided under Apache-2.0, like the rest of the repository (`LICENSE`). However, trademark rights (use as a name or logo) are not granted (Apache-2.0 §6).
 
-## 8. 環境変数
+## 8. Environment variables
 
-ビルド・リリースのスクリプトが読む環境変数(`HYPERBUF_ICON`、`HYPERBUF_SIGN_IDENTITY`、`HYPERBUF_NOTARY_PROFILE`、`HYPERBUF_RELEASE_DIR`)は、[debug-environment.md](debug-environment.md) §3。
+The environment variables read by the build and release scripts (`HYPERBUF_ICON`, `HYPERBUF_SIGN_IDENTITY`, `HYPERBUF_NOTARY_PROFILE`, `HYPERBUF_RELEASE_DIR`) are in [debug-environment.md](debug-environment.md) §3.

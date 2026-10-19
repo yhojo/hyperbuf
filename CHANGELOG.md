@@ -18,6 +18,10 @@ Versions are not yet strictly semantic: 0.x releases may change behavior between
 
 - When HyperBuf is not running, `hyperbuf-open` (Emacs) now launches it with `hyperbuf://ping`, waits for the socket (new setting `hyperbuf-launch-timeout`, 15 seconds by default) and sends the open request over the socket, like the `hyperbuf` command. The result (opened, refused, timed out) now comes back to Emacs, and a file outside the allowed paths is judged by the same rules as for the command line instead of asking for the extra URL-scheme confirmation.
 
+### Fixed
+
+- The usage text of `hyperbuf --wait` no longer says "files outside the project" (there are no projects any more); it now says "files under a warn path".
+
 ### Removed
 
 - The `hyperbuf --project` option. It was already ignored since HyperBuf has no per-window project; passing it is now a usage error.

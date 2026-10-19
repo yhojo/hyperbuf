@@ -16,6 +16,8 @@ Versions are not yet strictly semantic: 0.x releases may change behavior between
 
 - The `THIRD-PARTY-NOTICES.txt` shown by `Show Third-Party Licenses` is now written in English, including its header and notes, in line with the rule that all text the app itself shows is English.
 
+- When HyperBuf is not running, `hyperbuf-open` (Emacs) now launches it with `hyperbuf://ping`, waits for the socket (new setting `hyperbuf-launch-timeout`, 15 seconds by default) and sends the open request over the socket, like the `hyperbuf` command. The result (opened, refused, timed out) now comes back to Emacs, and a file outside the allowed paths is judged by the same rules as for the command line instead of asking for the extra URL-scheme confirmation.
+
 ### Removed
 
 - The `hyperbuf --project` option. It was already ignored since HyperBuf has no per-window project; passing it is now a usage error.

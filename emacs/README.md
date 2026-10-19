@@ -66,7 +66,8 @@ Emacs must be running a server (`(server-start)`).
 | --- | --- | --- |
 | `hyperbuf-transport` | `socket` | `socket`: connect to the app's socket directly. `cli`: call the `hyperbuf` command |
 | `hyperbuf-executable` | `"hyperbuf"` | Command used when the transport is `cli` |
-| `hyperbuf-launch-if-needed` | `t` | If the app is not running, launch it with a `hyperbuf://` URL carrying the open request. If `nil`, just report it |
+| `hyperbuf-launch-if-needed` | `t` | If the app is not running, launch it (with `hyperbuf://ping`), wait for its socket and then send the open request, like the `hyperbuf` command. If `nil`, just report it |
+| `hyperbuf-launch-timeout` | 15 | Seconds to wait for a launched app to start listening on the socket (`C-g` interrupts the wait) |
 | `hyperbuf-app` | `nil` | Path of the `.app` to launch (for development) |
 | `hyperbuf-timeout` / `hyperbuf-wait-timeout` | 3 / 60 | Seconds to wait for confirmation (the second one with a prefix argument) |
 | `hyperbuf-save-before-open` | `ask` | Whether to save a modified buffer before opening it in the viewer: `ask`, `t` (save without asking) or `nil` |
@@ -76,7 +77,7 @@ Emacs must be running a server (`(server-start)`).
 ## Limitations
 
 - Remote files (TRAMP) cannot be opened (the viewer reads only local files).
-- If the app is not running, Emacs launches it with a URL that carries the open request. The result appears in the app and is not returned to Emacs, and a file outside the allowed paths asks for confirmation in the app (see `docs/dev/file-access.md`).
+- If the app is not running, Emacs launches it and waits for it (`hyperbuf-launch-timeout`); Emacs is blocked while it waits, and `C-g` interrupts the wait.
 - Files in encodings other than UTF-8 fail the viewer's verification and Emacs does not move (it never moves to a wrong place).
 
 ## Development

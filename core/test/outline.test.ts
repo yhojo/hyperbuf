@@ -23,7 +23,7 @@ import {
 const levels = [1, 2, 3, 2, 1, 2];
 const tops = [0, 100, 200, 300, 400, 500];
 
-test("いまの節: 画面の上端以前の、最後の見出し", () => {
+test("current section: the last heading at or before the top of the screen", () => {
   assert.equal(currentIndex(tops, 0), 0);
   assert.equal(currentIndex(tops, 150), 1);
   assert.equal(currentIndex(tops, 100 - EPS), 1); // (almost) at the top edge of a heading
@@ -33,7 +33,7 @@ test("いまの節: 画面の上端以前の、最後の見出し", () => {
   assert.equal(currentIndex([], 0), -1);
 });
 
-test("次の見出し: 画面の上端より下の、最初の見出し", () => {
+test("next heading: the first heading below the top of the screen", () => {
   assert.equal(nextIndex(tops, 0), 1);
   assert.equal(nextIndex(tops, 150), 2);
   assert.equal(nextIndex(tops, 100), 2); // At the top edge of a heading, next means the one after it
@@ -42,7 +42,7 @@ test("次の見出し: 画面の上端より下の、最初の見出し", () => 
   assert.equal(nextIndex([], 0), null);
 });
 
-test("前の見出し: 画面の上端より上の、最後の見出し", () => {
+test("previous heading: the last heading above the top of the screen", () => {
   assert.equal(previousIndex(tops, 150), 1); // In the middle of a section, go to that section's heading
   assert.equal(previousIndex(tops, 100), 0); // At the top edge of a heading, previous means the one before it
   assert.equal(previousIndex(tops, 0), null);
@@ -50,7 +50,7 @@ test("前の見出し: 画面の上端より上の、最後の見出し", () => 
   assert.equal(previousIndex([], 0), null);
 });
 
-test("上のレベルの見出し", () => {
+test("heading of the upper level", () => {
   assert.equal(upIndex(levels, 2), 1); // A1a → A1
   assert.equal(upIndex(levels, 1), 0); // A1 → A
   assert.equal(upIndex(levels, 3), 0); // A2 → A
@@ -60,7 +60,7 @@ test("上のレベルの見出し", () => {
   assert.equal(upIndex(levels, -1), null);
 });
 
-test("同じレベルの、次・前(親をまたがない)", () => {
+test("next / previous of the same level (not crossing parents)", () => {
   assert.equal(sameLevelForward(levels, 1), 3); // A1 → A2
   assert.equal(sameLevelForward(levels, 3), null); // A2 → none (next would be the parent's sibling B)
   assert.equal(sameLevelForward(levels, 0), 4); // A → B
@@ -71,7 +71,7 @@ test("同じレベルの、次・前(親をまたがない)", () => {
   assert.equal(sameLevelBackward(levels, 5), null); // B1: no previous sibling
 });
 
-test("見出しのレベルが飛んでいても動く(# → ###)", () => {
+test("works even when heading levels skip (# → ###)", () => {
   const skip = [1, 3, 3, 1];
   assert.equal(upIndex(skip, 1), 0);
   assert.equal(sameLevelForward(skip, 1), 2);

@@ -6,11 +6,11 @@ import test from "node:test";
 import { version } from "../src/index.ts";
 import type { HyperbufHost } from "../src/index.ts";
 
-test("バージョンが取れる", () => {
+test("the version can be obtained", () => {
   assert.match(version, /^\d+\.\d+\.\d+$/);
 });
 
-test("HyperbufHost の最小の実装が型検査を通る", async () => {
+test("minimal HyperbufHost implementation passes the type check", async () => {
   const host: HyperbufHost = {
     name: "test",
     home: "/home/test",

@@ -8,18 +8,18 @@ import { parseVirtualPath, uniquifyNames, virtualPath } from "../src/names.ts";
 const HOME = "/Users/me";
 const names = (...paths: string[]) => uniquifyNames(paths, HOME);
 
-test("衝突しなければ、ファイル名だけ", () => {
+test("without a collision, just the file name", () => {
   const n = names("/Users/me/work/a/docs/design.md", "/Users/me/work/a/docs/other.md");
   assert.equal(n.get("/Users/me/work/a/docs/design.md"), "design.md");
 });
 
-test("同じ名前は、区別がつく最小の階層を足す(post-forward-angle-brackets)", () => {
+test("identical names get the smallest directory levels that tell them apart (post-forward-angle-brackets)", () => {
   const n = names("/Users/me/work/a/docs/README.md", "/Users/me/work/a/emacs/README.md");
   assert.equal(n.get("/Users/me/work/a/docs/README.md"), "README.md<docs>");
   assert.equal(n.get("/Users/me/work/a/emacs/README.md"), "README.md<emacs>");
 });
 
-test("親が同じ名前なら、さらに上へ伸ばす", () => {
+test("if the parents have the same name, extend further up", () => {
   const n = names(
     "/Users/me/a/docs/README.md",
     "/Users/me/b/docs/README.md",
@@ -30,19 +30,19 @@ test("親が同じ名前なら、さらに上へ伸ばす", () => {
   assert.equal(n.get("/Users/me/b/src/README.md"), "README.md<src>");
 });
 
-test("ホスト直下は ~、ルート直下は /", () => {
+test("directly under the host's home is ~, directly under the root is /", () => {
   const n = names("/Users/me/README.md", "/Users/me/docs/README.md", "/README.md");
   assert.equal(n.get("/Users/me/README.md"), "README.md<~>");
   assert.equal(n.get("/Users/me/docs/README.md"), "README.md<docs>");
   assert.equal(n.get("/README.md"), "README.md</>");
 });
 
-test("閉じて衝突がなくなれば、名前は元に戻る(名前は動的)", () => {
+test("when a collision disappears after closing, the name reverts (names are dynamic)", () => {
   assert.equal(names("/x/a/R.md", "/x/b/R.md").get("/x/a/R.md"), "R.md<a>");
   assert.equal(names("/x/a/R.md").get("/x/a/R.md"), "R.md");
 });
 
-test("仮想バッファ: 起点があれば常に添える。起点のないものは、そのまま", () => {
+test("virtual buffers: always append the origin if present; those without one stay as is", () => {
   const search = virtualPath("search: foo", "/Users/me/work/docs");
   const help = virtualPath("Help: keybindings");
   const n = names(search, help, "/Users/me/work/docs/a.md");
@@ -52,7 +52,7 @@ test("仮想バッファ: 起点があれば常に添える。起点のないも
   assert.deepEqual(parseVirtualPath(help), { label: "Help: keybindings" });
 });
 
-test("起点が違う同じ検索語は、起点で区別できる", () => {
+test("the same search word with different origins is told apart by origin", () => {
   const a = virtualPath("search: foo", "/p/x/docs");
   const b = virtualPath("search: foo", "/p/y/docs");
   const n = names(a, b);

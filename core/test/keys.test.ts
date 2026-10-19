@@ -16,7 +16,7 @@ const ev = (o: Partial<KeyEventLike>): KeyEventLike => ({
   ...o,
 });
 
-test("keyName: 修飾キー付き英字は code から求める(Option で文字が変わっても)", () => {
+test("keyName: letters with modifiers are derived from code (even if Option changes the character)", () => {
   assert.equal(keyName(ev({ key: "f", code: "KeyF", ctrlKey: true })), "C-f");
   assert.equal(keyName(ev({ key: "ƒ", code: "KeyF", altKey: true })), "M-f");
   assert.equal(keyName(ev({ key: "[", code: "BracketLeft", metaKey: true })), "s-[");
@@ -25,7 +25,7 @@ test("keyName: 修飾キー付き英字は code から求める(Option で文字
   assert.equal(keyName(ev({ key: "Control", ctrlKey: true })), null);
 });
 
-test("keyName: Option(Meta)つきの記号は、物理キーから求める(M-< と M->)", () => {
+test("keyName: symbols with Option (Meta) are derived from the physical key (M-< and M->)", () => {
   // On macOS, event.key for Option+Shift+, is a different character (≤)
   assert.equal(keyName(ev({ key: "≤", code: "Comma", altKey: true, shiftKey: true })), "M-<");
   assert.equal(keyName(ev({ key: "≥", code: "Period", altKey: true, shiftKey: true })), "M->");
@@ -42,7 +42,7 @@ test("keyName: Option(Meta)つきの記号は、物理キーから求める(M-< 
   );
 });
 
-test("ディスパッチャ: プレフィックスと未割り当て", () => {
+test("dispatcher: prefixes and unbound keys", () => {
   const d = createDispatcher(
     createKeymap({ "C-x 2": "split-below", "C-x C-f": "find-file", "C-f": "forward" }),
   );
@@ -54,7 +54,7 @@ test("ディスパッチャ: プレフィックスと未割り当て", () => {
   assert.deepEqual(d.pending, []);
 });
 
-test("キーマップの競合は例外", () => {
+test("a keymap conflict throws", () => {
   assert.throws(() => createKeymap({ "C-x": "a", "C-x 2": "b" }));
   assert.throws(() => createKeymap({ "C-x 2": "b", "C-x": "a" }));
 });

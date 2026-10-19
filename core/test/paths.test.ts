@@ -14,7 +14,7 @@ import {
   resolveInput,
 } from "../src/paths.ts";
 
-test("normalizePath: . と .. と重複した / を解決し、/ より上へは行かない", () => {
+test("normalizePath: resolves . and .. and duplicate /, and never goes above /", () => {
   assert.equal(normalizePath("/a/b/../c/./d//e"), "/a/c/d/e");
   assert.equal(normalizePath("/../../x"), "/x");
   assert.equal(normalizePath("/"), "/");
@@ -38,7 +38,7 @@ test("expandHome / abbreviateHome", () => {
   assert.equal(abbreviateHome("/Users/mex/a.md", "/Users/me"), "/Users/mex/a.md");
 });
 
-test("resolveInput: 相対は base から、~ は展開、末尾の / は残す", () => {
+test("resolveInput: relative from base, ~ expanded, trailing / kept", () => {
   assert.equal(resolveInput("sub/a.md", "/base", "/h"), "/base/sub/a.md");
   assert.equal(resolveInput("~/x/", "/base", "/h"), "/h/x/");
   assert.equal(resolveInput("../y.md", "/base/z", "/h"), "/base/y.md");
@@ -46,7 +46,7 @@ test("resolveInput: 相対は base から、~ は展開、末尾の / は残す"
   assert.equal(resolveInput("/", "/base", "/h"), "/");
 });
 
-test("isInside: 区切りの境界で判定する", () => {
+test("isInside: judged at separator boundaries", () => {
   assert.equal(isInside("/tmp/a.md", "/tmp"), true);
   assert.equal(isInside("/tmp", "/tmp"), true);
   assert.equal(isInside("/tmp2/a.md", "/tmp"), false);

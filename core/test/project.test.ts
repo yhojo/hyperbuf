@@ -17,7 +17,7 @@ const projectRoot = async (dir: string): Promise<string> => {
 const ctxOf = (model = createModel()): AppContext =>
   ({ model, host: { home: HOME, projectRoot } }) as unknown as AppContext;
 
-test("バッファのルート: ファイルは親のディレクトリから、仮想バッファは起点から、起点がなければ null", async () => {
+test("buffer root: a file from its parent directory, a virtual buffer from its origin, null without an origin", async () => {
   const ctx = ctxOf();
   assert.equal(await bufferProjectRoot(ctx, "/w/a/docs/x.md"), "/w/a");
   assert.equal(await bufferProjectRoot(ctx, virtualPath("search: q", "/w/b/sub")), "/w/b");
@@ -25,7 +25,7 @@ test("バッファのルート: ファイルは親のディレクトリから、
   assert.equal(await bufferProjectRoot(ctx, "/tmp/loose/y.md"), "/tmp/loose");
 });
 
-test("プロジェクトのバッファ: 現在のバッファと同じルートのものだけ(最近使った順)", async () => {
+test("project buffers: only those with the same root as the current buffer (most recently used first)", async () => {
   const model = createModel();
   for (const path of ["/w/a/1.md", "/w/b/2.md", "/w/a/docs/3.md", "/other/4.md"]) {
     openBuffer(model, path, "");
@@ -38,7 +38,7 @@ test("プロジェクトのバッファ: 現在のバッファと同じルート
   for (const path of paths) assert.ok(model.mru.includes(path));
 });
 
-test("プロジェクトのバッファ: ルートのない仮想バッファは、履歴を戻った先のルートになる", async () => {
+test("project buffers: a virtual buffer without a root takes the root found by going back in the history", async () => {
   const model = createModel();
   openBuffer(model, "/w/b/1.md", "");
   visit(model, selectedWindow(model), "/w/b/1.md");

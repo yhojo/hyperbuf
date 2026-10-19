@@ -26,7 +26,7 @@ function sample() {
   return model;
 }
 
-test("保存して復元すると、配置・履歴・位置・選択・最近使った順が戻る", () => {
+test("saving and restoring brings back layout, history, positions, selection and recency order", () => {
   const model = sample();
   const snap = takeSnapshot(model);
   assert.ok(snap);
@@ -44,7 +44,7 @@ test("保存して復元すると、配置・履歴・位置・選択・最近�
   assert.ok(restored.winSeq >= model.winSeq);
 });
 
-test("仮想 buffer(*search: …*)は保存しない", () => {
+test("virtual buffers (*search: …*) are not saved", () => {
   const model = createModel();
   const win = selectedWindow(model);
   visit(model, win, "a.md");
@@ -62,7 +62,7 @@ test("仮想 buffer(*search: …*)は保存しない", () => {
   assert.deepEqual(snap.mru, ["a.md"]);
 });
 
-test("保存できる履歴がない window は、分割をたたむ。全部なければ null", () => {
+test("a window with no savable history collapses its split; null if none at all", () => {
   const model = createModel();
   const win = selectedWindow(model);
   visit(model, win, "a.md");
@@ -76,7 +76,7 @@ test("保存できる履歴がない window は、分割をたたむ。全部な
   assert.equal(takeSnapshot(empty), null);
 });
 
-test("なくなった文書は、履歴から外れ、現在位置は前の参照になる", () => {
+test("vanished documents drop out of the history and the current position becomes the previous reference", () => {
   const model = sample();
   const restored = restoreModel(takeSnapshot(model)!, all("a.md", "c.md"))!;
   const left = windows(restored)[0]!;
@@ -88,7 +88,7 @@ test("なくなった文書は、履歴から外れ、現在位置は前の参�
   assert.deepEqual(restored.mru.includes("b.md"), false);
 });
 
-test("文書がすべてなくなれば null、片方の window だけ残れば分割をたたむ", () => {
+test("null when all documents vanish; collapses the split when only one window remains", () => {
   const snap = takeSnapshot(sample())!;
   assert.equal(restoreModel(snap, all()), null);
   const one = restoreModel(snap, all("c.md"))!;
@@ -96,7 +96,7 @@ test("文書がすべてなくなれば null、片方の window だけ残れば�
   assert.equal(one.selected, windows(one)[0]!.id);
 });
 
-test("履歴が長いときは、現在位置を含む MAX_HISTORY 件に切る", () => {
+test("a long history is cut to MAX_HISTORY entries including the current position", () => {
   const model = createModel();
   const win = selectedWindow(model);
   for (let i = 0; i < 250; i++) visit(model, win, `d${i}.md`);
@@ -109,7 +109,7 @@ test("履歴が長いときは、現在位置を含む MAX_HISTORY 件に切る"
   }
 });
 
-test("壊れたデータは、使わない", () => {
+test("broken data is not used", () => {
   const good = JSON.parse(JSON.stringify(takeSnapshot(sample())));
   assert.ok(parseSnapshot(good));
   const bad = (mutate: (s: any) => void) => {
@@ -161,7 +161,7 @@ test("壊れたデータは、使わない", () => {
   );
 });
 
-test("選択中の window がなければ、先頭の window", () => {
+test("without a selected window, the first window", () => {
   const snap = takeSnapshot(sample())!;
   snap.selected = 999;
   const restored = restoreModel(
@@ -171,7 +171,7 @@ test("選択中の window がなければ、先頭の window", () => {
   assert.equal(restored.selected, windows(restored)[0]!.id);
 });
 
-test("referencedPaths: 履歴にある文書を重複なく返す", () => {
+test("referencedPaths: returns the documents in the history without duplicates", () => {
   const restored = restoreModel(takeSnapshot(sample())!, all("a.md", "b.md", "c.md"))!;
   assert.deepEqual(referencedPaths(restored).sort(), ["a.md", "b.md", "c.md"]);
 });
@@ -181,7 +181,7 @@ const selectionIn = (model: ReturnType<typeof sample>) => {
   return { win: win.id, path: "c.md", start: 10, end: 15, text: "hello" };
 };
 
-test("選択範囲は、保存して復元できる。window や文書が変わっていれば使わない", () => {
+test("a selection can be saved and restored; it is not used if the window or document changed", () => {
   const model = sample();
   const snap = takeSnapshot(model, selectionIn(model))!;
   const parsed = parseSnapshot(JSON.parse(JSON.stringify(snap)))!;
@@ -193,7 +193,7 @@ test("選択範囲は、保存して復元できる。window や文書が変わ�
   assert.equal(restoredSelection(parsed, without), null);
 });
 
-test("選択範囲だけが壊れていても、ほかは復元できる", () => {
+test("even if only the selection is broken, the rest is restored", () => {
   const model = sample();
   const good = JSON.parse(JSON.stringify(takeSnapshot(model, selectionIn(model))));
   const only = (mutate: (s: any) => void) => {
@@ -211,12 +211,12 @@ test("選択範囲だけが壊れていても、ほかは復元できる", () =>
     (s: any) => (s.selection = "x"),
   ]) {
     const parsed = only(mutate);
-    assert.ok(parsed, "スナップショット自体は使える");
+    assert.ok(parsed, "the snapshot itself is usable");
     assert.equal(parsed.selection, undefined);
   }
 });
 
-test("存在しない window や仮想 buffer の選択範囲は、保存しない", () => {
+test("selections of nonexistent windows or virtual buffers are not saved", () => {
   const model = sample();
   assert.equal(takeSnapshot(model, { ...selectionIn(model), win: 999 })!.selection, undefined);
   assert.equal(
@@ -225,7 +225,7 @@ test("存在しない window や仮想 buffer の選択範囲は、保存しな�
   );
 });
 
-test("window の大きさ(分割の割合)も、保存して復元する", () => {
+test("window sizes (split ratios) are also saved and restored", () => {
   const model = sample();
   resizeWindow(model, selectedWindow(model), "row", 0.2);
   resizeWindow(model, selectedWindow(model), "col", 0.2);

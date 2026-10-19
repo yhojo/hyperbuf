@@ -85,7 +85,7 @@ Documents are split by audience under `docs/`:
 | `docs/dev/` | developers | the current design and specification (architecture, buffer model, interaction model, file access, integration protocol, session, release, …) |
 | `docs/history/` | history | PoC results, migration plan, plan change log, past decisions. Records of the time; do not rewrite them to match the present |
 
-- **Language:** `README.md`, `docs/user/` and `docs/dev/` are in English, as are UI text, `emacs/` and `CLAUDE.md`. `docs/history/` stays in Japanese (records of the time) with an English summary in its `README.md`. Source code comments, test names and the output of repo scripts are still mostly Japanese; new ones may be written in English. When adding documents, write them in English except under `docs/history/`.
+- **Language:** `README.md`, `docs/user/` and `docs/dev/` are in English, as are UI text, `emacs/` and `CLAUDE.md`. `docs/history/` stays in Japanese (records of the time) with an English summary in its `README.md`. Source code comments are in English; test names and the output of repo scripts are still partly Japanese, and new ones are written in English. Commit messages are in English. When adding documents, write them in English except under `docs/history/`.
 - **Generated files, never edit by hand:** `docs/user/keybindings.md`, `docs/user/syntax-highlighting.md`, `docs/user/third-party-licenses.md` (see "Commands" for how to regenerate; `npm run check` fails when they are stale).
 - **Checks that keep documents and code in sync:** the config key list in `docs/user/configuration.md` (`ConfigDocsTests`), the limits table in `docs/dev/session-restore.md` (`core/test/session-docs.test.ts`), the operations and error codes in `docs/dev/integration-protocol.md` (`protocol/test/docs.test.mjs`), and the version strings (`scripts/check-versions.sh`).
 - **When you change X, update Y:**
@@ -110,7 +110,7 @@ Documents are split by audience under `docs/`:
 - When there are noteworthy circumstances (a major change of direction, an effect on history, divided opinions, …), agree beforehand before merging.
 - Merge with a merge commit (`--no-ff`). No squash, no rebase.
 - Branch names are `<type>/<short description>` (for example `feat/split-window`, `fix/scroll-restore`, `docs/branch-rules`). The type follows Conventional Commits (feat, fix, docs, refactor, test, chore).
-- Commit messages follow Conventional Commits (`type: summary`). The summary may be in Japanese.
+- Commit messages follow Conventional Commits (`type: summary`) and are written in English (the existing history before 2026-10-19 is in Japanese and is kept as it is).
 - PoCs are done on `poc/<theme>` branches. Their code is not merged into `main` in principle; only the design documents that summarize the results are brought in. PoC branches are kept, not deleted.
 - Never rewrite the history of `main` (no force push, …). The only exception so far: on 2026-10-19, before the source was published, the author e-mail address of every commit and tag was replaced by the GitHub noreply address (see `docs/history/README.md`).
 - User-visible changes (features, behavior changes, fixes) are written in English under `[Unreleased]` in `CHANGELOG.md` when merging (the release procedure is in `docs/dev/release.md`).

@@ -15,7 +15,7 @@ import {
   split,
   visit,
 } from "../model.ts";
-import { isVirtualPath, killBuffer } from "../model.ts";
+import { isVirtualPath, killBuffer, type Win } from "../model.ts";
 import {
   currentIndex,
   nextIndex,
@@ -34,8 +34,9 @@ import { displayedText } from "./count-dom.ts";
 import { locateFromDom } from "./locate-dom.ts";
 import { ensureBuffer, errorMessage, follow, openAt } from "./navigation.ts";
 import { abbreviateHome } from "../paths.ts";
-import { bufferNames } from "./directory.ts";
-import { promptFindFile, promptFindFileRecursive } from "./files.ts";
+import { bufferNames, currentProjectRoot } from "./directory.ts";
+import { projectBuffers } from "./project.ts";
+import { displayDir, promptFindFile, promptFindFileRecursive } from "./files.ts";
 import { searchProject } from "./search.ts";
 
 export const COMMAND_NAMES = [
@@ -66,6 +67,8 @@ export const COMMAND_NAMES = [
   "follow-link",
   "switch-buffer",
   "kill-buffer",
+  "project-switch-to-buffer",
+  "project-kill-buffers",
   "find-file",
   "project-find-file",
   "forget-remembered-path",
@@ -81,6 +84,7 @@ export const COMMAND_NAMES = [
   "isearch-forward",
   "isearch-backward",
   "search-project",
+  "project-find-regexp",
   "edit-in-editor",
   "execute-command",
   "describe-bindings",
@@ -120,6 +124,10 @@ export const COMMAND_DOCS: Readonly<Record<CommandName, string>> = {
   "follow-link": "Follow the selected link",
   "switch-buffer": "Switch to a buffer chosen from the open buffers (most recently used first)",
   "kill-buffer": "Kill a buffer (its references are removed from every window's history)",
+  "project-switch-to-buffer":
+    "Switch to a buffer of the current project (same project root; most recently used first)",
+  "project-kill-buffers":
+    "Kill all buffers of the current project (same project root) after confirming",
   "find-file":
     "Visit a file (path completion starting at the base directory; RET enters a directory; ~/, ../ and absolute paths also work)",
   "project-find-file":
@@ -142,6 +150,8 @@ export const COMMAND_DOCS: Readonly<Record<CommandName, string>> = {
   "isearch-forward":
     "Search the document incrementally (C-s next, C-r previous, RET accept, C-g cancel)",
   "isearch-backward": "Search the document incrementally, backward",
+  "project-find-regexp":
+    "Search all files under the project root (the nearest ancestor with .git/.hg/…, or the base directory) and show the results in a virtual buffer (plain text, case-insensitive for ASCII; .gitignore is not read)",
   "search-project":
     "Search all files under the base directory and show the results in a virtual buffer",
   "edit-in-editor":
@@ -179,15 +189,34 @@ export function createCommands(ctx: AppContext): Commands {
   };
 
   /** 開いているバッファを、名前(uniquify 済み)の候補から選ぶ。候補は、最近使った順。 */
-  const pickBuffer = async (label: string, history?: string): Promise<string | null> => {
+  const pickBuffer = async (
+    label: string,
+    history?: string,
+    candidates: readonly string[] = model.mru,
+  ): Promise<string | null> => {
     const names = bufferNames(ctx);
     const byName = new Map<string, string>();
-    for (const path of model.mru) byName.set(names.get(path) ?? path, path);
+    for (const path of candidates) byName.set(names.get(path) ?? path, path);
     const picked = await minibuffer.prompt(label, [...byName.keys()], {
       allowFree: false,
       history,
     });
     return picked === null ? null : (byName.get(picked) ?? null);
+  };
+
+  /** buffer を閉じる。履歴が空になった window には、別の buffer(最近使ったもの)を表示する。なければ、空のまま。 */
+  const killBuffers = async (paths: readonly string[]): Promise<void> => {
+    const empty = new Map<number, Win>();
+    for (const path of paths) {
+      if (!model.buffers.has(path)) continue;
+      for (const win of killBuffer(model, path)) empty.set(win.id, win);
+    }
+    for (const win of empty.values()) {
+      const next = model.mru[0];
+      if (!next) continue;
+      await ensureBuffer(ctx, next);
+      visit(model, win, next);
+    }
   };
 
   /** 入力欄で選んだファイル(絶対パス)を開く。 */
@@ -262,15 +291,31 @@ export function createCommands(ctx: AppContext): Commands {
       const path = await pickBuffer(`Kill buffer (${names.get(entry?.path ?? "") ?? ""}): `);
       const target = path ?? entry?.path;
       if (path === null || !target || !model.buffers.has(target)) return;
-      const empty = killBuffer(model, target);
-      // 履歴が空になった window には、別の buffer(最近使ったもの)を表示する。なければ、空のまま
-      for (const win of empty) {
-        const next = model.mru[0];
-        if (!next) continue;
-        await ensureBuffer(ctx, next);
-        visit(model, win, next);
-      }
+      await killBuffers([target]);
       echo.message(`Killed buffer: ${names.get(target) ?? target}`);
+    },
+    "project-switch-to-buffer": async () => {
+      const { root, paths } = await projectBuffers(ctx);
+      if (!paths.length) return void echo.message("No buffers in this project");
+      const path = await pickBuffer(
+        `Switch to buffer in ${displayDir(root, host.home)}: `,
+        "switch-buffer",
+        paths,
+      );
+      if (path) visit(model, sel(), path);
+    },
+    "project-kill-buffers": async () => {
+      const { root, paths } = await projectBuffers(ctx);
+      if (!paths.length) return void echo.message("No buffers in this project");
+      const where = abbreviateHome(root, host.home);
+      const answer = await minibuffer.prompt(
+        `Kill ${paths.length} buffer${paths.length === 1 ? "" : "s"} in ${where}? `,
+        ["yes", "no"],
+        { allowFree: false },
+      );
+      if (answer !== "yes") return;
+      await killBuffers(paths);
+      echo.message(`Killed ${paths.length} buffer${paths.length === 1 ? "" : "s"} in ${where}`);
     },
     "find-file": () => openPicked(promptFindFile(ctx)),
     "forget-remembered-path": async () => {
@@ -331,6 +376,11 @@ export function createCommands(ctx: AppContext): Commands {
     // 文書内のインクリメンタル検索(Emacs の isearch)。プロジェクト全体の検索は、search-project(M-s g)
     "isearch-forward": () => startIsearch(ctx, 1),
     "isearch-backward": () => startIsearch(ctx, -1),
+    "project-find-regexp": async () => {
+      const root = await currentProjectRoot(ctx);
+      const query = await minibuffer.prompt(`Search in ${displayDir(root, host.home)}: `);
+      if (query) await searchProject(ctx, query, root);
+    },
     "search-project": async () => {
       const query = await minibuffer.prompt("Search: ");
       if (query) await searchProject(ctx, query);

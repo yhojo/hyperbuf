@@ -102,3 +102,17 @@ import Testing
         #expect(try load(t, "{broken") == UserSettings())
     }
 }
+
+extension UserSettingsTests {
+    @Test func projectIgnorePathsAcceptsAbsoluteAndTildePaths() throws {
+        let t = try TempProject()
+        defer { t.remove() }
+        let ok = try load(t, #"{"projectIgnorePaths": ["~/.git-home", "/Users/x/wrapper"]}"#)
+        #expect(ok.projectIgnorePaths == ["~/.git-home", "/Users/x/wrapper"] && ok.problems.isEmpty)
+        let bad = try load(t, #"{"projectIgnorePaths": ["relative/dir", 3, ""]}"#)
+        #expect(bad.projectIgnorePaths.isEmpty && bad.problems.count == 3)
+        let wrongType = try load(t, #"{"projectIgnorePaths": "~/x"}"#)
+        #expect(wrongType.projectIgnorePaths.isEmpty && wrongType.problems.count == 1)
+        #expect(try load(t, "{}").projectIgnorePaths.isEmpty)
+    }
+}

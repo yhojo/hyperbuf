@@ -39,6 +39,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
                 saveSession: (snapshot) => call({ op: "save-session", snapshot }),
                 listDirectory: (dir, options = {}) => call({ op: "list-dir", path: dir, hidden: !!options.hidden }),
                 listTree: (dir) => call({ op: "list-tree", path: dir }),
+                projectRoot: (dir) => call({ op: "project-root", path: dir }),
                 readFile: (path) => call({ op: "read", path }),
                 checkAccess: (paths) => call({ op: "check-access", paths }),
                 allow: (remember) => call({ op: "allow", remember }),
@@ -124,6 +125,15 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
             Task {
                 let tree = await Task.detached { DirectoryLister.tree(path, home: home) }.value
                 replyHandler(Bridge.treeJSON(tree), nil)
+            }
+        case "project-root":
+            guard let path = body["path"] as? String, path.hasPrefix("/") else {
+                return replyHandler(nil, "bad request")
+            }
+            let ignore = UserSettings.load().projectIgnorePaths
+            Task {
+                let root = await Task.detached { ProjectRoot.find(from: path, home: home, ignore: ignore) }.value
+                replyHandler(root, nil)
             }
         case "read":
             guard let path = body["path"] as? String else { return replyHandler(nil, "bad request") }

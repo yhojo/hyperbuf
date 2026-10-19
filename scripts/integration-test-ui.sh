@@ -401,20 +401,25 @@ const cands = () => [...document.querySelectorAll('#candidates li')];
 await fire('x','KeyX',{ctrlKey:true}); await fire('p','KeyP'); await fire('f','KeyF'); await sleep(400);   // C-x p f
 const label = document.getElementById('prompt-label').textContent;
 const listed = cands().map((li) => li.textContent);
-typeIn('rend'); await sleep(250);
+typeIn('sample-project/long'); await sleep(250);
+const narrowed = cands().map((li) => li.textContent);
+typeIn('sample-project/rend'); await sleep(250);
 const filtered = cands().map((li) => li.textContent);
 pressIn('Enter','Enter'); await hb.keyboard.idle(); await sleep(300);
 const header = document.querySelector('.mode-line').textContent;
 // 基準を ../ に切り替えて、基準の外のファイルに届く
 await fire('x','KeyX',{ctrlKey:true}); await fire('p','KeyP'); await fire('f','KeyF'); await sleep(300);
-typeIn('../../sample'); await sleep(500);
+typeIn('../'); await sleep(500);
 const outer = cands().map((li) => li.textContent);
 pressIn('g','KeyG',{ctrlKey:true}); await sleep(80);
-return JSON.stringify({ label, listed, filtered, header, outer });
+const ROOT = P.slice(0, P.lastIndexOf('/fixtures/'));
+return JSON.stringify({ label, listed, narrowed, filtered, header, outer, repoName: ROOT.slice(ROOT.lastIndexOf('/') + 1) });
 """)
-check("C-x p f: 基準のディレクトリ以下を再帰で一覧にする(相対パス)", "Find file (tree)" in r["label"] and "long.md" in r["listed"] and any(x.startswith("rendering/") for x in r["listed"]), r["listed"])
-check("絞り込んで RET で開く", r["filtered"] and r["filtered"][0].startswith("rendering/") and "long.md" not in r["header"] and ".md" in r["header"], (r["filtered"], r["header"]))
-check("../ を入力すると、基準が切り替わり、基準の外のファイルも一覧になる", any(x.startswith("sample-project/") for x in r["outer"]), r["outer"][:8])
+# サンプルのプロジェクトは、リポジトリの中(.git のあるルートは、リポジトリの先頭)にある
+sp = "fixtures/sample-project/"
+check("C-x p f: プロジェクト・ルート(.git のある先頭)以下を再帰で一覧にする(ルートからの相対パス)", r["label"].startswith("Find file in ~/") and r["label"].endswith(r["repoName"] + "/: ") and "README.md" in r["listed"] and sp + "long.md" in r["narrowed"], (r["label"], r["listed"][:8], r["narrowed"][:5]))
+check("絞り込んで RET で開く", r["filtered"] and r["filtered"][0].startswith(sp + "rendering/") and "long.md" not in r["header"] and ".md" in r["header"], (r["filtered"], r["header"]))
+check("../ を入力すると、基準が切り替わり、基準の外のファイルも一覧になる", r["outer"] and "README.md" not in r["outer"] and all("/" in x for x in r["outer"]), r["outer"][:8])
 
 print("バッファ名の uniquify と、仮想バッファ(検索結果)の起点")
 r = run("""

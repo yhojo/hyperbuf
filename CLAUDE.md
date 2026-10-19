@@ -41,6 +41,7 @@ scripts/release.sh [--dry-run]                        # (release builds are Univ
 scripts/integration-test.sh [dir]                     # needs a GUI session: opens every document under dir in a debug HyperBuf and checks rendering, CSP, search, images
 scripts/integration-test-ui.sh                        # needs a GUI session: C-s / outline navigation / keymap config / describe-bindings / minibuffer / kill-buffer in a real WKWebView (synthetic key events; native key path is checked by hand)
 scripts/integration-test-session.sh                   # needs a GUI session: quit → relaunch restores frames / window layout / history / scroll / selection (session v2, restoreSession setting, broken/missing data, closing frames)
+scripts/integration-test-project.sh                   # needs a GUI session: project roots in a real WKWebView (C-x p f / g / b / k: VCS marker ascent, default-directory fallback, projectIgnorePaths, per-project buffers; M-s g stays on the buffer's directory)
 scripts/integration-test-ipc.sh                       # needs a GUI session: real .app + socket client + `hyperbuf` CLI + hyperbuf:// URL (open / warn-path confirm / URL-scheme confirm / timeout / errors)
 (cd cli && swift run hyperbuf docs/migration-plan.md:20)   # opens a file at a line in a running HyperBuf (launches it if needed)
 ```

@@ -44,6 +44,8 @@ public struct UserSettings: Sendable, Equatable {
     public var alpha = WindowAlpha.opaque
     /// 確認なしにブラウザで開く URL のパターン(`*` は、任意の文字列)。
     public var trustedUrls: [String] = []
+    /// プロジェクト・ルートにしないディレクトリ(`~/…` または絶対パス。完全一致)。docs/project-model.md §14.3。
+    public var projectIgnorePaths: [String] = []
     public var problems: [String] = []
 
     public static let maxTrustedUrls = 200
@@ -89,6 +91,22 @@ public struct UserSettings: Sendable, Equatable {
                 settings.problems.append(
                     "alpha must be [active, inactive], two integers from \(WindowAlpha.range.lowerBound) to \(WindowAlpha.range.upperBound) (ignored)"
                 )
+            }
+        }
+        if let raw = object["projectIgnorePaths"] {
+            if let items = raw as? [Any] {
+                for item in items {
+                    guard let path = item as? String, !path.isEmpty, path.count <= maxPatternLength,
+                        !path.contains("\0"), path.hasPrefix("/") || path == "~" || path.hasPrefix("~/")
+                    else {
+                        settings.problems.append(
+                            "projectIgnorePaths has an invalid entry (write an absolute path or ~/…; ignored)")
+                        continue
+                    }
+                    settings.projectIgnorePaths.append(path)
+                }
+            } else {
+                settings.problems.append("projectIgnorePaths must be an array of strings (ignored)")
             }
         }
         if let raw = object["trustedUrls"] {

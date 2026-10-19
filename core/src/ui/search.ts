@@ -2,7 +2,7 @@
 // Copyright 2026 Yasuo Hojo
 
 // 起点のディレクトリ以下の全文検索(`M-s g` は基準のディレクトリ、`C-x p g` はプロジェクト・ルート)。結果は仮想 buffer(`*search: …*`)に Markdown として並べ、
-// リンクで該当行(行アンカー)へ飛ぶ。仮想 buffer の考え方: docs/dev/interaction-model.md §5b。
+// リンクで該当行(行アンカー)へ飛ぶ。仮想 buffer の考え方: docs/dev/interaction-model.md §5。
 
 import { openBuffer, selectedWindow, visit } from "../model.ts";
 import { virtualPath } from "../names.ts";

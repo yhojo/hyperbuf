@@ -54,7 +54,7 @@ hyperbuf://open?v=1&path=<絶対パス>[&line=<N>][&anchor=<ID>][&project=<絶�
 | `project`  | いいえ   | プロジェクトのルート(絶対パス)。省略時は §5 の規則で決める                |
 | `target`   | いいえ   | 表示先。省略時は `current`(選択中の window。履歴に積まれ、Back で戻れる)  |
 
-- 位置の指定(`line` / `anchor`)は、既存のアンカー(`path#見出し`、`path#line:N`、`interaction-model.md` §5b)と同じ意味。
+- 位置の指定(`line` / `anchor`)は、既存のアンカー(`path#見出し`、`path#line:N`、`interaction-model.md` §5)と同じ意味。
 - 相対パスは拒否する(CLI が絶対パスに変換する)。
 - パーセントエンコードされた制御文字、`..` を含むパス、`.md` 以外は拒否する。
 

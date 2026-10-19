@@ -11,8 +11,12 @@ enum TestHarness {
     /// With `HYPERBUF_TEST_COMMANDS=<directory>`, runs the `N.js` files placed there in order inside the WebView and
     /// writes the result to `N.result` (`RESULT: ...` or `ERROR: ...`). An entry point for shell scripts to drive the page
     /// (selection, running commands, etc.) in automated tests. Debug builds only.
+    /// Scripts are held back until `isReady()` is true (the Web core of that frame has started); otherwise a script sent
+    /// right after a frame is created can run before `window.__hyperbuf` exists.
     @MainActor
-    static func startCommandChannel(for webView: WKWebView, slot: Int = 1) {
+    static func startCommandChannel(
+        for webView: WKWebView, slot: Int = 1, isReady: @escaping @MainActor () -> Bool = { true }
+    ) {
         #if DEBUG
             guard let base = ProcessInfo.processInfo.environment["HYPERBUF_TEST_COMMANDS"] else { return }
             // Slot 1 uses the given directory. Other frames use `frame<N>` below it (for multi-frame tests)
@@ -21,6 +25,7 @@ enum TestHarness {
             Task { @MainActor [weak webView] in
                 while let webView {
                     try? await Task.sleep(for: .milliseconds(100))
+                    guard isReady() else { continue }
                     let names = ((try? FileManager.default.contentsOfDirectory(atPath: directory)) ?? [])
                         .filter { $0.hasSuffix(".js") }.sorted()
                     for name in names {

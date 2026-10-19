@@ -53,6 +53,9 @@ final class FrameSession: Identifiable {
 
     // MARK: Web core readiness
 
+    /// Whether the Web core has called `ready` (used by the integration-test command channel).
+    var isPageReady: Bool { pageReady }
+
     /// The Web core called `ready` (`onOpen` etc. are registered).
     func pageDidBecomeReady() {
         pageReady = true

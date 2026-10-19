@@ -31,7 +31,7 @@ struct WebShell: NSViewRepresentable {
         frame.webView = view
         context.coordinator.bridge = bridge  // WKUserContentController does not hold the handler strongly
         TestHarness.attach(to: view, bridge: bridge, slot: frame.slot)
-        TestHarness.startCommandChannel(for: view, slot: frame.slot)
+        TestHarness.startCommandChannel(for: view, slot: frame.slot) { [weak frame] in frame?.isPageReady ?? false }
         view.load(URLRequest(url: URL(string: "\(ContentSecurityPolicy.scheme)://app/index.html")!))
         return view
     }

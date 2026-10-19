@@ -6,6 +6,10 @@ Versions are not yet strictly semantic: 0.x releases may change behavior between
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-19
+
+Changes since 0.1.1.
+
 ### Added
 
 - Project roots, as in Emacs `project.el`: `C-x p f` now lists Markdown files under the nearest ancestor directory that has a VCS marker (`.git`, `.hg`, `.svn`, `.bzr`, `_darcs`, `.jj`), or under the buffer's directory if there is none. `~` and `/` are never roots. Directories that must not become a root can be listed in `projectIgnorePaths`.

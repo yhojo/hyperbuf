@@ -2,4 +2,4 @@
 // Copyright 2026 Yasuo Hojo
 
 /// アプリのバージョン。リリース時に scripts で更新する。
-public let hyperBufVersion = "0.1.1"
+public let hyperBufVersion = "0.1.2"

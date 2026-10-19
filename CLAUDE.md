@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-HyperBuf is in **active implementation**. v0.1.1 was released on 2026-10-14 (tag `v0.1.1`; Developer ID signed + notarized Universal build) and is in private initial distribution to a few acquaintances to collect feedback. Migration plan M0–M7b are done; M8 (distribution) is in progress: signing, notarization and the `.zip` / `.dmg` are done, while public release preparation (source publication, GitHub Releases, Homebrew cask, SECURITY/CONTRIBUTING, git-history cleanup, trademark search) remains. The PoCs are finished and live on `poc/*` branches (not merged). The repository is mirrored to a private GitHub repo (`yhojo/hyperbuf`); CI runs on pushes to `main`.
+HyperBuf is in **active implementation**. v0.1.2 was released on 2026-10-19 (tag `v0.1.2`; Developer ID signed + notarized Universal build) and is in private initial distribution to a few acquaintances to collect feedback. Migration plan M0–M7b are done; M8 (distribution) is in progress: signing, notarization and the `.zip` / `.dmg` are done, while public release preparation (source publication, GitHub Releases, Homebrew cask, SECURITY/CONTRIBUTING, git-history cleanup, trademark search) remains. The PoCs are finished and live on `poc/*` branches (not merged). The repository is mirrored to a private GitHub repo (`yhojo/hyperbuf`); CI runs on pushes to `main`.
 
 Progress, decisions and the order of work: `docs/history/migration-plan.md`. The product vision and feature overview: `README.md` (Japanese).
 

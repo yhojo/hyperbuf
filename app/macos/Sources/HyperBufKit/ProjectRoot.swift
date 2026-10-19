@@ -15,6 +15,11 @@ public enum ProjectRoot {
     /// - `ignore`(`projectIgnorePaths`)に完全一致するディレクトリは、目印があっても飛ばす。
     /// - 見つからなければ `dir` 自身(`default-directory`)。
     public static func find(from dir: String, home: String, ignore: [String] = []) -> String {
+        markedRoot(from: dir, home: home, ignore: ignore) ?? (PathUtil.canonicalPath(dir) ?? dir)
+    }
+
+    /// `find` と同じ探索で、VCS の目印が見つかったときだけ、そのルートを返す(見つからなければ nil)。
+    public static func markedRoot(from dir: String, home: String, ignore: [String] = []) -> String? {
         let start = PathUtil.canonicalPath(dir) ?? dir
         let stops = Set([PathUtil.canonicalPath(home) ?? home, "/"].map { $0.lowercased() })
         let skipped = Set(ignore.map { PathUtil.normalizeConfigured($0, home: home).lowercased() })
@@ -25,7 +30,7 @@ public enum ProjectRoot {
             if up == current { break }
             current = up
         }
-        return start
+        return nil
     }
 
     private static func hasMarker(_ dir: String) -> Bool {

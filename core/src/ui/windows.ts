@@ -11,11 +11,13 @@ import {
   boundaryRight,
   clampRatio,
   currentEntry,
+  isVirtualPath,
   resizableSplit,
   resizeWindow,
   selectedWindow,
   windows,
 } from "../model.ts";
+import { dirname } from "../paths.ts";
 import type { Renderer } from "../pipeline.ts";
 import { uniquifyNames } from "../names.ts";
 import { findAnchor, topSourceLine, visibleAnchor } from "./anchors.ts";
@@ -35,6 +37,8 @@ export interface ViewsOptions {
   resolveResource: (path: string) => string;
   /** ホストのディレクトリ(バッファ名の `~` の短縮に使う)。 */
   home: string;
+  /** ディレクトリの Git ブランチ名(モードライン用)。ないシェルでは、出さない。 */
+  vcsBranch?: (dir: string) => Promise<string | null>;
   /** window 内のリンクが選ばれた(クリック)。 */
   onFollow(win: Win, href: string): void;
   /** window が選ばれた(クリック)。 */
@@ -46,9 +50,17 @@ export interface ViewsOptions {
 interface WinView {
   el: HTMLElement;
   /** モードライン(window の下)。名前・位置・履歴を、Emacs のモードラインのように出す。 */
-  modeLine: { el: HTMLElement; name: HTMLElement; pos: HTMLElement; hist: HTMLElement };
+  modeLine: {
+    el: HTMLElement;
+    name: HTMLElement;
+    pos: HTMLElement;
+    hist: HTMLElement;
+    branch: HTMLElement;
+  };
   /** スクロールのたびに、モードラインの位置の更新を、1 フレームにまとめる。 */
   modeLinePending: boolean;
+  /** ブランチ名を取得した、バッファのディレクトリと版(同じなら、取り直さない)。 */
+  branchKey: string | null;
   content: HTMLElement;
   lastEntry: HistoryEntry | null;
   lastKey: string | null;
@@ -66,6 +78,8 @@ export class Views {
   readonly stats: RenderStats = { ms: 0, diagrams: "" };
   /** 外部更新のとき、最初に変わった場所へ移る(`toggle-follow-updates`)。 */
   followUpdates = false;
+  /** モードラインに Git のブランチ名を出す(設定 `modeLineVcsBranch`)。 */
+  showVcsBranch = true;
   private readonly views = new Map<number, WinView>();
   private layoutSig = "";
   /** バッファの識別(絶対パス)→ 表示名(uniquify 済み)。 */
@@ -330,11 +344,13 @@ export class Views {
       name: document.createElement("span"),
       pos: document.createElement("span"),
       hist: document.createElement("span"),
+      branch: document.createElement("span"),
     };
     modeLine.name.className = "ml-name";
     modeLine.pos.className = "ml-pos";
     modeLine.hist.className = "ml-hist";
-    modeLineEl.append(modeLine.name, modeLine.pos, modeLine.hist);
+    modeLine.branch.className = "ml-branch";
+    modeLineEl.append(modeLine.name, modeLine.pos, modeLine.hist, modeLine.branch);
     const content = document.createElement("div");
     content.className = "content";
     el.append(content, modeLineEl);
@@ -342,6 +358,7 @@ export class Views {
       el,
       modeLine,
       modeLinePending: false,
+      branchKey: null,
       content,
       lastEntry: null,
       lastText: null,
@@ -396,6 +413,38 @@ export class Views {
     modeLine.pos.textContent = line === null ? position : `${position}  L${line}`;
   }
 
+  /** 全 window のブランチ名を、取り直す(アプリがアクティブになったとき。ターミナルなどでの切り替えに追従する)。 */
+  refreshBranches(): void {
+    for (const view of this.views.values()) view.branchKey = null;
+    this.refresh();
+  }
+
+  /**
+   * モードラインのブランチ名。バッファの表示・切替・再読み込みのときに、シェルへ問い合わせる(監視はしない)。
+   * 仮想バッファ(検索結果など)と、Git のルートがないバッファには、出さない。
+   */
+  private updateBranch(win: Win, view: WinView, key: string): void {
+    const el = view.modeLine.branch;
+    const path = currentEntry(win)?.path;
+    const vcsBranch = this.opts.vcsBranch;
+    if (!this.showVcsBranch || !vcsBranch || !path || isVirtualPath(path)) {
+      el.textContent = "";
+      view.branchKey = null;
+      return;
+    }
+    if (view.branchKey === key) return;
+    view.branchKey = key;
+    void vcsBranch(dirname(path)).then(
+      (branch) => {
+        // 問い合わせている間に、別のバッファへ移っていたら、捨てる
+        if (view.branchKey === key) el.textContent = branch ?? "";
+      },
+      () => {
+        if (view.branchKey === key) el.textContent = "";
+      },
+    );
+  }
+
   private scheduleModeLine(view: WinView): void {
     if (view.modeLinePending) return;
     view.modeLinePending = true;
@@ -420,6 +469,8 @@ export class Views {
       view.modeLine.name.textContent = "(no buffer)";
       view.modeLine.pos.textContent = "";
       view.modeLine.hist.textContent = "";
+      view.modeLine.branch.textContent = "";
+      view.branchKey = null;
       if (view.lastKey !== "empty") {
         view.content.innerHTML =
           '<div class="empty-state">Type C-x C-f to open a file (C-x p f: search under the base directory)</div>';
@@ -435,6 +486,7 @@ export class Views {
     const gone = buf.missing ? "  (deleted; it may have been moved)" : "";
     view.modeLine.name.textContent = `${name}${gone}`;
     view.modeLine.hist.textContent = `[History ${win.index + 1}/${win.history.length}]${this.followUpdates ? " [Follow]" : ""}`;
+    this.updateBranch(win, view, `${entry.path}@${buf.version}`);
 
     if (view.lastKey !== key) {
       // 外部更新(同じ文書の版が変わった)なら、見出し基準で閲覧位置を維持する

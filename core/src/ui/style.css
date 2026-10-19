@@ -98,7 +98,8 @@ body {
   text-overflow: ellipsis;
 }
 .mode-line .ml-pos,
-.mode-line .ml-hist {
+.mode-line .ml-hist,
+.mode-line .ml-branch {
   flex: none;
 }
 .win.selected .mode-line {

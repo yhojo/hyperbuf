@@ -27,6 +27,8 @@ export interface HostConfig {
   mathUnescapeUnderscore?: boolean;
   /** ファイルが外部で更新されたとき、変更箇所の先頭へスクロールする(既定は false。`toggle-follow-updates` で切り替える)。 */
   followUpdates?: boolean;
+  /** モードラインに、Git のブランチ名を出す(既定は true。docs/dev/buffer-model.md §6.9)。 */
+  modeLineVcsBranch?: boolean;
   /** シェルが見つけた設定の問題(許可パス / 警告パスなど)。`C-h b` の「設定の問題」に出す。 */
   problems?: string[];
 }
@@ -95,6 +97,11 @@ export interface HyperbufHost {
    * ない(古いシェル、開発サーバー)ときは、`dir` をルートとして扱う。
    */
   projectRoot?(dir: string): Promise<string>;
+  /**
+   * `dir` が属する Git リポジトリの、ブランチ名(detached HEAD は短縮ハッシュ)。Git のルートがなければ null。
+   * 外部コマンドは使わず、シェルが `HEAD` を直接読む(docs/dev/buffer-model.md §6.9)。ない(古いシェル)ときは、出さない。
+   */
+  vcsBranch?(dir: string): Promise<string | null>;
   /**
    * Markdown を読む(絶対パス、`.md` のみ)。アクセスの判定はしない
    * (利用者が打った・選んだパス、判定済みの外部要求、復元されたセッション)。

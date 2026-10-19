@@ -40,6 +40,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
                 listDirectory: (dir, options = {}) => call({ op: "list-dir", path: dir, hidden: !!options.hidden }),
                 listTree: (dir) => call({ op: "list-tree", path: dir }),
                 projectRoot: (dir) => call({ op: "project-root", path: dir }),
+                vcsBranch: (dir) => call({ op: "vcs-branch", path: dir }),
                 readFile: (path) => call({ op: "read", path }),
                 checkAccess: (paths) => call({ op: "check-access", paths }),
                 allow: (remember) => call({ op: "allow", remember }),
@@ -101,6 +102,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
                     "restoreSession": settings.restoreSession,
                     "mathUnescapeUnderscore": settings.mathUnescapeUnderscore,
                     "followUpdates": settings.followUpdates,
+                    "modeLineVcsBranch": settings.modeLineVcsBranch,
                     "problems": access.policy.problems + settings.problems,
                 ], nil)
         case "load-session":
@@ -134,6 +136,15 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
             Task {
                 let root = await Task.detached { ProjectRoot.find(from: path, home: home, ignore: ignore) }.value
                 replyHandler(root, nil)
+            }
+        case "vcs-branch":
+            guard let path = body["path"] as? String, path.hasPrefix("/") else {
+                return replyHandler(nil, "bad request")
+            }
+            let ignore = UserSettings.load().projectIgnorePaths
+            Task {
+                let branch = await Task.detached { VCSBranch.read(from: path, home: home, ignore: ignore) }.value
+                replyHandler(branch ?? NSNull(), nil)
             }
         case "read":
             guard let path = body["path"] as? String else { return replyHandler(nil, "bad request") }

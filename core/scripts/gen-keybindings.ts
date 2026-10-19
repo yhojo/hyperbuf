@@ -28,7 +28,15 @@ const GROUPS: readonly { title: string; commands: readonly string[] }[] = [
   },
   {
     title: "Reference history and links",
-    commands: ["back", "forward", "next-link", "prev-link", "follow-link"],
+    commands: [
+      "back",
+      "forward",
+      "beginning-of-history",
+      "end-of-history",
+      "next-link",
+      "prev-link",
+      "follow-link",
+    ],
   },
   {
     title: "Scrolling and position",

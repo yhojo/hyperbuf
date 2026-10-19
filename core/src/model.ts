@@ -170,6 +170,25 @@ export function forward(model: Model, win: Win): boolean {
   return true;
 }
 
+/** 履歴の先頭へ移る(`C-a`)。すでに先頭なら false。 */
+export function backToStart(model: Model, win: Win): boolean {
+  if (win.index <= 0) return false;
+  win.index = 0;
+  const entry = currentEntry(win);
+  if (entry) touch(model, entry.path);
+  return true;
+}
+
+/** 履歴の最後へ移る(`C-e`)。すでに最後なら false。 */
+export function forwardToEnd(model: Model, win: Win): boolean {
+  const last = win.history.length - 1;
+  if (win.index >= last) return false;
+  win.index = last;
+  const entry = currentEntry(win);
+  if (entry) touch(model, entry.path);
+  return true;
+}
+
 function findParent(
   node: LayoutNode,
   target: LayoutNode,

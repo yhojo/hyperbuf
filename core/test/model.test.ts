@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   back,
+  backToStart,
   boundaryBelow,
   boundaryRight,
   createModel,
@@ -12,6 +13,7 @@ import {
   deleteOthers,
   deleteWindow,
   forward,
+  forwardToEnd,
   jump,
   killBuffer,
   openBuffer,
@@ -45,6 +47,19 @@ test("参照履歴: visit/back/forward と先の履歴の破棄", () => {
   visit(m, w, "a.md", "x");
   assert.equal(w.history.length, 3); // c.md は破棄された
   assert.ok(!forward(m, w));
+});
+
+test("参照履歴: 先頭・最後へ移る", () => {
+  const m = setup();
+  const w = selectedWindow(m);
+  visit(m, w, "b.md");
+  visit(m, w, "c.md");
+  assert.ok(!forwardToEnd(m, w)); // すでに最後
+  assert.ok(backToStart(m, w));
+  assert.equal(currentEntry(w)?.path, "a.md");
+  assert.ok(!backToStart(m, w)); // すでに先頭
+  assert.ok(forwardToEnd(m, w));
+  assert.equal(currentEntry(w)?.path, "c.md");
 });
 
 test("同じ参照の連続 visit は積まない", () => {

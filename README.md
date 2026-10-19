@@ -65,6 +65,7 @@ HyperBufは、ハッカー文化に根差した **使い込める道具** を目
 | `C-x p f` | `project-find-file` | プロジェクト・ルート以下の文書を一覧にして開く |
 | `C-x b` | `switch-buffer` | 表示するbufferを切り替える |
 | `C-b` / `C-f` | `back` / `forward` | 参照履歴を前後移動 |
+| `C-a` / `C-e` | `beginning-of-history` / `end-of-history` | 参照履歴の先頭 / 最後へ移動 |
 | `C-s` / `C-r` | `isearch-forward` / `isearch-backward` | 文書内のインクリメンタル検索 |
 | `M-s g` / `C-x p g` | `search-project` / `project-find-regexp` | ディレクトリ以下 / プロジェクト・ルート以下の全文検索 |
 | `C-x 2` / `C-x 3` / `C-x 0` / `C-x 1` / `C-x o` | `split-below` ほか | windowの分割・閉じる・移動 |

@@ -25,6 +25,8 @@ For an introduction to the basic operations, see [getting-started.md](getting-st
 | --- | --- | --- |
 | `C-b`, `left`, `s-[` | `back` | Go back in reference history |
 | `C-f`, `right`, `s-]` | `forward` | Go forward in reference history |
+| `C-a` | `beginning-of-history` | Go to the first entry of the reference history |
+| `C-e` | `end-of-history` | Go to the last entry of the reference history |
 | `TAB` | `next-link` | Select the next link |
 | `S-TAB` | `prev-link` | Select the previous link |
 | `RET` | `follow-link` | Follow the selected link |

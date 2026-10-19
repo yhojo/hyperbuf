@@ -3,7 +3,7 @@
 
 import Foundation
 
-/// プロジェクト・ルートの探索(docs/project-model.md §14)。Emacs の `project.el` と同じく、
+/// プロジェクト・ルートの探索(docs/buffer-model.md §6)。Emacs の `project.el` と同じく、
 /// バッファの基準のディレクトリから親へさかのぼり、最初に VCS の目印があるディレクトリを、ルートにする。
 public enum ProjectRoot {
     /// VCS の目印(ディレクトリ、またはファイル。`.git` は worktree・submodule ではファイル)。

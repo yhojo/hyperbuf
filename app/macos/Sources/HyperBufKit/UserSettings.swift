@@ -44,7 +44,7 @@ public struct UserSettings: Sendable, Equatable {
     public var alpha = WindowAlpha.opaque
     /// 確認なしにブラウザで開く URL のパターン(`*` は、任意の文字列)。
     public var trustedUrls: [String] = []
-    /// プロジェクト・ルートにしないディレクトリ(`~/…` または絶対パス。完全一致)。docs/project-model.md §14.3。
+    /// プロジェクト・ルートにしないディレクトリ(`~/…` または絶対パス。完全一致)。docs/buffer-model.md §6.4。
     public var projectIgnorePaths: [String] = []
     public var problems: [String] = []
 

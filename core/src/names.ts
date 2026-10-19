@@ -2,7 +2,7 @@
 // Copyright 2026 Yasuo Hojo
 
 // バッファの名前(画面に出す名前)。識別は絶対パスで、名前は、Emacs の uniquify と同じ考え方で決める
-// (docs/project-model.md §9): 基本はファイル名。同じ名前が複数あるときだけ、親ディレクトリを足す。
+// (docs/buffer-model.md §3): 基本はファイル名。同じ名前が複数あるときだけ、親ディレクトリを足す。
 // 形式は `post-forward-angle-brackets`(`README.md<docs>`)。
 
 import { abbreviateHome, basename } from "./paths.ts";

@@ -96,7 +96,7 @@ public struct CLI: Sendable {
                 }
                 // アプリが起動していない: `hyperbuf://ping`(起動だけ)で起動し、ソケットが現れるのを待って、
                 // ソケットで送る。URL スキームは、起点を特定できない経路なので、許可パスにないファイルは確認が
-                // 出る。CLI の要求は、すべてソケットを通す(docs/project-model.md §5.2)
+                // 出る。CLI の要求は、すべてソケットを通す(docs/file-access.md §2)
                 guard let url = OpenURL.make(Request(op: .ping)) else { return .failure }
                 do {
                     try env.launcher.launch(url: url, activate: !options.noActivate)

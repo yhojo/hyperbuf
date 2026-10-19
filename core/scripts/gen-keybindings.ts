@@ -104,7 +104,7 @@ const unknown = grouped.filter((c) => !(COMMAND_NAMES as readonly string[]).incl
 const repeated = grouped.filter((c, i) => grouped.indexOf(c) !== i);
 if (missing.length || unknown.length || repeated.length) {
   console.error(
-    `gen-keybindings.ts の GROUPS が、コマンドの一覧と合っていません。足りない: [${missing}]、存在しない: [${unknown}]、重複: [${repeated}]`,
+    `GROUPS in gen-keybindings.ts does not match the command list. Missing: [${missing}], unknown: [${unknown}], duplicated: [${repeated}]`,
   );
   process.exit(1);
 }
@@ -156,5 +156,5 @@ if (process.argv.includes("--check")) {
   }
 } else {
   writeFileSync(target, generated);
-  console.log("docs/user/keybindings.md を生成しました");
+  console.log("Generated docs/user/keybindings.md");
 }

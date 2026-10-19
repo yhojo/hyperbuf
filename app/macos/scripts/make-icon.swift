@@ -140,4 +140,4 @@ iconutil.arguments = ["-c", "icns", iconset, "-o", "\(outDir)/AppIcon.icns"]
 try iconutil.run()
 iconutil.waitUntilExit()
 try? FileManager.default.removeItem(atPath: iconset)
-print("\(outDir)/AppIcon.icns を生成しました")
+print("Generated \(outDir)/AppIcon.icns")

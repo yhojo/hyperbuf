@@ -57,7 +57,7 @@ import Testing
         #expect(!documented.isEmpty)
         #expect(
             documented == code,
-            "docs/user/configuration.md の一覧にないキー: \(code.subtracting(documented).sorted())、コードにないキー: \(documented.subtracting(code).sorted())"
+            "Keys missing from the docs/user/configuration.md list: \(code.subtracting(documented).sorted()), keys missing from the code: \(documented.subtracting(code).sorted())"
         )
     }
 }

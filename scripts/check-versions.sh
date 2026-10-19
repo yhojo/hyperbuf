@@ -20,19 +20,19 @@ protocollock="$(sed -n 's/^  "version": "\(.*\)",$/\1/p' protocol/package-lock.j
 
 echo "app=$app cli=$cli core=$core protocol=$protocol core-index=$coreindex emacs=$emacs core-lock=$corelock protocol-lock=$protocollock"
 bad=0
-[ -n "$app" ] || { echo "アプリの版を読めません(app/macos/Sources/HyperBufKit/Version.swift)" >&2; exit 1; }
+[ -n "$app" ] || { echo "Cannot read the app version (app/macos/Sources/HyperBufKit/Version.swift)" >&2; exit 1; }
 for pair in "cli:$cli" "core:$core" "protocol:$protocol" "core/src/index.ts:$coreindex" "emacs:$emacs" "core/package-lock.json:$corelock" "protocol/package-lock.json:$protocollock"; do
   if [ "${pair#*:}" != "$app" ]; then
-    echo "版がそろっていません: ${pair%%:*} は ${pair#*:}、アプリは $app" >&2
+    echo "Version mismatch: ${pair%%:*} is ${pair#*:}, the app is $app" >&2
     bad=$((bad + 1))
   fi
 done
 if ! grep -q "^## \[$app\]" CHANGELOG.md; then
-  echo "CHANGELOG.md に、版 $app の節(## [$app])がありません" >&2
+  echo "CHANGELOG.md has no section for version $app (## [$app])" >&2
   bad=$((bad + 1))
 fi
 if [ "$bad" -ne 0 ]; then
-  echo "NG: バージョンの表記が $bad 件、そろっていません。更新する場所は docs/dev/release.md を参照してください" >&2
+  echo "NG: $bad version string(s) out of sync. See docs/dev/release.md for where to update" >&2
   exit 1
 fi
-echo "OK: バージョンは $app でそろっています"
+echo "OK: all versions are $app"

@@ -33,7 +33,7 @@ import Testing
         try t.write("dir/b.md", "x")
         for bad in ["missing.md", "a.txt", "dir", "a.md:3", "dir:3"] {
             guard case .failure = FileResolver.resolve(bad, cwd: t.path) else {
-                Issue.record("失敗するはず: \(bad)")
+                Issue.record("should fail: \(bad)")
                 continue
             }
         }
@@ -49,7 +49,7 @@ import Testing
         #expect(try FileResolver.resolve("both", cwd: t.path).get().path == t.path + "/both/index.md")
         #expect(try FileResolver.resolve("readme/", cwd: t.path).get().path == t.path + "/readme/README.md")
         guard case .failure(let failure) = FileResolver.resolve("none", cwd: t.path) else {
-            Issue.record("index.md も README.md もなければ、失敗する")
+            Issue.record("fails when neither index.md nor README.md exists")
             return
         }
         #expect(failure.message.contains("index.md"))

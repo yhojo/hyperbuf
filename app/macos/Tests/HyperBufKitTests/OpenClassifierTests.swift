@@ -10,7 +10,7 @@ import Testing
 @Suite struct OpenClassifierTests {
     private func open(_ path: String) -> ValidatedOpen {
         guard case .success(let v) = OpenRequestValidator.validate(path: path, line: nil, anchor: nil, version: nil)
-        else { fatalError("検証に失敗: \(path)") }
+        else { fatalError("validation failed: \(path)") }
         return v
     }
 
@@ -33,7 +33,7 @@ import Testing
         let t = try TempProject()
         defer { t.remove() }
         guard case .failure(let error) = classify(t.url.path + "/none.md", t) else {
-            Issue.record("失敗するはず")
+            Issue.record("should fail")
             return
         }
         #expect(error.code == ErrorCode.notFound.rawValue)
@@ -53,7 +53,7 @@ import Testing
             at: t.url.appendingPathComponent("ok/link.md"), withDestinationURL: t.url.appendingPathComponent("w/a.md"))
         let outcome = try classify(t.url.path + "/ok/link.md", t, warn: [t.real + "/w"]).get()
         guard case .confirm(let absolute, _) = outcome else {
-            Issue.record("警告パスの実体は、確認が要る")
+            Issue.record("the real path of a warn path needs confirmation")
             return
         }
         #expect(absolute == t.real + "/w/a.md")

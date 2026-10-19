@@ -1,5 +1,5 @@
 {
-  "_comment": "npm のパッケージとして洗い出せない、同梱物のライセンス(core/scripts/licenses.mjs が読む)。",
+  "_comment": "Licenses of bundled items that cannot be enumerated as npm packages (read by core/scripts/licenses.mjs).",
   "assets": [
     {
       "name": "KaTeX fonts",

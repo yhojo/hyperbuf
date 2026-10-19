@@ -15,13 +15,13 @@ while IFS= read -r file; do
     *) expected="Apache-2.0" ;;
   esac
   if ! head -20 "$file" | grep -q "SPDX-License-Identifier: $expected"; then
-    echo "ライセンス表記がない、または違う($expected のはず): $file" >&2
+    echo "License header missing or wrong (expected $expected): $file" >&2
     bad=$((bad + 1))
   fi
 done < <(git ls-files '*.ts' '*.mjs' '*.js' '*.swift' '*.sh' '*.css' '*.el')
 
 if [ "$bad" -ne 0 ]; then
-  echo "NG: $bad 件" >&2
+  echo "NG: $bad file(s)" >&2
   exit 1
 fi
-echo "ライセンス表記の検査: OK"
+echo "License header check: OK"

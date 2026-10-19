@@ -43,14 +43,14 @@ private func decodeRequest(_ object: [String: Any]) throws -> Request {
             let result = OpenURL.parse(url)
             if let expected = item["error"] as? String {
                 guard case .failure(let error) = result else {
-                    Issue.record("\(name): 失敗するはず")
+                    Issue.record("\(name): should fail")
                     continue
                 }
                 #expect(error.code == expected, "\(name)")
             } else {
                 let expected = try decodeRequest(try #require(item["request"] as? [String: Any]))
                 guard case .success(let parsed) = result else {
-                    Issue.record("\(name): 成功するはず")
+                    Issue.record("\(name): should succeed")
                     continue
                 }
                 #expect(parsed.op == expected.op, "\(name)")
@@ -61,7 +61,7 @@ private func decodeRequest(_ object: [String: Any]) throws -> Request {
                 if expected.op == RequestOperation.open.rawValue {
                     let rebuilt = try #require(OpenURL.make(expected), "\(name)")
                     guard case .success(let again) = OpenURL.parse(rebuilt) else {
-                        Issue.record("\(name): 往復")
+                        Issue.record("\(name): round trip")
                         continue
                     }
                     #expect(

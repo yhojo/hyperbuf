@@ -62,7 +62,7 @@ import Testing
             "https:///nohost", "https://example.com/\u{0}x", "not a url", String(repeating: "a", count: 3000),
         ] {
             guard case .deny = policy.decide(url, remembered: r) else {
-                Issue.record("拒否されるはず: \(url.prefix(40))")
+                Issue.record("should be rejected: \(url.prefix(40))")
                 continue
             }
         }

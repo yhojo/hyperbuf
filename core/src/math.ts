@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 数式の互換処理(DOM やシェルに依存しない純粋な関数)。
+// Math compatibility handling (pure functions with no DOM or shell dependency).
 //
-// Marked 2 などは、先に Markdown としてバックスラッシュのエスケープを外してから、数式のエンジンに渡す。
-// そのため、Markdown の強調(`_`)を避けるために、数式の中の `_` を `\_` と書く習慣(`$f\_{2}$`)が、そのまま通る。
-// TeX の `\_` は「文字としての下線」なので、そのまま KaTeX に渡すと、下付き文字にならず、`f_2` と表示される。
-// GitHub などは、数式の中身をそのまま渡す(`\_` は下線のまま)ので、これは、Marked 2 流の互換処理。
+// Marked 2 and others first unescape backslashes as Markdown, then pass the result to the math engine.
+// So the habit of writing `_` inside math as `\_` to avoid Markdown emphasis (`_`) (`$f\_{2}$`) works as is.
+// TeX's `\_` is "a literal underscore", so passing it unchanged to KaTeX does not make a subscript and shows `f_2`.
+// GitHub and others pass the math content through as is (`\_` stays an underscore), so this is Marked 2-style compatibility handling.
 
-/** 引数の中では、`\_` が「文字としての下線」を意味するコマンド(テキスト・書体の指定)。 */
+/** Commands whose argument treats `\_` as "a literal underscore" (text and font commands). */
 const LITERAL_ARGUMENT_COMMANDS = new Set([
   "text",
   "textrm",
@@ -27,18 +27,18 @@ const LITERAL_ARGUMENT_COMMANDS = new Set([
 ]);
 
 /**
- * 数式(TeX)の中の `\_` を `_` に戻す(下付き文字にする)。次のものは、そのままにする。
- *  - `\\_`(改行のあとの `_`)。`\\` は 1 つの記号で、直後の `_` は、そのまま
- *  - `\text{…}` `\mathrm{…}` `\operatorname{…}` などの引数の中(`\text{snake\_case}`、`\mathrm{max\_value}`)
+ * Turns `\_` in math (TeX) back into `_` (a subscript). The following are left as is.
+ *  - `\\_` (a `_` after a line break). `\\` is one symbol, and the `_` right after it is left as is
+ *  - Inside arguments of `\text{…}`, `\mathrm{…}`, `\operatorname{…}`, etc. (`\text{snake\_case}`, `\mathrm{max\_value}`)
  */
 export function unescapeMathUnderscores(tex: string): string {
   if (!tex.includes("\\_")) return tex;
   let out = "";
   let i = 0;
   let depth = 0;
-  /** 直前が、引数を取る、文字扱いのコマンドで、`{` を待っている。 */
+  /** Just after a command that takes an argument and treats it as text; waiting for `{`. */
   let pending = false;
-  /** 文字扱いの引数の中に入った、波括弧の深さ(入れ子の外側から)。 */
+  /** Brace depth inside a text-style argument (counted from the outside of the nesting). */
   const literal: number[] = [];
   while (i < tex.length) {
     const c = tex[i] as string;

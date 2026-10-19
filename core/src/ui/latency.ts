@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 打鍵から描画までの遅延の計測(ステータス行に、中央値・p95・最大を出す)。
+// Measures latency from keystroke to render (shows the median, p95 and max on the status line).
 
 export interface LatencySummary {
   n: number;
@@ -25,7 +25,7 @@ export class LatencyRecorder {
     this.keep = keep;
   }
 
-  /** 描画の後(次のフレームの後)の時刻まで待って、t0 からの経過を記録する。 */
+  /** Waits until after rendering (after the next frame) and records the elapsed time since t0. */
   record(t0: number, onUpdate: (ms: number, summary: LatencySummary) => void): void {
     requestAnimationFrame(() =>
       setTimeout(() => {

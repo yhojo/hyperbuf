@@ -3,11 +3,12 @@
 
 import Foundation
 
-/// ソケットの置き場所。`sun_path` は 104 バイト未満でなければならない。
+/// Where the socket lives. `sun_path` must be shorter than 104 bytes.
 public enum SocketPath {
     public static let maxBytes = 103
 
-    /// `~/Library/Application Support/HyperBuf/hyperbuf.sock`。長すぎるときは、`$TMPDIR` 配下(ユーザーごとに隔離された場所)。
+    /// `~/Library/Application Support/HyperBuf/hyperbuf.sock`. If too long, under `$TMPDIR` (a per-user isolated
+    /// location).
     public static func standard(home: String = NSHomeDirectory(), tmp: String = NSTemporaryDirectory()) -> String {
         let primary = home + "/Library/Application Support/HyperBuf/hyperbuf.sock"
         if primary.utf8.count <= maxBytes { return primary }

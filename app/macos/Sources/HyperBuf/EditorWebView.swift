@@ -4,14 +4,14 @@
 import AppKit
 import WebKit
 
-/// WKWebView に、右クリックメニューの項目「<エディタ> で編集」を足す(「翻訳」などと同じメニュー)。
-/// 項目を選ぶと、Web コアが、指した場所(選択・クリック位置)を、元の Markdown の位置にして、記録する。
+/// Adds the context menu item "Edit in <editor>" to the WKWebView (the same menu as "Translate" etc.).
+/// When chosen, the Web core turns the location pointed at (selection / click position) into a position in the source Markdown and records it.
 final class EditorWebView: WKWebView {
     var onEditRequested: (() -> Void)?
     var editMenuTitle = "Edit in Editor"
 
-    // 起動直後から、クリックなしでキー操作を受け付ける。WKWebView は、ウィンドウに載っても、
-    // 自分では、ファーストレスポンダにならない(クリックして初めてなる)
+    // Accept key input right after launch without a click. A WKWebView does not become the first responder
+    // by itself even when placed in a window (only after being clicked)
     private var keyObserver: NSObjectProtocol?
     private var closeObserver: NSObjectProtocol?
 
@@ -23,7 +23,7 @@ final class EditorWebView: WKWebView {
         closeObserver = nil
         guard let window else { return }
         takeKeyboardFocus()
-        // ウィンドウを閉じるときも、セッションを保存する(最後のウィンドウなら、そのまま終了する)
+        // Also save the session when a window is closed (for the last window, quit as is)
         closeObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification, object: window, queue: .main
         ) { [weak self] _ in
@@ -39,7 +39,7 @@ final class EditorWebView: WKWebView {
         }
     }
 
-    /// テキスト入力中は、奪わない。
+    /// Does not take it away during text input.
     private func takeKeyboardFocus() {
         DispatchQueue.main.async { [weak self] in
             guard let self, let window = self.window else { return }

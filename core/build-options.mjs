@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// Web コアのバンドルの設定。build.mjs(ビルド)と scripts/licenses.mjs(同梱するライブラリの洗い出し)が共有する。
-// Mermaid は動的 import で別チャンクにし、図のある文書でだけ読み込む。
+// Settings for the Web core bundle. Shared by build.mjs (build) and scripts/licenses.mjs (listing of bundled
+// libraries).
+// Mermaid is split into a separate chunk via dynamic import and loaded only for documents with diagrams.
 export const buildOptions = {
   entryPoints: ["src/main.ts"],
   bundle: true,
   splitting: true,
   format: "esm",
   outdir: "dist",
-  target: "safari17", // macOS 14 の Safari 17 に合わせる
+  target: "safari17", // matches Safari 17 of macOS 14
   minify: true,
   loader: { ".woff2": "file", ".woff": "file", ".ttf": "file", ".wasm": "file" },
-  // elkjs(EPL-2.0)は同梱しない。ELK レイアウトを使う図は、図の位置にエラーとして表示される
+  // elkjs (EPL-2.0) is not bundled. Diagrams that use the ELK layout are shown as an error at the diagram's
+  // position
   alias: { "elkjs/lib/elk.bundled.js": "./src/stubs/elkjs-disabled.js" },
   logLevel: "warning",
 };

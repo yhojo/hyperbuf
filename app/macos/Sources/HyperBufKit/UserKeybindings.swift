@@ -3,16 +3,16 @@
 
 import Foundation
 
-/// 設定ファイル(`config.json`)の `keybindings`: キー列 → コマンド名(`null` は、標準の割り当てを外す)。
-/// 例: `{"keybindings": {"M-p": "back", "C-f": null}}`
+/// `keybindings` in the config file (`config.json`): key sequence -> command name (`null` removes the default binding).
+/// Example: `{"keybindings": {"M-p": "back", "C-f": null}}`
 ///
-/// ここでは、型・件数・長さだけを検証して、Web コアに渡す。キー表記・コマンド名・衝突の検証と、問題の報告は、
-/// Web コア側(`core/src/keybindings.ts`)が行う(`describe-bindings` に出る)。
+/// Here only type, count and length are validated before passing to the Web core. Validation of key notation, command names and conflicts,
+/// and reporting problems, are done on the Web core side (`core/src/keybindings.ts`) (shown in `describe-bindings`).
 public enum UserKeybindings {
     public static let maxEntries = 500
     public static let maxLength = 100
 
-    /// Web コアに渡せる形(`null` は `NSNull`)。ファイルがない・不正なら、空。
+    /// The form that can be passed to the Web core (`null` is `NSNull`). Empty if the file is absent or invalid.
     public static func load(from url: URL = EditorConfig.configURL()) -> [String: Any] {
         guard let data = try? Data(contentsOf: url),
             let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],

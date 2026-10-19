@@ -3,7 +3,7 @@
 
 import Foundation
 
-/// 任意の JSON の値。応答の `result` など、形が操作ごとに違うものに使う。
+/// An arbitrary JSON value. Used where the shape differs per operation, such as the response `result`.
 public enum JSONValue: Sendable, Equatable, Codable {
     case null
     case bool(Bool)
@@ -41,7 +41,7 @@ public enum JSONValue: Sendable, Equatable, Codable {
         }
     }
 
-    /// `JSONSerialization` が返す値(辞書・配列・文字列・数値・真偽・NSNull)から変換する。
+    /// Converts from values returned by `JSONSerialization` (dictionary, array, string, number, bool, NSNull).
     public init(any value: Any) {
         switch value {
         case is NSNull: self = .null

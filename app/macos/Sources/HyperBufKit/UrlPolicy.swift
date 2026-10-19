@@ -3,19 +3,19 @@
 
 import Foundation
 
-/// 文書のリンク(外部の URL)を、ブラウザで開くかの判定(docs/user/configuration.md の `trustedUrls`)。
+/// Judgment of whether to open a document link (external URL) in the browser (`trustedUrls` in docs/user/configuration.md).
 ///
-/// 段階的に緩める設計:
-///  1. 既定は、確認する(URL 全体をミニバッファに出して、利用者が yes / no / always を選ぶ)
-///  2. `trustedUrls` のパターン(`*` は任意の文字列)に合う URL は、確認なしで開く
-///  3. 「always」で記憶したサイト(オリジン)は、確認なしで開く
+/// Designed to be loosened step by step:
+///  1. By default, confirm (the whole URL is shown in the minibuffer and the user chooses yes / no / always)
+///  2. A URL matching a `trustedUrls` pattern (`*` is any string) is opened without confirmation
+///  3. A site (origin) remembered with "always" is opened without confirmation
 ///
-/// 常に開かないもの: `http` / `https` / `mailto` 以外のスキーム、ユーザー名・パスワードを含む URL(フィッシングで
-/// 使われる形)、長すぎる URL、ホストのない URL。
+/// Never opened: schemes other than `http` / `https` / `mailto`, URLs containing a user name or password (a form used in phishing),
+/// overly long URLs, and URLs without a host.
 public struct UrlPolicy: Sendable {
     public enum Decision: Sendable, Equatable {
         case open
-        /// 確認が要る。`origin` は、「always」で記憶する単位(`https://example.com`)。記憶できないもの(mailto)は nil。
+        /// Confirmation is needed. `origin` is the unit remembered with "always" (`https://example.com`). nil for what cannot be remembered (mailto).
         case confirm(origin: String?)
         case deny(reason: String)
     }
@@ -25,7 +25,7 @@ public struct UrlPolicy: Sendable {
 
     public init(trusted: [String] = []) { self.trusted = trusted }
 
-    /// `scheme://host[:port]`(小文字)。`http` / `https` の URL だけ。
+    /// `scheme://host[:port]` (lowercase). Only for `http` / `https` URLs.
     public static func origin(of url: String) -> String? {
         guard let components = URLComponents(string: url), let scheme = components.scheme?.lowercased(),
             scheme == "http" || scheme == "https", let host = components.host?.lowercased(), !host.isEmpty
@@ -44,7 +44,7 @@ public struct UrlPolicy: Sendable {
         }
         switch scheme {
         case "mailto":
-            // メールクライアントを開く。毎回確認する(記憶しない)
+            // Opens the mail client. Confirm every time (not remembered)
             return .confirm(origin: nil)
         case "http", "https":
             guard let host = components.host, !host.isEmpty else { return .deny(reason: "No host") }
@@ -59,7 +59,7 @@ public struct UrlPolicy: Sendable {
         }
     }
 
-    /// `*` だけを、任意の文字列(空を含む)として扱う、大文字小文字を区別しない照合。全体が一致すること。
+    /// Case-insensitive matching that treats only `*` as any string (including empty). The whole string must match.
     public static func glob(_ pattern: String, matches text: String) -> Bool {
         let parts = pattern.lowercased().components(separatedBy: "*")
         let text = text.lowercased()
@@ -76,7 +76,7 @@ public struct UrlPolicy: Sendable {
     }
 }
 
-/// 「always」で記憶したサイト(オリジン)。永続化する。保存先は 0600、置き場所のディレクトリは 0700。
+/// Sites (origins) remembered with "always". Persisted. The file is 0600 and its directory 0700.
 public final class RememberedOrigins: @unchecked Sendable {
     public static func standardURL() -> URL {
         URL(fileURLWithPath: NSHomeDirectory())

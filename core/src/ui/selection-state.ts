@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 選択範囲の保存と復元(セッション)。選択は、window の本文の、表示されたテキスト(isearch と同じ索引)の位置で表す。
+// Saving and restoring the selection (session). A selection is represented by positions in the displayed text of a window's body (the same index as isearch).
 
 import { MAX_SELECTION } from "../session.ts";
 import type { SessionSelection } from "../session.ts";
@@ -10,7 +10,7 @@ import type { AppContext } from "./context.ts";
 import { buildIndex, rangeFor } from "./isearch-dom.ts";
 import type { TextIndex } from "./isearch-dom.ts";
 
-/** 範囲の端(`node`, `offset`)を、索引の位置にする。索引にない場所(数式の複製など)なら null。 */
+/** Turns a range end (`node`, `offset`) into an index position. null if it is somewhere not in the index (such as a copy of math). */
 function offsetOf(
   index: TextIndex,
   node: Node,
@@ -21,7 +21,7 @@ function offsetOf(
     const hit = index.nodes.find((n) => n.node === node);
     return hit ? hit.start + offset : null;
   }
-  // 要素が端のとき(段落の選択など)は、その点の前後で、最も近いテキストを使う
+  // When the end is an element (e.g. a paragraph selection), use the nearest text before or after that point
   const point = document.createRange();
   point.setStart(node, offset);
   point.collapse(true);
@@ -36,7 +36,7 @@ function offsetOf(
   return end;
 }
 
-/** いまの選択範囲(window の本文の中にあるもの)。なければ null。 */
+/** The current selection (the one inside the window's body). null if none. */
 export function captureSelection(ctx: AppContext): SessionSelection | null {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return null;
@@ -54,7 +54,7 @@ export function captureSelection(ctx: AppContext): SessionSelection | null {
   return null;
 }
 
-/** 保存した選択範囲を戻す。その位置の文字列が一致しなければ(文書が変わっていれば)、何もしない。 */
+/** Restores the saved selection. Does nothing if the text at that position does not match (the document has changed). */
 export function applySelection(ctx: AppContext, saved: SessionSelection): boolean {
   const content = ctx.views.contentOf(saved.win);
   if (!content) return false;

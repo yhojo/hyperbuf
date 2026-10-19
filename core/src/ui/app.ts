@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// アプリの組み立て。状態(model)、部品(エコー・ミニバッファ・描画)、コマンド、キー入力、
-// ホストからのイベントを結びつける。
+// Assembles the app. Ties together state (model), components (echo area, minibuffer, rendering), commands, key input,
+// and events from the host.
 
 import type { HostConfig, HyperbufHost } from "../host.ts";
 import { createModel, currentEntry, isVirtualPath, openBuffer, windows } from "../model.ts";
@@ -31,10 +31,10 @@ export interface AppHandle {
   ctx: AppContext;
   commands: Commands;
   keyboard: KeyboardHandle;
-  /** 選択中の window で文書を開き、描画する(外部連携・テスト用)。 */
+  /** Opens a document in the selected window and renders it (for external integration and tests). */
   open(path: string, anchor?: string | null): Promise<void>;
   search(query: string): Promise<void>;
-  /** セッションを、いますぐ保存する(アプリの終了の直前に、シェルが呼ぶ)。 */
+  /** Saves the session right now (the shell calls this just before the app quits). */
   flushSession(): Promise<void>;
 }
 
@@ -68,7 +68,7 @@ export async function startApp(options: {
   });
   let saver: SessionSaver | undefined;
   let watched = new Set<string>();
-  /** 表示中のファイルを、ホストに伝える。新しく表示されたものは、読み直して、古ければ更新する。 */
+  /** Tells the host which files are displayed. Newly displayed ones are re-read and updated if stale. */
   const syncWatch = (): void => {
     const now = new Set(displayedPaths(model));
     host.watch?.([...now]);
@@ -76,7 +76,7 @@ export async function startApp(options: {
     watched = now;
     for (const path of added) void revalidate(path);
   };
-  /** バッファの内容を、ファイルと照らし合わせる(監視していない間の変更・削除を拾う)。 */
+  /** Checks buffer contents against files (picks up changes and deletions made while not watching). */
   const revalidate = async (path: string): Promise<void> => {
     const buf = model.buffers.get(path);
     if (!buf) return;
@@ -94,7 +94,7 @@ export async function startApp(options: {
       }
     }
   };
-  // 利用者のキー割り当て(config.json の keybindings)を、標準に重ねる。問題のある設定は、無視して、知らせる
+  // Layers the user's key bindings (`keybindings` in config.json) over the defaults. Problematic settings are ignored and reported
   const config: HostConfig | undefined = await host.getConfig?.().catch(() => undefined);
   renderer.configure({ mathUnescapeUnderscore: config?.mathUnescapeUnderscore !== false });
   views.followUpdates = config?.followUpdates === true;
@@ -122,17 +122,17 @@ export async function startApp(options: {
   } else {
     echo.message("Type C-x C-f to open a file");
   }
-  // アプリの動作中に OS の外観(ライト / ダーク)が切り替わったら、描画時に色が決まる図(Mermaid)を、描き直す。
-  // 文書・コード・数式・UI は、CSS(`prefers-color-scheme`)が、そのまま追従する
+  // When the OS appearance (light / dark) changes while the app is running, re-render diagrams (Mermaid) whose colors are fixed at render time.
+  // Documents, code, math and the UI follow automatically via CSS (`prefers-color-scheme`)
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
     void refreshMermaidTheme().then(() => views.redrawDiagrams());
   });
-  // アプリがアクティブになったときに、表示中のファイルを照合する(監視で拾えない場合の保険)
+  // When the app becomes active, check the displayed files (a safety net for cases the watcher misses)
   window.addEventListener("focus", () => {
     for (const path of watched) void revalidate(path);
     views.refreshBranches();
   });
-  // 復元の前に保存すると、前回の状態を消してしまう。復元(または、初期表示)のあとに始める
+  // Saving before restoring would erase the previous state. Start after the restore (or the initial display)
   if (useSession) {
     saver = createSessionSaver(ctx);
     const flushNow = (): void => void saver?.flush();
@@ -166,7 +166,7 @@ export async function startApp(options: {
   };
 }
 
-/** 全 window が表示している、ファイルの文書のパス(重複なし)。 */
+/** Paths of the files shown by all windows (no duplicates). */
 function displayedPaths(model: Model): string[] {
   const out = new Set<string>();
   for (const win of windows(model)) {

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// コマンドの定義。キーマップ(keymap.ts)は、キー列 → コマンド名の対応だけを持つ。
-// M-x は、ここの名前をそのまま候補にする。
+// Command definitions. The keymap (keymap.ts) only holds the key sequence -> command name mapping.
+// M-x uses the names here as its candidates as they are.
 
 import {
   back,
@@ -97,7 +97,7 @@ export const COMMAND_NAMES = [
 
 export type CommandName = (typeof COMMAND_NAMES)[number];
 
-/** コマンドの説明(describe-bindings に出る)。全コマンドに必要(型で、漏れを検出する)。 */
+/** Command descriptions (shown in describe-bindings). Required for every command (the type catches omissions). */
 export const COMMAND_DOCS: Readonly<Record<CommandName, string>> = {
   "split-below": "Split the window above and below (history is copied)",
   "split-right": "Split the window side by side (history is copied)",
@@ -170,7 +170,7 @@ export type Command = () => unknown;
 export type Commands = Record<CommandName, Command>;
 
 const LINE_PX = 48;
-/** window の大きさを変える 1 回分(`enlarge-window` など。Emacs の 1 行・1 桁に当たる、ピクセル数)。 */
+/** One step of window resizing (`enlarge-window` etc.; pixels, corresponding to one row / one column in Emacs). */
 const RESIZE_V_PX = 48;
 const RESIZE_H_PX = 80;
 const NO_SPLIT = (axis: string): string => `No ${axis} split to resize`;
@@ -179,7 +179,7 @@ export function createCommands(ctx: AppContext): Commands {
   const { model, views, echo, minibuffer, host } = ctx;
   const sel = () => selectedWindow(model);
 
-  /** 見出しの一覧から、移動先を求めて、そこへスクロールする。 */
+  /** Finds a destination from the list of headings and scrolls there. */
   const moveToHeading = (
     pick: (tops: number[], levels: number[]) => number | null,
     none: string,
@@ -194,7 +194,7 @@ export function createCommands(ctx: AppContext): Commands {
     else echo.message(none);
   };
 
-  /** 開いているバッファを、名前(uniquify 済み)の候補から選ぶ。候補は、最近使った順。 */
+  /** Chooses among open buffers from name candidates (uniquified). Candidates are in most-recently-used order. */
   const pickBuffer = async (
     label: string,
     history?: string,
@@ -210,7 +210,7 @@ export function createCommands(ctx: AppContext): Commands {
     return picked === null ? null : (byName.get(picked) ?? null);
   };
 
-  /** buffer を閉じる。履歴が空になった window には、別の buffer(最近使ったもの)を表示する。なければ、空のまま。 */
+  /** Kills a buffer. A window whose history becomes empty shows another buffer (the most recently used). If there is none, it stays empty. */
   const killBuffers = async (paths: readonly string[]): Promise<void> => {
     const empty = new Map<number, Win>();
     for (const path of paths) {
@@ -225,7 +225,7 @@ export function createCommands(ctx: AppContext): Commands {
     }
   };
 
-  /** 入力欄で選んだファイル(絶対パス)を開く。 */
+  /** Opens the file (absolute path) chosen in the input field. */
   const openPicked = async (picking: Promise<string | null>): Promise<void> => {
     const path = await picking;
     if (!path) return;
@@ -263,7 +263,7 @@ export function createCommands(ctx: AppContext): Commands {
     "scroll-page-up": () => views.scrollBy(-views.pageHeight() * 0.9),
     "beginning-of-document": () => views.scrollTo(0),
     "end-of-document": () => views.scrollTo(views.scrollHeight()),
-    // outline-mode 風の見出し移動。文書内の移動なので、参照履歴には積まない
+    // outline-mode-style heading navigation. It moves within a document, so it is not pushed onto the reference history
     "next-heading": () =>
       moveToHeading((tops) => nextIndex(tops, views.scrollTop()), "No following heading"),
     "previous-heading": () =>
@@ -381,7 +381,7 @@ export function createCommands(ctx: AppContext): Commands {
       const n = Number(await minibuffer.prompt("Goto line: "));
       if (entry && Number.isInteger(n) && n > 0) visit(model, sel(), entry.path, `line:${n}`);
     },
-    // 文書内のインクリメンタル検索(Emacs の isearch)。プロジェクト全体の検索は、search-project(M-s g)
+    // Incremental search within a document (Emacs isearch). Project-wide search is search-project (M-s g)
     "isearch-forward": () => startIsearch(ctx, 1),
     "isearch-backward": () => startIsearch(ctx, -1),
     "project-find-regexp": async () => {
@@ -393,7 +393,7 @@ export function createCommands(ctx: AppContext): Commands {
       const query = await minibuffer.prompt("Search: ");
       if (query) await searchProject(ctx, query);
     },
-    // ビューアで指した場所(選択・右クリック・いま読んでいる場所)を、元の位置にして、エディタ連携のために記録する
+    // Records the location pointed at in the viewer (selection / right-click / current reading position) as the source position, for editor integration
     "edit-in-editor": async () => {
       const entry = currentEntry(sel());
       const buf = entry && model.buffers.get(entry.path);
@@ -429,7 +429,7 @@ export function createCommands(ctx: AppContext): Commands {
       const command = COMMAND_NAMES.find((n) => n === name);
       if (command) await commands[command]();
     },
-    // キー割り当ての一覧(仮想 buffer)。設定の問題も、ここに出る
+    // List of key bindings (virtual buffer). Config problems are shown here too
     "describe-bindings": () => {
       const path = "*Help: keybindings*";
       openBuffer(

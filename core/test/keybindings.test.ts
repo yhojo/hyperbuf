@@ -29,7 +29,7 @@ test("キー表記の検証", () => {
     "M->",
     "a",
   ]) {
-    // C-M-s は、修飾キーの順(C- M- s- S-)に合っているので、正しい
+    // C-M-s follows the modifier order (C- M- s- S-), so it is valid
     assert.ok(isValidKeySequence(ok), ok);
   }
   for (const bad of [
@@ -52,9 +52,9 @@ test("割り当てを足す・置き換える・外す", () => {
   const r = applyOverrides(defaults, { "M-p": "back", "C-f": null, "C-x 2": "next-link" }, known);
   assert.deepEqual(r.problems, []);
   assert.equal(r.bindings["M-p"], "back");
-  assert.ok(!("C-f" in r.bindings)); // 外した
-  assert.equal(r.bindings["C-x 2"], "next-link"); // 置き換えた
-  assert.equal(r.bindings["C-b"], "back"); // 他は、そのまま
+  assert.ok(!("C-f" in r.bindings)); // removed
+  assert.equal(r.bindings["C-x 2"], "next-link"); // replaced
+  assert.equal(r.bindings["C-b"], "back"); // others unchanged
   assert.doesNotThrow(() => createKeymap(r.bindings));
 });
 
@@ -74,7 +74,7 @@ test("不明なコマンド・不正な表記・割り当てのないキーの�
   assert.ok(r.problems.some((p) => p.includes("unknown command")));
   assert.ok(r.problems.some((p) => p.includes("invalid key notation")));
   assert.ok(r.problems.some((p) => p.includes("cannot be removed")));
-  assert.equal(r.bindings["M-w"], "back"); // 正しいものは、適用される
+  assert.equal(r.bindings["M-w"], "back"); // valid ones are applied
   assert.ok(!("M-q" in r.bindings));
 });
 
@@ -85,14 +85,14 @@ test("C-g は、取り消しに予約されている", () => {
 });
 
 test("プレフィックスとコマンドの衝突は、無視する(外してから割り当てれば、できる)", () => {
-  // C-x は、C-x 2 などのプレフィックス
+  // C-x is a prefix of C-x 2 and so on
   const conflict = applyOverrides(defaults, { "C-x": "back" }, known);
   assert.ok(conflict.problems[0]?.includes("conflicts"));
   assert.ok(!("C-x" in conflict.bindings));
-  // C-x 2 の下に、さらに割り当てると、C-x 2 がコマンドとプレフィックスの両方になる
+  // Binding further under C-x 2 makes C-x 2 both a command and a prefix
   const deeper = applyOverrides(defaults, { "C-x 2 a": "back" }, known);
   assert.ok(deeper.problems[0]?.includes("conflicts"));
-  // 先に、外す(解除は、並びに関係なく先に処理される)
+  // Unbind first (unbinding is processed first regardless of order)
   const ok = applyOverrides(defaults, { "C-x 2 a": "back", "C-x 2": null }, known);
   assert.deepEqual(ok.problems, []);
   assert.equal(ok.bindings["C-x 2 a"], "back");
@@ -120,7 +120,7 @@ test("describe-bindings の内容: 割り当て済み・キーなし・設定の
   });
   assert.match(md, /^# Key bindings/);
   assert.match(md, /## Configuration problems[\s\S]*unknown command/);
-  assert.match(md, /\| `C-f`, `s-]` \| `forward` \| 進む\\\|戻る \|/); // 表の区切りを壊さない
+  assert.match(md, /\| `C-f`, `s-]` \| `forward` \| 進む\\\|戻る \|/); // does not break the table delimiter
   assert.match(md, /## Unbound commands[\s\S]*\| `next-link` \| 次のリンク \|/);
   const none = renderBindingsHelp({
     docs: { back: "x" },

@@ -1,18 +1,23 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 同梱するサードパーティのライセンスの洗い出し(docs/history/migration-plan.md の M8)。
+// Listing of bundled third-party licenses (M8 of docs/history/migration-plan.md).
 //
-// 使い方:
-//   node scripts/licenses.mjs summary          docs/user/third-party-licenses.md を出力する(一覧)
-//   node scripts/licenses.mjs notices <出力先>   アプリに同梱する THIRD-PARTY-NOTICES(全文つき)を出力する
-//   node scripts/licenses.mjs check            許可するライセンスだけか、ライセンス文があるか、一覧が最新かを検査する
+// Usage:
+//   node scripts/licenses.mjs summary          prints docs/user/third-party-licenses.md (the list)
+//   node scripts/licenses.mjs notices <output> prints THIRD-PARTY-NOTICES (with full texts) to bundle in the
+// app
+//   node scripts/licenses.mjs check checks that only allowed licenses are used, license texts exist, and the
+// list is up to date
 //
-// 対象は「実際にバンドルに入るもの」。esbuild の metafile から、入力になった node_modules のパッケージを求める
-// (devDependencies のうち、テストやビルドだけに使うものは、含まれない)。
-// 追加: Swift 側(アプリ・CLI)は、サードパーティの依存を持たない。starry-night の文法は、バンドルに入ったものだけの
-// ライセンス文を、starry-night の `notice` から取り出す。npm で洗い出せないもの(KaTeX のフォント)は
-// legal/extra-licenses.json に書く。
+// The target is "what actually goes into the bundle". From the esbuild metafile, find the node_modules
+// packages that were inputs
+// (devDependencies used only for tests or builds are not included).
+// Also: the Swift side (app, CLI) has no third-party dependencies. For starry-night grammars, only the
+// license texts of
+// those that entered the bundle are extracted from starry-night's `notice`. What npm cannot enumerate (KaTeX
+// fonts) is
+// written in legal/extra-licenses.json.
 
 import * as esbuild from "esbuild";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
@@ -25,7 +30,7 @@ const root = resolve(here, "..");
 const repo = resolve(root, "..");
 process.chdir(root);
 
-/** 許可するライセンス(SPDX)。ここにないものは、確認が済むまで、検査で失敗する。 */
+/** Allowed licenses (SPDX). Anything not listed here fails the check until it has been reviewed. */
 const ALLOWED_LIST = [
   "MIT",
   "ISC",
@@ -37,7 +42,8 @@ const ALLOWED_LIST = [
   "CC0-1.0",
   "BlueOak-1.0.0",
   "OFL-1.1",
-  // starry-night の文法のうち、SPDX で表せない、許容的なもの(ライセンス文は、notice に含まれる)
+  // starry-night grammars that SPDX cannot express but are permissive (the license text is included in the
+  // notice)
   "permissive",
   "wtfpl",
   "zlib",
@@ -48,7 +54,7 @@ const ALLOWED = new Set(ALLOWED_LIST.map((l) => l.toLowerCase()));
 
 const extra = JSON.parse(readFileSync(join(repo, "legal/extra-licenses.json"), "utf8"));
 
-/** SPDX の式(OR / AND)を判定する。OR は、どれか 1 つが許可されていればよい。 */
+/** Evaluates an SPDX expression (OR / AND). For OR, it is enough that one of them is allowed. */
 function allowed(expression) {
   const text = expression.replace(/[()]/g, " ").trim();
   if (text.includes(" OR ")) return text.split(" OR ").some((e) => allowed(e));
@@ -66,7 +72,8 @@ async function bundledPackages() {
   });
   const dirs = new Map();
   const grammars = new Set();
-  // 出力に実際に残ったもの(ツリーシェイクで捨てられたファイルは、metafile の入力には出るが、配布物には入らない)
+  // What actually remained in the output (files dropped by tree-shaking appear in the metafile inputs but do
+  // not go into the distribution)
   const inBundle = new Set();
   for (const output of Object.values(result.metafile.outputs)) {
     for (const [input, info] of Object.entries(output.inputs)) {
@@ -108,7 +115,7 @@ function repositoryOf(pj) {
   return r.replace(/^git\+/, "").replace(/\.git$/, "");
 }
 
-/** starry-night の notice を、ブロックに分ける({files, source, spdx, text})。 */
+/** Splits starry-night's notice into blocks ({files, source, spdx, text}). */
 function starryNightNotices(grammars) {
   const text = readFileSync(join(root, "node_modules/@wooorm/starry-night/notice"), "utf8");
   const blocks = text.split(/\n={20,}\n/).slice(1);
@@ -143,7 +150,8 @@ async function collect() {
       files: licenseFiles(join(root, dir)),
     });
     const last = packages[packages.length - 1];
-    // ライセンス文のファイルがないパッケージ: MIT の標準の文面に、author を補う(override に copyright を書く)
+    // Packages without a license text file: add the author to the standard MIT text (write the copyright in
+    // the override)
     if (!last.files.length && override?.copyright && /^MIT$/i.test(last.license)) {
       const template = readFileSync(join(repo, "legal/MIT-template.txt"), "utf8");
       last.files = [

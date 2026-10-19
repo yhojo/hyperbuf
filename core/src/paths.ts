@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 絶対パスの操作(DOM やシェルに依存しない純粋な関数)。バッファの識別は、正規化した絶対パス。
-// ファイルシステムには触れない(シンボリックリンクの解決は、シェルが行う)。
+// Absolute path operations (pure functions with no DOM or shell dependency). A buffer's identity is the normalized absolute path.
+// Does not touch the file system (the shell resolves symbolic links).
 
-/** `.` と `..` と重複した `/` を解決する。`/` より上へは行かない。絶対パスだけを扱う。 */
+/** Resolves `.`, `..` and duplicate `/`. Does not go above `/`. Handles absolute paths only. */
 export function normalizePath(path: string): string {
   const out: string[] = [];
   for (const seg of path.split("/")) {
@@ -28,21 +28,21 @@ export function joinPath(dir: string, rel: string): string {
   return normalizePath(rel.startsWith("/") ? rel : `${dir}/${rel}`);
 }
 
-/** `~` と `~/…` をホストのディレクトリにする(それ以外は、そのまま)。 */
+/** Turns `~` and `~/…` into the host's directory (anything else is left as is). */
 export function expandHome(path: string, home: string): string {
   if (path === "~") return home;
   return path.startsWith("~/") ? `${home}${path.slice(1)}` : path;
 }
 
-/** ホストのディレクトリ以下を `~` で短縮する(表示用)。 */
+/** Shortens paths under the host's directory with `~` (for display). */
 export function abbreviateHome(path: string, home: string): string {
   if (path === home) return "~";
   return home !== "/" && path.startsWith(`${home}/`) ? `~${path.slice(home.length)}` : path;
 }
 
 /**
- * 入力欄の文字列を、絶対パスにする。`~/` は展開し、絶対パスでなければ、`base` からの相対とみなす。
- * 末尾の `/` は残す(ディレクトリの指定を、入力中に区別するため)。
+ * Turns an input string into an absolute path. Expands `~/`; if not absolute, treats it as relative to `base`.
+ * A trailing `/` is kept (to tell a directory specification apart while typing).
  */
 export function resolveInput(text: string, base: string, home: string): string {
   const expanded = expandHome(text, home);
@@ -51,7 +51,7 @@ export function resolveInput(text: string, base: string, home: string): string {
   return abs.endsWith("/") && normalized !== "/" ? `${normalized}/` : normalized;
 }
 
-/** `path` が `dir` の中(または `dir` そのもの)か。区切りの境界で判定する(`/tmp` は `/tmp2` に一致しない)。 */
+/** Whether `path` is inside `dir` (or is `dir` itself). Judged on separator boundaries (`/tmp` does not match `/tmp2`). */
 export function isInside(path: string, dir: string): boolean {
   if (dir === "/") return true;
   return path === dir || path.startsWith(`${dir}/`);

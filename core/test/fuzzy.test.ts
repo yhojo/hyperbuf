@@ -34,7 +34,7 @@ test("飛び飛びの一致", () => {
 
 test("一致した範囲(強調表示用): ファイル名を優先し、語ごと・飛び飛びにも対応し、まとめる", () => {
   assert.deepEqual(matchRanges("docs/interaction-model.md", "model"), [[17, 22]]);
-  assert.deepEqual(matchRanges("docs/model/model.md", "model"), [[11, 16]]); // ファイル名の側
+  assert.deepEqual(matchRanges("docs/model/model.md", "model"), [[11, 16]]); // the file name side
   assert.deepEqual(matchRanges("docs/interaction-model.md", "docs model"), [
     [0, 4],
     [17, 22],
@@ -43,7 +43,7 @@ test("一致した範囲(強調表示用): ファイル名を優先し、語ご�
     [5, 7],
     [17, 19],
   ]);
-  assert.deepEqual(matchRanges("abc", "ab bc"), [[0, 3]]); // 重なる範囲は、まとめる
+  assert.deepEqual(matchRanges("abc", "ab bc"), [[0, 3]]); // overlapping ranges are merged
   assert.deepEqual(matchRanges("abc", ""), []);
   assert.deepEqual(matchRanges("abc", "zzz"), []);
 });

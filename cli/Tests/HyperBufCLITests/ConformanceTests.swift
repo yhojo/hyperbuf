@@ -7,7 +7,8 @@ import Testing
 
 @testable import HyperBufCLI
 
-/// protocol/examples/cli-args.json の例を、実際のファイルを作って検証する(Swift・Emacs が共有する例)。
+/// Verifies the examples in protocol/examples/cli-args.json by creating real files (examples shared by Swift and
+/// Emacs).
 @Suite struct CLIConformanceTests {
     @Test func cliArgsExamples() throws {
         let url = URL(fileURLWithPath: #filePath)

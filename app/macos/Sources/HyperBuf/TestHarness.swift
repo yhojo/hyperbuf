@@ -4,18 +4,18 @@
 import Foundation
 import WebKit
 
-/// 統合テスト用のハーネス(デバッグビルドのみ)。
-/// `HYPERBUF_TEST_SCRIPT=<JS ファイル>` のとき、Web コアの起動後にその JS を WebView の中で実行し、
-/// 結果を標準出力に `RESULT: …` として出して終了する。scripts/integration-test.sh が使う。
+/// Harness for integration tests (debug builds only).
+/// With `HYPERBUF_TEST_SCRIPT=<JS file>`, runs that JS inside the WebView once the Web core has started,
+/// prints the result to standard output as `RESULT: ...` and exits. Used by scripts/integration-test.sh.
 enum TestHarness {
-    /// `HYPERBUF_TEST_COMMANDS=<ディレクトリ>` のとき、そこに置かれた `N.js` を順に WebView の中で実行して、
-    /// 結果を `N.result`(`RESULT: …` または `ERROR: …`)に書く。シェルスクリプトから、ページの操作
-    /// (選択、コマンドの実行など)を、自動のテストで行うための入口。デバッグビルドのみ。
+    /// With `HYPERBUF_TEST_COMMANDS=<directory>`, runs the `N.js` files placed there in order inside the WebView and
+    /// writes the result to `N.result` (`RESULT: ...` or `ERROR: ...`). An entry point for shell scripts to drive the page
+    /// (selection, running commands, etc.) in automated tests. Debug builds only.
     @MainActor
     static func startCommandChannel(for webView: WKWebView, slot: Int = 1) {
         #if DEBUG
             guard let base = ProcessInfo.processInfo.environment["HYPERBUF_TEST_COMMANDS"] else { return }
-            // スロット 1 は、指定のディレクトリ。ほかのフレームは、その下の `frame<N>`(複数フレームのテスト用)
+            // Slot 1 uses the given directory. Other frames use `frame<N>` below it (for multi-frame tests)
             let directory = slot == 1 ? base : base + "/frame\(slot)"
             try? FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
             Task { @MainActor [weak webView] in

@@ -1,9 +1,9 @@
 #!/bin/bash
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Yasuo Hojo
-# ソースファイルに、SPDX のライセンス表記(1 行)があるか検査する。
-#   emacs/ 以下: GPL-3.0-or-later、それ以外: Apache-2.0(docs/history/license-options.md)
-# 対象: git の管理下の .ts .mjs .js .swift .sh .css .el(fixtures/・docs/・legal/ は除く)
+# Checks that source files have an SPDX license line (one line).
+#   Under emacs/: GPL-3.0-or-later; everything else: Apache-2.0 (docs/history/license-options.md)
+# Targets: .ts .mjs .js .swift .sh .css .el under git control (excluding fixtures/, docs/, legal/)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

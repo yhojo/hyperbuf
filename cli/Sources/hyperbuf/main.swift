@@ -6,10 +6,10 @@ import HyperBufCLI
 import HyperBufIPC
 import HyperBufProtocol
 
-// hyperbuf コマンド。仕様: docs/dev/integration-protocol.md
+// The hyperbuf command. Spec: docs/dev/integration-protocol.md
 let environment = ProcessInfo.processInfo.environment
 
-// 開発・テスト用の差し替え: HYPERBUF_SOCKET_PATH(ソケット)、HYPERBUF_APP(.app のパス)
+// Overrides for development/testing: HYPERBUF_SOCKET_PATH (socket), HYPERBUF_APP (path to the .app)
 let env = CLI.Environment(
     cwd: FileManager.default.currentDirectoryPath,
     socketPath: environment["HYPERBUF_SOCKET_PATH"] ?? SocketPath.standard(),

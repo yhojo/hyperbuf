@@ -3,21 +3,21 @@
 
 import Foundation
 
-/// ファイルへのアクセスの判定(docs/dev/file-access.md): 許可パスと警告パス。
+/// Judgment of file access (docs/dev/file-access.md): allow paths and warn paths.
 ///
-///  1. どちらにも一致しなければ → 開く
-///  2. 一致するものがあれば、一番長く一致したものが勝つ(許可 → 開く、警告 → 確認)
-///  3. 許可と警告が同じパスで重なれば、安全側の警告(設定の問題として報告する)
+///  1. If neither matches -> open
+///  2. If any match, the longest match wins (allow -> open, warn -> confirm)
+///  3. If allow and warn overlap on the same path, the safe side (warn) wins (reported as a config problem)
 ///
-/// パスは正規化(`realpath`、シンボリックリンクは実体)したうえで、区切りの境界で照合する。
+/// Paths are normalized (`realpath`; symbolic links resolved) and matched on separator boundaries.
 public struct PathPolicy: Sendable {
     public enum Decision: Sendable, Equatable {
         case allow
-        /// 警告パスのファイル。確認が要る。承認されたら `remember` を記憶する(アプリが提案したもの)。
+        /// A file under a warn path. Confirmation is needed. If approved, `remember` is remembered (proposed by the app).
         case confirm(remember: String)
     }
 
-    /// 警告パスの既定(ホスト配下の機微な場所を含む)。
+    /// Default warn paths (including sensitive places under the host's home directory).
     public static func defaultWarn(home: String) -> [String] {
         [
             "/usr", "/opt", "/tmp", "/var", "/etc", "/System", "/Library",
@@ -25,7 +25,7 @@ public struct PathPolicy: Sendable {
         ]
     }
 
-    /// 許可パスの既定(iCloud Drive。`~/Library` の警告より、長い一致が勝つ)。
+    /// Default allow paths (iCloud Drive; a longer match beats the `~/Library` warning).
     public static func defaultAllow(home: String) -> [String] {
         ["\(home)/Library/Mobile Documents"]
     }
@@ -33,7 +33,7 @@ public struct PathPolicy: Sendable {
     public let home: String
     public private(set) var warn: [String]
     public private(set) var allow: [String]
-    /// 設定の問題(`C-h b` の「設定の問題」に出す)。
+    /// Config problems (shown as "configuration problems" in `C-h b`).
     public private(set) var problems: [String]
 
     public init(home: String, warn: [String]? = nil, allow: [String]? = nil, problems: [String] = []) {
@@ -45,7 +45,7 @@ public struct PathPolicy: Sendable {
             PathUtil.normalizeConfigured($0, home: home)
         }
         self.problems = problems
-        // 許可と警告が同じパスなら、安全側(警告)にして、報告する
+        // If allow and warn are the same path, take the safe side (warn) and report it
         let both = Set(self.warn.map { $0.lowercased() }).intersection(self.allow.map { $0.lowercased() })
         for path in both.sorted() {
             self.problems.append(
@@ -54,7 +54,7 @@ public struct PathPolicy: Sendable {
         self.allow.removeAll { both.contains($0.lowercased()) }
     }
 
-    /// 設定ファイル(`config.json`)の `warnPaths` / `allowPaths`。なければ既定。不正な項目は無視して、理由を記録する。
+    /// `warnPaths` / `allowPaths` of the config file (`config.json`). Defaults if absent. Invalid entries are ignored and the reason recorded.
     public static func load(from url: URL, home: String) -> PathPolicy {
         var problems: [String] = []
         var object: [String: Any] = [:]
@@ -88,12 +88,12 @@ public struct PathPolicy: Sendable {
         return PathPolicy(home: home, warn: warn, allow: allow, problems: problems)
     }
 
-    /// 判定する。`path` は正規化済みの絶対パス。`remembered` は、承認して記憶した場所(許可として働く)。
+    /// Judges. `path` is a normalized absolute path. `remembered` are places approved and remembered (they act as allow).
     public func decide(_ path: String, remembered: RememberedPaths) -> Decision {
         var best: (length: Int, allowed: Bool)?
         func consider(_ dir: String, allowed: Bool, explicit: Bool = false) {
             guard PathUtil.isInside(path, dir) else { return }
-            // 承認して記憶した場所(explicit)は、同じ長さの警告パスより優先する(利用者が明示的に許可した)
+            // A remembered place (explicit) beats a warn path of the same length (the user explicitly allowed it)
             let length = (dir == "/" ? 0 : dir.count) * 2 + (explicit ? 1 : 0)
             if let current = best {
                 if length > current.length || (length == current.length && !allowed) { best = (length, allowed) }
@@ -108,14 +108,14 @@ public struct PathPolicy: Sendable {
         return .confirm(remember: rememberTarget(for: path))
     }
 
-    /// 許可パス(設定・記憶を含む)に明示的に含まれるか。警告パスとの比較はしない(URL スキーム経由の判定に使う)。
+    /// Whether it is explicitly under an allow path (including config and remembered). Not compared with warn paths (used for the URL scheme route).
     public func isExplicitlyAllowed(_ path: String, remembered: RememberedPaths) -> Bool {
         if allow.contains(where: { PathUtil.isInside(path, $0) }) { return true }
         return remembered.all.contains { PathUtil.isInside(path, PathUtil.canonicalPath($0) ?? $0) }
     }
 
-    /// 承認されたときに記憶するもの。ファイルのディレクトリ。ただし、それが警告パスそのもの、または
-    /// その上位になる場合は、ディレクトリ全体を許可してしまうので、ファイル単体にする。
+    /// What to remember on approval: the file's directory. But if that is a warn path itself, or
+    /// an ancestor of one, it would allow the whole directory, so use the single file instead.
     public func rememberTarget(for file: String) -> String {
         let dir = PathUtil.parent(file)
         for w in warn where PathUtil.isInside(w, dir) { return file }

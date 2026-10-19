@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 文書を開く・リンクをたどる。buffer の読み込みと、参照履歴への記録をまとめる。
+// Opening documents and following links. Combines buffer loading with recording in the reference history.
 
 import { currentEntry, openBuffer, resolveLink, selectedWindow, visit } from "../model.ts";
 import type { Win } from "../model.ts";
 import { abbreviateHome } from "../paths.ts";
 import type { AppContext } from "./context.ts";
 
-/** buffer がなければ、ホストから読んで作る。 */
+/** If there is no buffer, read it from the host and create it. */
 export async function ensureBuffer(ctx: AppContext, path: string): Promise<void> {
   if (ctx.model.buffers.has(path)) return;
   openBuffer(ctx.model, path, await ctx.host.readFile(path));
 }
 
-/** 選択中の window で、文書を開く(参照履歴に積まれる)。失敗は呼び出し側で扱う。 */
+/** Opens a document in the selected window (pushed onto the reference history). Failures are handled by the caller. */
 export async function openAt(
   ctx: AppContext,
   path: string,
@@ -25,9 +25,9 @@ export async function openAt(
 }
 
 /**
- * リンクやリソースが指すファイルへのアクセスを確かめる(docs/dev/file-access.md)。
- * 警告パスのファイルなら、ミニバッファで確認し、承認されたら、シェルに記憶させる。
- * @returns 開いてよいか
+ * Checks access to the file a link or resource points to (docs/dev/file-access.md).
+ * For a file under a warn path, confirm in the minibuffer and, if approved, have the shell remember it.
+ * @returns whether it may be opened
  */
 export async function confirmAccess(ctx: AppContext, path: string): Promise<boolean> {
   const { host, minibuffer } = ctx;
@@ -44,8 +44,8 @@ export async function confirmAccess(ctx: AppContext, path: string): Promise<bool
 }
 
 /**
- * 外部の URL(`https://…` など)を、既定のブラウザで開く。文書の中身はアプリの中で開かない(local first)ので、
- * ブラウザに渡す。確認の方針は、シェルが判定する(`trustedUrls` → 記憶したサイト → 確認)。
+ * Opens an external URL (`https://…` etc.) in the default browser. Document contents are not opened inside the app (local first),
+ * so they are passed to the browser. The shell decides the confirmation policy (`trustedUrls` -> remembered sites -> confirm).
  */
 export async function openExternalLink(ctx: AppContext, href: string): Promise<void> {
   const { host, echo, minibuffer } = ctx;
@@ -59,7 +59,7 @@ export async function openExternalLink(ctx: AppContext, href: string): Promise<v
     return;
   }
   if (decision.action === "confirm") {
-    // URL 全体を見せる(ホストの偽装に気づけるよう、オリジンも添える)
+    // Show the whole URL (with the origin attached so that host spoofing can be noticed)
     const answer = await minibuffer.prompt(
       `Open in browser? ${shorten(href, 160)}${decision.origin ? ` [${decision.origin}] (always: allow this site from now on)` : ""} `,
       decision.origin ? ["yes", "no", "always"] : ["yes", "no"],
@@ -81,7 +81,7 @@ function shorten(text: string, max = 100): string {
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
-/** リンクをたどる。外部 URL は、ブラウザで開く(確認の方針はシェル)。警告パスのファイルは、確認する。 */
+/** Follows a link. External URLs open in the browser (confirmation policy is the shell's). Files under a warn path are confirmed. */
 export async function follow(ctx: AppContext, win: Win, href: string): Promise<void> {
   const entry = currentEntry(win);
   if (!entry) return;

@@ -3,18 +3,18 @@
 
 import Foundation
 
-/// 終了コード(docs/dev/integration-protocol.md §6.1)。
+/// Exit codes (docs/dev/integration-protocol.md §6.1).
 public enum ExitCode: Int32, Sendable {
     case success = 0
-    /// 使い方の誤り。
+    /// Usage error.
     case usage = 1
-    /// ファイルの問題(ない・読めない・`.md` ではない)。
+    /// File problem (missing, unreadable, not `.md`).
     case file = 2
-    /// アプリを起動できない。
+    /// The app cannot be launched.
     case cannotLaunch = 3
-    /// アプリに拒否された(範囲外で承認されなかった、期限切れなど)。
+    /// Rejected by the app (out of scope and not approved, expired, etc.).
     case refused = 4
-    /// プロトコルの不一致、内部のエラー、応答を解釈できない。
+    /// Protocol mismatch, internal error, or an unparseable response.
     case failure = 5
 }
 
@@ -24,16 +24,16 @@ public struct UsageError: Error, Equatable {
 }
 
 public struct OpenOptions: Equatable, Sendable {
-    /// 引数のとおりの、開くファイル(`FILE[:LINE]`)。
+    /// The files to open, exactly as given in the arguments (`FILE[:LINE]`).
     public var files: [String] = []
     public var line: Int?
     public var anchor: String?
     public var target: String?
-    /// アプリ内の確認(範囲外など)を、長く待つ。
+    /// Wait a long time for in-app confirmation (out-of-scope paths, etc.).
     public var wait = false
-    /// アプリを前面に出さずに起動する(起動するときだけ有効)。
+    /// Launch the app without bringing it to the front (only effective when launching).
     public var noActivate = false
-    /// 開かずに、組み立てた URL を出力する。
+    /// Print the built URL instead of opening.
     public var printURL = false
 }
 

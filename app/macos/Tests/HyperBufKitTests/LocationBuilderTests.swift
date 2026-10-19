@@ -14,7 +14,7 @@ import Testing
              "precision": "\(precision.rawValue)", "expect": "abc", "expectTruncated": false,
              "context": {"before": "x ", "after": " y"}, "selection": "abc", "version": 4}
             """
-        // JSON のエスケープは、JSONSerialization に任せる
+        // Leave JSON escaping to JSONSerialization
         let object = (try? JSONSerialization.jsonObject(with: Data(json.utf8))) as? [String: Any] ?? [:]
         let data = (try? JSONSerialization.data(withJSONObject: object)) ?? Data()
         return (try? JSONDecoder().decode(WebLocation.self, from: data))!
@@ -31,7 +31,7 @@ import Testing
         defer { t.remove() }
         let access = access(t)
         let path = t.url.path + "/docs/a.md"
-        _ = try access.readMarkdown(path)  // ビューアが読んだ版
+        _ = try access.readMarkdown(path)  // The version the viewer read
 
         let now = Date(timeIntervalSince1970: 1000)
         let payload = try LocationBuilder.build(web(path: path), access: access, now: now).get()

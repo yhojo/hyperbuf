@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// docs/dev/integration-protocol.md の操作とエラーコードの表が、JSON Schema とずれていないかを確かめる。
-// 操作やエラーコードを足す・消すときは、スキーマと文書の表を同時に直す。
+// Checks that the operations and error codes tables in docs/dev/integration-protocol.md match the JSON Schema.
+// When adding or removing an operation or error code, fix the schema and the document tables together.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -12,7 +12,7 @@ const doc = read("../../docs/dev/integration-protocol.md");
 const request = JSON.parse(read("../schema/request.schema.json"));
 const response = JSON.parse(read("../schema/response.schema.json"));
 
-/** 見出し(`### 3.3 Operations` など)の次の見出しまでにある表の、先頭の列の `名前`。 */
+/** The `name` in the first column of the table between a heading (such as `### 3.3 Operations`) and the next heading. */
 function firstColumn(heading) {
   const start = doc.indexOf(heading);
   assert.notEqual(start, -1, `${heading} が文書にない`);

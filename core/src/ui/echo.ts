@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 画面下部のエコー領域(メッセージ)とステータス行。ダイアログは使わない。
+// Echo area (messages) and status line at the bottom of the screen. No dialogs are used.
 
 export interface Echo {
   message(text: string): void;

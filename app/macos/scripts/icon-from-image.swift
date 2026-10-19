@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
-// 既存のアイコン画像(.icns または .png。暗い角丸の板が、画像いっぱいに広がったもの)から、macOS の標準の
-// アイコン(角の外側は透明、周囲に約 10% の余白、影つき)を作る。デザインそのものは、変えない。
-// 使い方: swift app/macos/scripts/icon-from-image.swift <入力の .icns / .png> <出力のディレクトリ>
-//   → <出力>/AppIcon.icns と <出力>/AppIcon-1024.png
-// 手順: 画像から、暗い板の範囲(bounding box)と、角の半径を、画素の明るさから求める。板の範囲だけを切り出し、
-//       少し大きめの半径の角丸でクリップ(外側の地の色が、縁に混ざらない)して、余白の中に置く。
+// From an existing icon image (.icns or .png; a dark rounded plate filling the whole image), builds a standard macOS
+// icon (transparent outside the corners, about 10% margin around, with a shadow). The design itself is not changed.
+// Usage: swift app/macos/scripts/icon-from-image.swift <input .icns / .png> <output directory>
+//   → <output>/AppIcon.icns and <output>/AppIcon-1024.png
+// Steps: from pixel brightness, find the bounding box of the dark plate and the corner radius. Cut out only the plate
+// area,
+//       clip with a slightly larger corner radius (so the outer background does not bleed in) and place it in the
+// margin.
 import AppKit
 import CoreGraphics
 
@@ -18,7 +20,7 @@ let inputPath = args[1]
 let outDir = args[2]
 try FileManager.default.createDirectory(atPath: outDir, withIntermediateDirectories: true)
 
-// MARK: 入力(最も大きな画像)
+// MARK: Input (the largest image)
 guard let image = NSImage(contentsOfFile: inputPath),
     let best = image.representations.max(by: { $0.pixelsWide < $1.pixelsWide }),
     let source = best.cgImage(forProposedRect: nil, context: nil, hints: nil)
@@ -29,7 +31,7 @@ else {
 let width = source.width
 let height = source.height
 
-// MARK: 板の範囲と角の半径(暗い画素から)
+// MARK: Plate area and corner radius (from dark pixels)
 let space = CGColorSpace(name: CGColorSpace.sRGB)!
 var pixels = [UInt8](repeating: 0, count: width * height * 4)
 let probe = CGContext(
@@ -40,7 +42,7 @@ func luminance(_ x: Int, _ y: Int) -> Double {
     let i = (y * width + x) * 4
     return (0.2126 * Double(pixels[i]) + 0.7152 * Double(pixels[i + 1]) + 0.0722 * Double(pixels[i + 2])) / 255
 }
-let dark = 0.35  // 板(暗い)と、外側の地(明るい)を分ける明るさ
+let dark = 0.35  // brightness separating the plate (dark) from the outer background (light)
 var minX = width, maxX = 0, minY = height, maxY = 0
 for y in 0..<height {
     for x in 0..<width where luminance(x, y) < dark {
@@ -51,15 +53,15 @@ for y in 0..<height {
     }
 }
 let box = CGRect(x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1)
-// 角の半径: 上端から 2 行目で、暗い画素が始まる位置(角丸なら、半径に応じて内側にずれる)から求める
+// Corner radius: found from where dark pixels start on the 2nd row from the top (shifts inward with rounded corners)
 var left = box.width
 let rowY = Int(box.minY) + 2
 for x in Int(box.minX)..<Int(box.maxX) where luminance(x, rowY) < dark {
     left = CGFloat(x) - box.minX
     break
 }
-var radius = (left * left + 2 * left * 2 + 0) / 1  // 後で解く(下の探索)
-// r - sqrt(4r - 4) = left を、数値で解く
+var radius = (left * left + 2 * left * 2 + 0) / 1  // solved later (the search below)
+// Solve r - sqrt(4r - 4) = left numerically
 var solved: CGFloat = 8
 for candidate in stride(from: CGFloat(8), through: box.width / 2, by: 0.5) {
     if candidate - (4 * candidate - 4).squareRoot() >= left {
@@ -68,30 +70,30 @@ for candidate in stride(from: CGFloat(8), through: box.width / 2, by: 0.5) {
     }
 }
 radius = solved
-// 縁に、外側の地の色が混ざらないよう、少し大きめの半径と、1 px の内側への食い込みで切る
+// Cut with a slightly larger radius and a 1 px inward bite so the outer background does not bleed into the edge
 let inset: CGFloat = 1.5
 let clipRadius = radius * 1.06
 print(String(format: "板の範囲: %.0f,%.0f %.0fx%.0f / 角の半径(推定): %.0f", box.minX, box.minY, box.width, box.height, radius))
 guard let cropped = source.cropping(to: box.insetBy(dx: inset, dy: inset)) else { exit(1) }
 
-// MARK: 描画(1024 座標。上が y = 0)
+// MARK: Drawing (1024 coordinates; y = 0 at the top)
 func draw(_ ctx: CGContext) {
     let body = CGRect(x: 100, y: 100, width: 824, height: 824)
     let path = CGPath(
         roundedRect: body, cornerWidth: clipRadius * 824 / box.width, cornerHeight: clipRadius * 824 / box.width,
         transform: nil)
-    // 影(板の形で)
+    // Shadow (in the plate's shape)
     ctx.saveGState()
     ctx.setShadow(offset: CGSize(width: 0, height: 14), blur: 28, color: CGColor(srgbRed: 0, green: 0, blue: 0, alpha: 0.35))
     ctx.addPath(path)
     ctx.setFillColor(CGColor(srgbRed: 0.05, green: 0.08, blue: 0.1, alpha: 1))
     ctx.fillPath()
     ctx.restoreGState()
-    // 板の絵(切り出した部分を、板の範囲いっぱいに)
+    // The plate image (the cut-out part, filling the whole plate area)
     ctx.saveGState()
     ctx.addPath(path)
     ctx.clip()
-    // 座標系が上下反転しているので、画像の向きを直して描く
+    // The coordinate system is flipped vertically, so correct the image orientation when drawing
     ctx.translateBy(x: body.minX, y: body.maxY)
     ctx.scaleBy(x: 1, y: -1)
     ctx.draw(cropped, in: CGRect(x: 0, y: 0, width: body.width, height: body.height))

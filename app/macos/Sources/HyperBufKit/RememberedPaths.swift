@@ -3,12 +3,12 @@
 
 import Foundation
 
-/// 利用者が承認して記憶した、警告パスの下で読んでよい場所(ディレクトリまたはファイル)。永続化する。
-/// (以前の「信頼するルート」。保存先のファイルと形式は、そのまま引き継ぐ。)
+/// Places under a warn path that the user approved and may be read (a directory or a file). Persisted.
+/// (Formerly "trusted roots". The file location and format are carried over as they are.)
 ///
-/// 守ること:
-///  - 追加できるのは、アプリ自身が提案し、利用者がミニバッファで承認したものだけ(Web 側から任意のパスは足せない)
-///  - 保存先は 0600、置き場所のディレクトリは 0700(利用者の作業場所が分かるため)
+/// Rules:
+///  - Only what the app itself proposed and the user approved in the minibuffer can be added (the Web side cannot add an arbitrary path)
+///  - The file is 0600 and its directory 0700 (they reveal where the user works)
 public final class RememberedPaths: @unchecked Sendable {
     public static func standardURL() -> URL {
         URL(fileURLWithPath: NSHomeDirectory())
@@ -39,13 +39,13 @@ public final class RememberedPaths: @unchecked Sendable {
         return paths
     }
 
-    /// `path`(絶対パス)が、記憶した場所の内側(または、そのもの)か。
+    /// Whether `path` (an absolute path) is inside a remembered place (or is it).
     public func contains(_ path: String) -> Bool {
         let real = PathUtil.canonicalPath(path) ?? path
         return all.contains { PathUtil.isInside(real, PathUtil.canonicalPath($0) ?? $0) }
     }
 
-    /// 場所を足して保存する。存在しないものは足さない。
+    /// Adds a place and saves. Nonexistent ones are not added.
     @discardableResult
     public func add(_ path: String) -> Bool {
         guard let real = PathUtil.canonicalPath(path) else { return false }
@@ -58,7 +58,7 @@ public final class RememberedPaths: @unchecked Sendable {
         return true
     }
 
-    /// 記憶を取り消して保存する。
+    /// Revokes a remembered place and saves.
     @discardableResult
     public func remove(_ path: String) -> Bool {
         lock.lock()
@@ -75,7 +75,7 @@ public final class RememberedPaths: @unchecked Sendable {
             at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         chmod(dir.path, 0o700)
         guard let data = try? JSONEncoder().encode(Stored(v: 1, roots: paths)) else { return }
-        // 一時ファイルに 0600 で書いてから、置き換える(書き込み途中のファイルを見せない)
+        // Write to a temporary file with 0600, then replace (never show a half-written file)
         let tmp = dir.appendingPathComponent(".trusted-roots.\(UUID().uuidString).tmp")
         if FileManager.default.createFile(atPath: tmp.path, contents: data, attributes: [.posixPermissions: 0o600]) {
             _ = try? FileManager.default.replaceItemAt(url, withItemAt: tmp)

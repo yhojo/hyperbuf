@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// Markdown → HTML(unified / remark / rehype)。DOM に依存しない純粋な部分。
+// Markdown -> HTML (unified / remark / rehype). The pure part with no DOM dependency.
 //
-// 方針:
-//  - 入力は信頼しない。raw HTML は rehype-raw で構文木にしたうえで、rehype-sanitize(GitHub 準拠のスキーマ)に通す。
-//  - sanitize より後ろに置く変換(KaTeX・ハイライト・画像 URL の書き換え・アラート)は、自前の変換か、
-//    信頼できる出力を作るものに限る。
-//  - 外部画像は読み込まない(local first)。ローカル画像だけをホスト経由の URL に書き換える。
-//  - Mermaid は DOM が要るので、HTML 文字列化の後に、ui/diagrams.ts が描画する。
-// 検証の経緯: docs/history/poc-rendering-results.md
+// Policy:
+//  - Input is untrusted. Raw HTML is turned into a syntax tree by rehype-raw, then passed through rehype-sanitize (a GitHub-compatible schema).
+//  - Transforms placed after sanitize (KaTeX, highlighting, image URL rewriting, alerts) are limited to our own transforms
+//    or ones that produce trusted output.
+//  - External images are not loaded (local first). Only local images are rewritten to URLs via the host.
+//  - Mermaid needs the DOM, so ui/diagrams.ts renders it after the HTML is turned into a string.
+// History of the verification: docs/history/poc-rendering-results.md
 
 import type { Element, ElementContent, Root as HastRoot } from "hast";
 import type { Root as MdastRoot } from "mdast";
@@ -42,35 +42,35 @@ declare module "vfile" {
 }
 
 export interface RenderContext {
-  /** 描画する文書のパス(相対リンク・画像の解決に使う)。 */
+  /** Path of the document to render (used to resolve relative links and images). */
   docPath: string;
-  /** ローカル画像の相対パスを、読み込める URL にする(ホストが提供する)。 */
+  /** Turns the relative path of a local image into a loadable URL (provided by the host). */
   resolveResource: (path: string) => string;
 }
 
 export interface RenderResult {
   html: string;
-  /** 描画にかかった時間(ミリ秒)。 */
+  /** Time taken to render (milliseconds). */
   ms: number;
 }
 
-/** 描画の設定(config.json 由来)。 */
+/** Rendering settings (from config.json). */
 export interface RenderSettings {
-  /** 数式の中の `\_` を `_` に戻す(Marked 2 などと同じ。既定は true)。src/math.ts */
+  /** Turn `\_` in math back into `_` (same as Marked 2 and others; default true). src/math.ts */
   mathUnescapeUnderscore: boolean;
 }
 
 export interface Renderer {
-  /** 設定を変える(最初の描画の前に呼ぶ)。 */
+  /** Changes the settings (call before the first render). */
   configure(settings: Partial<RenderSettings>): void;
-  /** 本文のコードブロックが使う、大きな文法(Emacs Lisp など)を、描画の前に読み込む。 */
+  /** Loads the large grammars (Emacs Lisp, etc.) that the body's code blocks use, before rendering. */
   prepare(text: string): Promise<void>;
   renderMarkdown(text: string, context: RenderContext): RenderResult;
 }
 
 /**
- * GitHub はインライン数式の `$` について、(1) 内側が空白で始まる/終わる、(2) 閉じの `$` の直後が数字、
- * のどちらかなら数式として扱わない(例: 「$5 から $10」は通貨)。remark-math にはこの規則がないので揃える。
+ * For inline math `$`, GitHub does not treat it as math if either (1) the inside starts/ends with whitespace, or (2) the digit follows the closing `$`
+ * (for example, "$5 to $10" is currency). remark-math lacks this rule, so we match it.
  */
 const remarkMathGithubCompat: Plugin<[], MdastRoot> = () => (tree, file) => {
   const src = String(file.value);
@@ -78,7 +78,7 @@ const remarkMathGithubCompat: Plugin<[], MdastRoot> = () => (tree, file) => {
     const start = node.position?.start.offset;
     const end = node.position?.end.offset;
     if (start === undefined || end === undefined || index === undefined || !parent) return;
-    // node.value は前後の空白が除かれているので、元のソースで判定する
+    // node.value has surrounding whitespace removed, so judge from the original source
     const inner = src.slice(start + 1, end - 1);
     if (/\d/.test(src[end] ?? "") || /^\s|\s$/.test(inner)) {
       parent.children[index] = { type: "text", value: src.slice(start, end) };
@@ -87,8 +87,8 @@ const remarkMathGithubCompat: Plugin<[], MdastRoot> = () => (tree, file) => {
 };
 
 /**
- * 数式の中の `\_` を `_` に戻す(`$f\_{2}$` を、下付き文字にする)。Marked 2 などとの互換。
- * mdast の math / inlineMath は、描画用の hast の中身(`data.hChildren`)を別に持つので、両方を直す。
+ * Turns `\_` in math back into `_` (makes `$f\_{2}$` a subscript). Compatibility with Marked 2 and others.
+ * mdast math / inlineMath keep the content for rendering (hast, `data.hChildren`) separately, so fix both.
  */
 const remarkMathUnescape =
   (settings: RenderSettings): Plugin<[], MdastRoot> =>
@@ -114,8 +114,8 @@ const remarkMathUnescape =
   };
 
 /**
- * `$$ … $$` を 1 行に書いた式(前後に改行がない)は、remark-math ではインライン数式になり、左に詰まって出る。
- * `$$` で囲んだ式は、書き手の意図どおり、ブロック数式(中央寄せ)として描画する(Marked 2 と同じ)。
+ * An expression written on one line as `$$ … $$` (no newlines around it) becomes inline math in remark-math and is rendered left-packed.
+ * An expression enclosed in `$$` is rendered as block math (centered), as the writer intended (same as Marked 2).
  */
 const remarkMathDoubleDollar: Plugin<[], MdastRoot> = () => (tree, file) => {
   const src = String(file.value);
@@ -127,7 +127,7 @@ const remarkMathDoubleDollar: Plugin<[], MdastRoot> = () => (tree, file) => {
   });
 };
 
-/** GitHub と同じ方式(github-slugger)で見出しに id を付ける。重複には連番が付く。 */
+/** Gives headings ids the GitHub way (github-slugger). Duplicates get a sequence number. */
 const rehypeHeadingIds: Plugin<[], HastRoot> = () => (tree) => {
   const slugger = new GithubSlugger();
   visit(tree, "element", (node) => {
@@ -156,11 +156,11 @@ const LINE_TAGS = new Set([
 ]);
 
 /**
- * 元の Markdown の位置を、ブロック要素に残す。
- *  - data-source-line: 開始行(「N 行目を開く」用)
- *  - data-source-start / data-source-end: 開始・終了の文字オフセット(UTF-16)。ビューアから、編集位置を
- *    エディタへ渡すために、選択した範囲を、元の位置に対応づける(docs/dev/edit-location.md §4)
- *  - data-source-end-line: 終了行
+ * Keeps the original Markdown position on block elements.
+ *  - data-source-line: start line (for "open at line N")
+ *  - data-source-start / data-source-end: start and end character offsets (UTF-16). Maps the selected range in the viewer
+ *    to the original position, to pass the edit position to the editor (docs/dev/edit-location.md §4)
+ *  - data-source-end-line: end line
  */
 const rehypeSourceLines: Plugin<[], HastRoot> = () => (tree) => {
   visit(tree, "element", (node) => {
@@ -176,7 +176,7 @@ const rehypeSourceLines: Plugin<[], HastRoot> = () => (tree) => {
   });
 };
 
-/** > [!NOTE] などを、GitHub のアラートの構造に変える。 */
+/** Turns > [!NOTE] and the like into GitHub's alert structure. */
 const rehypeAlerts: Plugin<[], HastRoot> = () => (tree) => {
   visit(tree, "element", (node) => {
     if (node.tagName !== "blockquote") return;
@@ -198,7 +198,7 @@ const rehypeAlerts: Plugin<[], HastRoot> = () => (tree) => {
   });
 };
 
-/** 画像: 相対パスはホスト経由の URL にし、外部 URL は読み込まずに代替表示にする。 */
+/** Images: relative paths become URLs via the host; external URLs are not loaded and get a placeholder instead. */
 const rehypeImages: Plugin<[], HastRoot> = () => (tree, file: VFile) => {
   const { docPath, resolveResource } = file.data;
   if (docPath === undefined || resolveResource === undefined) {
@@ -223,7 +223,7 @@ const rehypeImages: Plugin<[], HastRoot> = () => (tree, file: VFile) => {
   });
 };
 
-/** コードブロック: Mermaid は印を付けて後で描画し、それ以外は starry-night(GitHub と同じ文法)で着色する。 */
+/** Code blocks: Mermaid is marked and rendered later; everything else is colored with starry-night (the same grammars as GitHub). */
 const rehypeCodeBlocks: Plugin<[() => StarryNight], HastRoot> = (current) => (tree) => {
   const starryNight = current();
   visit(tree, "element", (node, _index, parent) => {
@@ -252,7 +252,7 @@ const rehypeCodeBlocks: Plugin<[() => StarryNight], HastRoot> = (current) => (tr
     try {
       node.children = starryNight.highlight(toString(node), scope).children as ElementContent[];
     } catch {
-      // 文法がまだ読み込まれていない(prepare を通らない経路)。着色せず、そのまま表示する
+      // The grammar is not loaded yet (a path that bypasses prepare). Show it as is, without coloring
     }
   });
 };
@@ -271,7 +271,7 @@ const schema: SchemaWithAttributes = {
       "dataSourceStart",
       "dataSourceEnd",
     ],
-    // 数式(remark-math)とコードの言語指定を通す。KaTeX の出力は sanitize の後で作るので許可は不要。
+    // Let math (remark-math) and code language info through. KaTeX output is made after sanitize, so no allowance is needed.
     code: [["className", /^language-./, "math-inline", "math-display"]],
     div: [...(attributes["div"] ?? []), ["className", "math", "math-display"]],
     span: [...(attributes["span"] ?? []), ["className", "math", "math-inline"]],
@@ -281,14 +281,14 @@ type SchemaWithAttributes = SchemaWithAttributesBase;
 type SchemaWithAttributesBase = NonNullable<SanitizeSchema>;
 
 /**
- * starry-night は既定で外部 CDN(esm.sh)から WASM を取得するため、onigUrl で同梱ファイルを指定する(local first)。
+ * starry-night fetches WASM from an external CDN (esm.sh) by default, so specify the bundled file with onigUrl (local first).
  */
 export async function createRenderer(options: { onigUrl?: URL } = {}): Promise<Renderer> {
   const { onigUrl } = options;
   const starryOptions = onigUrl ? { getOnigurumaUrlFetch: () => onigUrl } : undefined;
   let starryNight = await createStarryNight(EAGER, starryOptions);
-  // 大きな文法は、必要になったときに足す。starry-night の register() は WASM を外部 CDN から取り直すので使わず、
-  // 同梱の WASM を指す新しい starry-night を作って差し替える(local first)
+  // Add large grammars when they become necessary. starry-night's register() re-fetches the WASM from an external CDN, so do not use it;
+  // instead create a new starry-night that points at the bundled WASM and swap it in (local first)
   const requested = new Set<string>();
   const active: Grammar[] = [];
   let chain: Promise<void> = Promise.resolve();
@@ -300,7 +300,7 @@ export async function createRenderer(options: { onigUrl?: URL } = {}): Promise<R
     .use(remarkMathGithubCompat)
     .use(remarkMathDoubleDollar)
     .use(remarkMathUnescape(settings))
-    // 脚注の id は sanitize が接頭辞を付ける。ここでも付けると二重になりリンクが切れる
+    // Footnote ids get a prefix from sanitize. Adding it here too would double it and break the links
     .use(remarkRehype, { allowDangerousHtml: true, clobberPrefix: "" })
     .use(rehypeRaw)
     .use(rehypeHeadingIds)
@@ -308,7 +308,7 @@ export async function createRenderer(options: { onigUrl?: URL } = {}): Promise<R
     .use(rehypeSanitize, schema)
     .use(rehypeAlerts)
     .use(rehypeImages)
-    // 不正な式は、rehype-katex が文書全体を止めずに、その場にエラー(errorColor)を表示する
+    // An invalid expression makes rehype-katex show an error (errorColor) in place without stopping the whole document
     .use(rehypeKatex, { errorColor: "#cf222e", strict: "ignore", trust: false })
     .use(rehypeCodeBlocks, () => starryNight)
     .use(rehypeStringify);
@@ -333,7 +333,7 @@ export async function createRenderer(options: { onigUrl?: URL } = {}): Promise<R
           }
         });
       }
-      await chain; // 読み込み中の文法があれば、終わるまで待つ(描画の前に、そろえる)
+      await chain; // if a grammar is loading, wait until it finishes (so everything is ready before rendering)
     },
     renderMarkdown(text, { docPath, resolveResource }) {
       const t0 = performance.now();

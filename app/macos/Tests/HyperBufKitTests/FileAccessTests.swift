@@ -31,7 +31,7 @@ import Testing
     }
 
     @Test func markdownReadingDoesNotJudgeTheWarnPaths() throws {
-        // 利用者が打った・選んだパス、判定済みの外部要求、復元されたセッションは、判定せずに読む
+        // Paths the user typed or chose, already-judged external requests and restored sessions are read without judging
         let t = try TempProject(files: ["w/a.md": "warned"])
         defer { t.remove() }
         let a = access(t, warn: [t.real + "/w"])

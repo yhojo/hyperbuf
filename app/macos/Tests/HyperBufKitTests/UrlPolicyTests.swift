@@ -31,7 +31,7 @@ import Testing
         #expect(policy.decide("https://github.com/yhojo/hyperbuf", remembered: r) == .open)
         #expect(policy.decide("http://localhost:8765/index.html", remembered: r) == .open)
         #expect(policy.decide("https://a.b.example.org/docs/x", remembered: r) == .open)
-        // 一致しないものは、確認する(別のホスト・別のスキーム・パスの違い)
+        // Non-matching ones are confirmed (a different host, a different scheme, a different path)
         #expect(policy.decide("https://github.com.evil.example/x", remembered: r) != .open)
         #expect(policy.decide("http://github.com/x", remembered: r) != .open)
         #expect(policy.decide("https://a.example.org/other", remembered: r) != .open)
@@ -44,8 +44,8 @@ import Testing
         let policy = UrlPolicy()
         #expect(r.add(origin: "https://docs.example.com"))
         #expect(policy.decide("https://docs.example.com/any/path", remembered: r) == .open)
-        #expect(policy.decide("https://docs.example.com:444/x", remembered: r) != .open)  // ポートが違えば、別のオリジン
-        #expect(store(t).contains(origin: "https://docs.example.com"))  // 永続化される
+        #expect(policy.decide("https://docs.example.com:444/x", remembered: r) != .open)  // Other port: other origin
+        #expect(store(t).contains(origin: "https://docs.example.com"))  // Persisted
         #expect(r.remove(origin: "https://docs.example.com"))
         #expect(policy.decide("https://docs.example.com/x", remembered: r) != .open)
         #expect(!r.add(origin: "ftp://x"))
@@ -54,7 +54,7 @@ import Testing
     @Test func dangerousUrlsAreDenied() throws {
         let t = try TempProject()
         defer { t.remove() }
-        let policy = UrlPolicy(trusted: ["https://*"])  // 信頼するパターンがあっても、拒否が優先
+        let policy = UrlPolicy(trusted: ["https://*"])  // Rejection takes precedence even with a trusted pattern
         let r = store(t)
         for url in [
             "javascript:alert(1)", "file:///etc/passwd", "ftp://example.com/x", "data:text/html,<b>x</b>",

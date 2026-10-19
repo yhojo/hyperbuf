@@ -4,10 +4,10 @@
 import Foundation
 import Testing
 
-/// docs/user/configuration.md の「List of configuration keys」が、コードが読む設定のキーと一致することを検査する。
-/// 設定のキーを足す・消すときは、一覧表も直す。
+/// Checks that "List of configuration keys" in docs/user/configuration.md matches the config keys the code reads.
+/// When adding or removing a settings key, also fix the table.
 @Suite struct ConfigDocsTests {
-    /// このファイルから、リポジトリのルート(app/macos/Tests/HyperBufKitTests/<file> から 5 つ上)を求める。
+    /// From this file, finds the repository root (5 levels up from app/macos/Tests/HyperBufKitTests/<file>).
     private static var repoRoot: URL {
         var url = URL(fileURLWithPath: #filePath)
         for _ in 0..<5 { url.deleteLastPathComponent() }
@@ -26,7 +26,7 @@ import Testing
         }
     }
 
-    /// 文書の「List of configuration keys」の表にあるキー。
+    /// The keys in the table of "List of configuration keys" in the document.
     private static func documentedKeys() throws -> Set<String> {
         let doc = try read("docs/user/configuration.md")
         guard let start = doc.range(of: "## List of configuration keys") else { return [] }
@@ -35,7 +35,7 @@ import Testing
         return Set(try matches(#"^\| `([A-Za-z]+)`\s*\|"#, in: section))
     }
 
-    /// 設定を読むコード(`object["…"]`、`flag("…"`、`list("…"`)が使うキー。
+    /// The keys used by the code that reads settings (`object["..."]`, `flag("..."`, `list("..."`).
     private static func codeKeys() throws -> Set<String> {
         let files = [
             "app/macos/Sources/HyperBufKit/UserSettings.swift",

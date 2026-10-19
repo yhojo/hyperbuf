@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// esbuild の file ローダーで、ファイルの URL(文字列)として取り込まれるもの。
+// Imported as a file URL (a string) by esbuild's file loader.
 declare module "*.wasm" {
   const url: string;
   export default url;
 }
 
-// CSS は副作用のための取り込み(esbuild が main.css にまとめる)。
+// CSS is imported for its side effects (esbuild bundles it into main.css).
 declare module "*.css";

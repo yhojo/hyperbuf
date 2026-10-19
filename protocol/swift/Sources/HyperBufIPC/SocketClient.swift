@@ -5,19 +5,20 @@ import Darwin
 import Foundation
 import HyperBufProtocol
 
-/// Unix ドメインソケットのクライアント(`hyperbuf` CLI が使う)。1 回の要求と、1 回の応答。
+/// Unix domain socket client (used by the `hyperbuf` CLI). One request, one response.
 public enum SocketClient {
     public enum ClientError: Error, Equatable {
-        /// ソケットがない、または、待ち受けていない(アプリが起動していない)。
+        /// No socket, or nothing is listening (the app is not running).
         case notRunning
-        /// 期限までに、応答が届かなかった。
+        /// No response arrived by the deadline.
         case timeout
-        /// 応答を解釈できなかった、または、応答の前に接続が閉じた。
+        /// The response could not be parsed, or the connection closed before the response.
         case badResponse
         case system(String)
     }
 
-    /// 要求を送り、応答を 1 つ受け取る。`id` のない応答(サーバーが要求を解釈できなかったとき)も、受け取る。
+    /// Sends a request and receives one response. Also accepts a response without `id` (when the server could not parse
+    /// the request).
     public static func send(_ request: Request, to path: String, timeout: TimeInterval) throws -> Response {
         let fd = try connect(path)
         defer { close(fd) }
@@ -55,7 +56,7 @@ public enum SocketClient {
         }
     }
 
-    /// ソケットが、待ち受けているか(アプリが起動しているか)。
+    /// Whether the socket is listening (whether the app is running).
     public static func isListening(at path: String) -> Bool {
         guard let fd = try? connect(path) else { return false }
         close(fd)
@@ -81,7 +82,7 @@ public enum SocketClient {
         if !ok {
             let error = errno
             close(fd)
-            // ソケットがない(ENOENT)、待ち受けていない(ECONNREFUSED)は、アプリが起動していない
+            // No socket (ENOENT) or nothing listening (ECONNREFUSED) means the app is not running
             if error == ENOENT || error == ECONNREFUSED { throw ClientError.notRunning }
             throw ClientError.system("connect: \(String(cString: strerror(error)))")
         }

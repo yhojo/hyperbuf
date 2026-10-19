@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 統合テスト(IPC)用のドライバ(WebView の中で実行される)。
-// ミニバッファの「警告パスのファイルを開きますか」に、パスの名前で自動的に答える:
-//   /approve/ または /urlconf/ を含むパス → yes、/deny/ を含むパス → no、/wait/ を含むパス → 答えない(期限切れで閉じることの確認)。
-// 答えたことは、テスト用のログに `ANSWERED <見出し>` として記録する。
+// Driver for integration tests (IPC) (runs inside the WebView).
+// Answers the minibuffer's "open a warn-path file?" automatically, by the name of the path:
+//  a path containing /approve/ or /urlconf/ -> yes, /deny/ -> no, /wait/ -> no answer (to check that it closes on timeout).
+// What it answered is recorded in the test log as `ANSWERED <heading>`.
 let answered = null;
 setInterval(() => {
   const mini = document.getElementById("minibuffer");
@@ -31,7 +31,7 @@ setInterval(() => {
     type("no");
     press("Enter", "Enter");
   } else if (label.includes("/wait/")) {
-    // 答えない。要求の期限が切れたら、アプリが、この確認を閉じるはず(閉じたことを、テスト用のログに記録する)
+    // No answer. When the request's deadline passes, the app should close this confirmation (record that it closed in the test log)
     window.hyperbufHost.log("SAW wait prompt");
     const watch = setInterval(() => {
       if (document.getElementById("minibuffer").hidden) {
@@ -41,7 +41,7 @@ setInterval(() => {
     }, 50);
   }
 }, 50);
-// このスクリプトが終わると、ハーネスがアプリを終了させる。テストの終了までは終わらせない(通常は、
-// その前に、シェルスクリプトがアプリを終了させる)。解決しない Promise は、WebKit が「到達できない」と扱うので、
-// 十分長い待ち時間のあとで解決する。
+// When this script finishes, the harness quits the app. Do not finish before the test ends (normally the shell script
+// quits the app first). WebKit treats a never-resolving Promise as "unreachable", so
+// resolve it after a sufficiently long wait.
 return new Promise((resolve) => setTimeout(() => resolve("driver timeout"), 10 * 60 * 1000));

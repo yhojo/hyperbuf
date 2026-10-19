@@ -7,7 +7,7 @@ import Testing
 @testable import HyperBufKit
 
 @Suite struct PathPolicyTests {
-    /// ホストを一時ディレクトリにして、その下に警告パスと許可パスを作る。
+    /// Makes a temporary directory the host and creates warn paths and allow paths under it.
     private func fixture(_ files: [String: String] = [:]) throws -> (TempProject, RememberedPaths) {
         let t = try TempProject(files: files)
         return (t, RememberedPaths(url: t.url.appendingPathComponent("state/remembered.json")))
@@ -34,7 +34,7 @@ import Testing
         let policy = PathPolicy(home: t.real, warn: [t.real + "/vendor"], allow: [t.real + "/vendor/ok"])
         #expect(policy.decide(t.real + "/vendor/ok/a.md", remembered: r) == .allow)
         #expect(policy.decide(t.real + "/vendor/b.md", remembered: r) != .allow)
-        // 逆: 許可の中の、より具体的な警告
+        // Conversely: a more specific warn inside an allow
         let policy2 = PathPolicy(home: t.real, warn: [t.real + "/vendor/ok"], allow: [t.real + "/vendor"])
         #expect(policy2.decide(t.real + "/vendor/ok/a.md", remembered: r) != .allow)
         #expect(policy2.decide(t.real + "/vendor/b.md", remembered: r) == .allow)
@@ -69,11 +69,11 @@ import Testing
         let (t, r) = try fixture(["tmp/x.md": "x", "tmp/sub/y.md": "x"])
         defer { t.remove() }
         let policy = PathPolicy(home: t.real, warn: [t.real + "/tmp"], allow: [])
-        // ファイルのディレクトリが警告パスそのもの → ディレクトリ全体を許可しないよう、ファイル単体
+        // The file's directory is the warn path itself -> a single file, so the whole directory is not allowed
         #expect(policy.decide(t.real + "/tmp/x.md", remembered: r) == .confirm(remember: t.real + "/tmp/x.md"))
-        // 警告パスの下のサブディレクトリ → ディレクトリ
+        // A subdirectory under a warn path -> the directory
         #expect(policy.decide(t.real + "/tmp/sub/y.md", remembered: r) == .confirm(remember: t.real + "/tmp/sub"))
-        // 警告パスの上位のディレクトリのファイルも、ファイル単体
+        // A file in an ancestor directory of a warn path is also a single file
         let wide = PathPolicy(home: t.real, warn: [t.real + "/tmp/sub"], allow: [])
         #expect(wide.rememberTarget(for: t.real + "/tmp/z.md") == t.real + "/tmp/z.md")
     }
@@ -90,7 +90,7 @@ import Testing
         let (t, r) = try fixture()
         defer { t.remove() }
         let home = t.real
-        // 一時ディレクトリは `/var` の下なので、ホスト配下の既定だけを使う(システムの警告パスは、別に確かめる)
+        // The temporary directory is under `/var`, so use only the defaults under the host (system warn paths are checked separately)
         let policy = PathPolicy(
             home: home, warn: PathPolicy.defaultWarn(home: home).filter { $0.hasPrefix(home + "/") })
         #expect(policy.decide(home + "/.ssh/notes.md", remembered: r) != .allow)
@@ -110,9 +110,9 @@ import Testing
         #expect(policy.warn.contains("/opt"))
         #expect(policy.warn.contains { $0.hasSuffix("/secret") })
         #expect(!policy.warn.contains { $0.contains("relative") })
-        #expect(policy.problems.count == 3)  // 相対パス、数値、allowPaths の型
-        #expect(!policy.warn.contains("/usr"))  // 書いたら既定を置き換える
-        #expect(policy.allow.contains { $0.hasSuffix("Mobile Documents") })  // allowPaths が無効なので既定のまま
+        #expect(policy.problems.count == 3)  // A relative path, a number, and the type of allowPaths
+        #expect(!policy.warn.contains("/usr"))  // Writing it replaces the default
+        #expect(policy.allow.contains { $0.hasSuffix("Mobile Documents") })  // invalid allowPaths: default stays
     }
 
     @Test func missingConfigUsesDefaults() throws {

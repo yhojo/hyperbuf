@@ -66,7 +66,7 @@ test("保存できる履歴がない window は、分割をたたむ。全部な
   const model = createModel();
   const win = selectedWindow(model);
   visit(model, win, "a.md");
-  split(model, "col"); // 複製された履歴を持つ
+  split(model, "col"); // has the duplicated history
   const other = windows(model)[1]!;
   other.history = [{ path: "*search: x*", anchor: null, scroll: 0 }];
   other.index = 0;
@@ -188,7 +188,7 @@ test("選択範囲は、保存して復元できる。window や文書が変わ�
   assert.deepEqual(parsed.selection, selectionIn(model));
   const restored = restoreModel(parsed, all("a.md", "b.md", "c.md"))!;
   assert.deepEqual(restoredSelection(parsed, restored), selectionIn(model));
-  // c.md がなくなると、その window の現在の文書が変わる(または、window ごとなくなる)ので、使わない
+  // If c.md is gone, that window's current document changes (or the window itself disappears), so it is not used
   const without = restoreModel(parsed, all("a.md", "b.md"))!;
   assert.equal(restoredSelection(parsed, without), null);
 });

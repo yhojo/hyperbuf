@@ -11,11 +11,11 @@ let package = Package(
         .library(name: "HyperBufIPC", targets: ["HyperBufIPC"]),
     ],
     targets: [
-        // アプリ(サーバー)と hyperbuf CLI(クライアント)が共有する、プロトコルの型と検証。
+        // Protocol types and validation shared by the app (server) and the hyperbuf CLI (client).
         .target(name: "HyperBufProtocol"),
-        // Unix ドメインソケットのサーバー(アプリ)とクライアント(CLI)。
+        // Unix domain socket server (app) and client (CLI).
         .target(name: "HyperBufIPC", dependencies: ["HyperBufProtocol"]),
-        // 適合テスト用の例(protocol/examples/)は、Swift・CLI・Emacs の全員が共有する。
+        // The examples for conformance tests (protocol/examples/) are shared by Swift, the CLI and Emacs.
         .testTarget(name: "HyperBufProtocolTests", dependencies: ["HyperBufProtocol"]),
         .testTarget(name: "HyperBufIPCTests", dependencies: ["HyperBufIPC", "HyperBufProtocol"]),
     ]

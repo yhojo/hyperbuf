@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// シンタックスハイライトの文法(starry-night。GitHub と同じ TextMate の文法)の一覧。
-// 対応する言語・コードブロックの指定・拡張子の一覧は、docs/user/syntax-highlighting.md(`npm run languages` で、
-// ここから自動生成する)。
+// List of syntax-highlighting grammars (starry-night; the same TextMate grammars as GitHub).
+// The supported languages, code block info strings and extensions are listed in docs/user/syntax-highlighting.md
+// (generated from here by `npm run languages`).
 //
-//  - EAGER: いつも含める。starry-night の `common`(34 言語)に、小さな文法を足したもの
-//  - LAZY: 大きな文法(Emacs Lisp は約 800 KB)は、文書の中にその言語のコードブロックがあるときだけ、
-//    別のチャンクとして読み込む(起動と、ふだんの表示を重くしない)。`pipeline.ts` の `prepare()` が使う
+//  - EAGER: always included. starry-night's `common` (34 languages) plus a few small grammars
+//  - LAZY: large grammars (Emacs Lisp is about 800 KB) are loaded as a separate chunk only when the document has a code block
+//    in that language (keeps startup and everyday rendering light). Used by `prepare()` in `pipeline.ts`
 
 import { common } from "@wooorm/starry-night";
 import type { Grammar } from "@wooorm/starry-night";
@@ -125,7 +125,7 @@ export const EAGER: Grammar[] = [
 
 export interface LazyGrammar {
   scope: string;
-  /** コードブロックの指定(言語名・拡張子)。小文字、先頭の `.` なし。文書の本文から、必要かを判定するのに使う。 */
+  /** Code block info strings (language names, extensions). Lowercase, no leading `.`. Used to decide from the document body whether it is needed. */
   flags: string[];
   load(): Promise<Grammar>;
 }
@@ -143,7 +143,7 @@ export const LAZY: LazyGrammar[] = [
   },
 ];
 
-/** Markdown の本文から、コードブロック(```lang / ~~~lang)の言語の指定を集める(小文字、先頭の `.` なし)。 */
+/** Collects the languages given to code blocks (```lang / ~~~lang) in Markdown text (lowercase, no leading `.`). */
 export function fenceFlags(markdown: string): Set<string> {
   const flags = new Set<string>();
   for (const m of markdown.matchAll(/^[ \t]{0,3}(?:`{3,}|~{3,})[ \t]*([^\s`{]+)/gm)) {

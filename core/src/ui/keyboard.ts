@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 全体のキー入力。キー列 → コマンドの対応と、コマンドの直列実行。
+// Global key input. Key sequence -> command mapping, and serial execution of commands.
 
 import { createDispatcher, keyName } from "../keys.ts";
 import type { Keymap } from "../keys.ts";
@@ -12,7 +12,7 @@ import { LatencyRecorder } from "./latency.ts";
 
 export interface KeyboardHandle {
   readonly latency: LatencyRecorder;
-  /** 直前までに受け付けたコマンドが、すべて終わるまで待つ(テスト用)。 */
+  /** Waits until all commands accepted so far have finished (for tests). */
   idle(): Promise<void>;
 }
 
@@ -23,11 +23,11 @@ export function installKeyboard(
 ): KeyboardHandle {
   const dispatcher = createDispatcher(keymap);
   const latency = new LatencyRecorder();
-  // 非同期コマンド(ファイル読み込みなど)の完了前に、次のキーが処理されないよう、実行は直列にする
+  // Run serially so that the next key is not processed before an asynchronous command (file loading etc.) completes
   let queue: Promise<void> = Promise.resolve();
 
   window.addEventListener("keydown", (e) => {
-    if (ctx.minibuffer.active) return; // 入力欄が専用のキー処理を持つ
+    if (ctx.minibuffer.active) return; // the input field has its own key handling
     const name = keyName(e);
     if (!name) return;
     const t0 = e.timeStamp;
@@ -43,7 +43,7 @@ export function installKeyboard(
         e.preventDefault();
         ctx.echo.message(`${r.keys.join(" ")} is undefined`);
       }
-      return; // 単独の未割り当てキーは WebView 既定に任せる(Cmd+C など)
+      return; // leave a lone unassigned key to the WebView default (Cmd+C etc.)
     }
     e.preventDefault();
     if (r.type === "prefix") {

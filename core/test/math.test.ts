@@ -21,7 +21,7 @@ test("\\text{…} や \\mathrm{…} の中の \\_ は、文字としての下線
   assert.equal(u("\\text{snake\\_case}"), "\\text{snake\\_case}");
   assert.equal(u("\\mathrm{max\\_value}"), "\\mathrm{max\\_value}");
   assert.equal(u("\\operatorname{arg\\_max}_{x}"), "\\operatorname{arg\\_max}_{x}");
-  // 引数の外は、戻す(入れ子の波括弧を含む)
+  // Text outside the argument is returned unchanged (including nested braces)
   assert.equal(u("\\text{a {b\\_c} d} + f\\_2"), "\\text{a {b\\_c} d} + f_2");
   assert.equal(u("\\text{x}\\_1"), "\\text{x}_1");
 });

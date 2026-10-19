@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 統合テスト(WebView の中で実行される)。HyperBuf.app(デバッグビルド)が、プロジェクトの全文書を開き、
-// 描画・CSP・検索・画像の読み込みに問題がないかを集計して、JSON で返す。
-// 実行: scripts/integration-test.sh [プロジェクトのディレクトリ]
+// Integration test (runs inside the WebView). HyperBuf.app (debug build) opens every document of the project and
+// tallies problems in rendering, CSP, search and image loading, returning the result as JSON.
+// Run: scripts/integration-test.sh [project directory]
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const alerts = [];
 window.alert = (m) => alerts.push(String(m));
@@ -19,19 +19,19 @@ const app = window.__hyperbuf;
 const host = window.hyperbufHost;
 const out = { host: host?.name, files: 0, docs: {}, search: null };
 
-// PROJECT は、scripts/integration-test.sh が、先頭に付ける(絶対パス)
+// PROJECT is prepended by scripts/integration-test.sh (an absolute path)
 const files = (await host.listTree(PROJECT)).files;
 out.files = files.length;
 for (const file of files) {
   const t0 = performance.now();
   await app.open(`${PROJECT}/${file}`);
-  // Mermaid の描画待ち(最大 20 秒)
+  // Wait for Mermaid rendering (up to 20 seconds)
   for (let i = 0; i < 200 && document.querySelector(".win.selected .content pre.mermaid-source"); i++) {
     await sleep(100);
   }
   const content = document.querySelector(".win.selected .content");
   const imgs = [...content.querySelectorAll("img")];
-  // 画像の読み込み(と失敗の確定)を待ってから数える
+  // Wait for images to load (and for failures to be settled) before counting
   await Promise.all(imgs.map((img) => img.decode().catch(() => {})));
   out.docs[file] = {
     ms: Math.round(performance.now() - t0),
@@ -41,7 +41,7 @@ for (const file of files) {
     brokenImages: imgs.filter((i) => !(i.complete && i.naturalWidth > 0)).length,
     images: imgs.length,
     mermaid: content.querySelectorAll(".mermaid-diagram svg").length,
-    // 実行・読み込みにつながる要素が、描画結果に残っていないこと(Mermaid の SVG 内の style を除く)
+    // No elements that lead to execution or loading may remain in the rendered result (except style inside Mermaid SVG)
     dangerous:
       content.querySelectorAll("script,iframe,object,embed,form,meta,base").length +
       [...content.querySelectorAll("style")].filter((s) => !s.closest(".mermaid-diagram")).length,
@@ -51,11 +51,11 @@ for (const file of files) {
   };
 }
 
-// 全文検索 → 仮想 buffer
+// Full-text search -> virtual buffer
 if (files.length) {
   const first = `${PROJECT}/${files[0]}`;
   const word = (await host.readFile(first)).match(/[\p{L}\p{N}]{4,}/u)?.[0] ?? "a";
-  await app.open(first); // 基準のディレクトリ(検索の起点)を、この文書のものにする
+  await app.open(first); // Make this document the base directory (the search origin)
   await app.search(word);
   await sleep(200);
   const header = document.querySelector(".win.selected .mode-line")?.textContent ?? "";

@@ -8,7 +8,7 @@ import Testing
 
 @testable import HyperBufIPC
 
-/// テスト用の素朴なクライアント。
+/// A simple client for tests.
 private final class TestClient {
     let fd: Int32
 
@@ -48,7 +48,8 @@ private final class TestClient {
 
     private var pending = Data()
 
-    /// 1 行読む。`timeout` 秒で来なければ nil。1 回の読み取りで複数行が届いても、残りは次の呼び出しに残す。
+    /// Reads one line. Returns nil if none arrives within `timeout` seconds. If one read delivers several lines, the
+    /// rest is kept for the next call.
     func readLine(timeout: TimeInterval = 5) -> [String: Any]? {
         let deadline = Date().addingTimeInterval(timeout)
         while true {
@@ -78,7 +79,7 @@ private func cleanup(_ path: String) {
 }
 
 @Suite(.serialized) struct SocketServerTests {
-    /// ping には成功、open には、パスをそのまま返す(ハンドラの呼び出しを確かめる)。
+    /// ping succeeds; open returns the path as is (to verify the handler is called).
     private func echoServer(_ path: String, delayMs: Int = 0) -> SocketServer {
         SocketServer(path: path) { request, operation, reply in
             let work = {
@@ -141,11 +142,11 @@ private func cleanup(_ path: String) {
             return ((c.readLine()?["error"]) as? [String: Any])?["code"] as? String
         }
         #expect(code("{broken") == "bad-request")
-        #expect(code(#"{"v":1,"id":"1"}"#) == "bad-request")  // op がない
+        #expect(code(#"{"v":1,"id":"1"}"#) == "bad-request")  // no op
         #expect(code(#"{"v":1,"id":"2","op":"delete","path":"/tmp/x.md"}"#) == "unknown-op")
         #expect(code(#"{"v":2,"id":"3","op":"ping"}"#) == "unsupported-version")
         #expect(called.value == 0)
-        // 不正な要求のあとでも、接続は使い続けられる
+        // The connection stays usable after an invalid request
         c.send(#"{"v":1,"id":"4","op":"ping"}"# + "\n")
         #expect(c.readLine()?["ok"] as? Bool == true)
         #expect(called.value == 1)
@@ -178,12 +179,12 @@ private func cleanup(_ path: String) {
     @Test func deferredRepliesStillArriveAfterTheClientHalfCloses() throws {
         let path = shortSocketPath()
         defer { cleanup(path) }
-        let server = echoServer(path, delayMs: 300)  // 確認待ち(ミニバッファ)のように、時間がかかる
+        let server = echoServer(path, delayMs: 300)  // takes time, like waiting for confirmation (minibuffer)
         try server.start()
         defer { server.stop() }
         let c = try #require(TestClient(path: path))
         c.send(#"{"v":1,"id":"slow","op":"ping"}"# + "\n")
-        c.halfClose()  // 送信側を閉じても、応答は受け取れる
+        c.halfClose()  // the response can still be received after closing the send side
         #expect(c.readLine()?["id"] as? String == "slow")
     }
 
@@ -232,7 +233,7 @@ private func cleanup(_ path: String) {
     @Test func recoversFromAStaleSocketAndDetectsALiveOne() throws {
         let path = shortSocketPath()
         defer { cleanup(path) }
-        // 古いソケット: bind だけして、listen せずに閉じる(異常終了で残ったファイルを模す)
+        // Stale socket: only bind, then close without listen (simulates a file left behind by an abnormal exit)
         let dir = (path as NSString).deletingLastPathComponent
         try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
         let stale = socket(AF_UNIX, SOCK_STREAM, 0)
@@ -250,13 +251,13 @@ private func cleanup(_ path: String) {
         #expect(FileManager.default.fileExists(atPath: path))
 
         let first = echoServer(path)
-        try first.start()  // 古いソケットを作り直す
+        try first.start()  // recreate the stale socket
         defer { first.stop() }
         #expect(TestClient(path: path) != nil)
 
         let second = echoServer(path)
         #expect(throws: SocketServer.StartError.alreadyRunning) { try second.start() }
-        // 起動中のサーバーのソケットを、壊していない
+        // the socket of the running server is not broken
         #expect(TestClient(path: path) != nil)
     }
 

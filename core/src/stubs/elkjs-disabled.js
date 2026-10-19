@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// elkjs(EPL-2.0)の代わりに、バンドルに入れる空の実装。Mermaid の ELK レイアウト(`layout: elk` / `flowchart-elk`)だけが
-// 使う。ELK を使う図は、レイアウトの呼び出しで失敗し、図の位置にエラーとして表示される(文書全体は止まらない)。
-// Mermaid は、ELK のチャンクを評価するとき(通常の図でも起こる)に、`new ELK()` を呼ぶので、
-// コンストラクタでは投げない。どのメソッドも、呼ばれたときに、失敗した Promise を返す。
-// 理由: docs/history/license-options.md(EPL-2.0 の同梱を避け、ライセンスの選択肢を広く保つ。約 1.5 MB のチャンクも減る)。
+// An empty implementation bundled in place of elkjs (EPL-2.0). Only Mermaid's ELK layout (`layout: elk` / `flowchart-elk`)
+// uses it. A diagram that uses ELK fails at the layout call and is shown as an error in place of the diagram (the whole document does not stop).
+// Mermaid calls `new ELK()` when it evaluates the ELK chunk (this also happens for ordinary diagrams), so
+// the constructor does not throw. Every method returns a rejected Promise when called.
+// Reason: docs/history/license-options.md (avoids bundling EPL-2.0, keeps license options open; the roughly 1.5 MB chunk also goes away).
 const unsupported = () =>
   Promise.reject(new Error("The ELK layout is not supported in HyperBuf (layout: elk)"));
 
 export default class ELK {
   constructor() {
     return new Proxy(this, {
-      // await や Promise.resolve が、thenable と取り違えないように
+      // so that await and Promise.resolve do not mistake it for a thenable
       get: (_target, property) => (property === "then" ? undefined : unsupported),
     });
   }

@@ -7,7 +7,7 @@ import Testing
 @testable import HyperBufKit
 
 extension Result where Success == Void {
-    /// 成功なら nil、失敗ならその値(`Void` は Equatable でないので、結果をそのまま `==` で比べられない)。
+    /// nil on success, the value on failure (`Void` is not Equatable, so results cannot be compared with `==` directly).
     fileprivate var failure: Failure? {
         if case .failure(let error) = self { return error }
         return nil
@@ -41,12 +41,12 @@ extension Result where Success == Void {
         let t = try TempProject(files: ["plain.txt": "x"])
         defer { t.remove() }
         let bad: [String] = [
-            #"{"editorCommand": ["emacsclient", "-n"]}"#,  // 相対パス(PATH 検索を許さない)
-            #"{"editorCommand": ["/no/such/program"]}"#,  // 存在しない
-            #"{"editorCommand": ["\#(t.url.path)/plain.txt"]}"#,  // 実行可能でない
-            #"{"editorCommand": ["/usr/bin"]}"#,  // ディレクトリ
+            #"{"editorCommand": ["emacsclient", "-n"]}"#,  // A relative path (PATH lookup is not allowed)
+            #"{"editorCommand": ["/no/such/program"]}"#,  // Nonexistent
+            #"{"editorCommand": ["\#(t.url.path)/plain.txt"]}"#,  // Not executable
+            #"{"editorCommand": ["/usr/bin"]}"#,  // A directory
             #"{"editorCommand": []}"#,
-            #"{"editorCommand": "/usr/bin/true"}"#,  // 配列でない(シェルの文字列は、受け付けない)
+            #"{"editorCommand": "/usr/bin/true"}"#,  // Not an array (a shell string is not accepted)
             #"{"editorCommand": ["/usr/bin/true", "a\u0000b"]}"#,
             #"{"editorCommand": ["/usr/bin/true", "\#(String(repeating: "x", count: 2000))"]}"#,
             #"{"editorCommand": ["/usr/bin/true", "1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16"]}"#,
@@ -67,7 +67,7 @@ extension Result where Success == Void {
     @Test func passesArgumentsLiterallyNoShellExpansion() async throws {
         let t = try TempProject()
         defer { t.remove() }
-        // シェルを介さないので、`$(…)` や `;` は、ただの文字列として引数に渡る
+        // No shell is involved, so `$(...)` and `;` are passed as plain strings in the arguments
         let marker = t.url.appendingPathComponent("created-by-injection").path
         let script = t.url.appendingPathComponent("check.sh").path
         try "#!/bin/sh\n[ \"$1\" = '$(touch \(marker)); ls' ] || exit 7\n".write(

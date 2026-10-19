@@ -89,8 +89,8 @@ import Testing
             t,
             #"{"followUpdates": "yes", "mathUnescapeUnderscore": 1, "trustedUrls": ["ftp://x/*", "javascript:alert(1)", "", 5, "https://ok.example/*"]}"#
         )
-        #expect(!s.followUpdates && s.mathUnescapeUnderscore)  // 型が違えば(文字列・数値)、既定のまま
-        #expect(s.trustedUrls == ["https://ok.example/*"])  // http / https のパターンだけ
+        #expect(!s.followUpdates && s.mathUnescapeUnderscore)  // Wrong types (string, number) stay at their defaults
+        #expect(s.trustedUrls == ["https://ok.example/*"])  // Only http / https patterns
         #expect(s.problems.count == 2 + 4)
         let bad = try load(t, #"{"trustedUrls": "https://x/*"}"#)
         #expect(bad.trustedUrls.isEmpty && bad.problems.count == 1)

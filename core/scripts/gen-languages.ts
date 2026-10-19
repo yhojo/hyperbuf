@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// docs/user/syntax-highlighting.md を、文法の一覧(src/grammars.ts)から生成する。
-// 使い方: node scripts/gen-languages.ts          生成して、書き込む
-//         node scripts/gen-languages.ts --check  最新か、検査する(違えば、終了コード 1)
+// Generates docs/user/syntax-highlighting.md from the grammar list (src/grammars.ts).
+// Usage: node scripts/gen-languages.ts          generate and write
+//         node scripts/gen-languages.ts --check  check that it is up to date (exit code 1 if not)
 
 import { readFileSync, writeFileSync } from "node:fs";
 import type { Grammar } from "@wooorm/starry-night";

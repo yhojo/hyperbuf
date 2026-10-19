@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 利用者のキー割り当て(設定ファイルの `keybindings`)を、標準の割り当てに重ねる。DOM に依存しない純粋な関数。
+// Overlays the user's key bindings (`keybindings` in the config file) on the default bindings. A pure function with no DOM dependency.
 //
 //   "keybindings": { "C-x 2": "split-below", "C-f": null, "M-p": "back" }
-//     コマンド名 → その割り当てを足す(同じキーの標準の割り当ては、置き換わる)
-//     null      → そのキーの標準の割り当てを外す
+//     command name -> add that binding (replaces the default binding for the same key)
+//     null         -> remove the default binding for that key
 //
-// 不正なもの(不明なコマンド、不正なキー表記、他の割り当てとの衝突)は、無視して、理由を `problems` に残す
-// (describe-bindings で見られる)。処理の順序は、設定の並びに依存しない: 解除(null)が先、割り当ては、キーの順。
+// Invalid entries (unknown command, invalid key notation, conflict with another binding) are ignored and the reason is kept in `problems`
+// (visible in describe-bindings). Processing order does not depend on the config order: removals (null) first, then bindings, in key order.
 
 import { createKeymap } from "./keys.ts";
 
@@ -19,10 +19,10 @@ export interface BindingsResult {
   problems: string[];
 }
 
-/** キー 1 つの表記: 修飾キーは、C- M- s- S- の順。本体は、1 文字か、名前つきのキー。 */
+/** Notation of one key: modifiers in the order C- M- s- S-. The base is one character or a named key. */
 const KEY = /^(?:C-)?(?:M-)?(?:s-)?(?:S-)?(?:RET|ESC|TAB|SPC|DEL|up|down|left|right|[^\s])$/u;
 export const MAX_SEQUENCE_KEYS = 4;
-/** 取り消しに使う(キー入力の処理が、直接扱う)ので、割り当てを変えられないキー。 */
+/** Keys whose binding cannot be changed, because they are used for cancel (handled directly by key input processing). */
 const RESERVED = new Set(["C-g"]);
 
 export function isValidKeySequence(sequence: string): boolean {
@@ -37,7 +37,7 @@ export function applyOverrides(
 ): BindingsResult {
   let bindings: Record<string, string> = { ...defaults };
   const problems: string[] = [];
-  // 解除(null)を先に、割り当てを後に。それぞれ、キーの順(設定の並びに依存しない)
+  // Removals (null) first, then bindings, each in key order (independent of the config order)
   const entries = Object.entries(overrides).sort(
     ([a, av], [b, bv]) => Number(bv === null) - Number(av === null) || a.localeCompare(b),
   );
@@ -75,7 +75,7 @@ export function applyOverrides(
   return { bindings, problems };
 }
 
-/** コマンドごとの、割り当てられているキー(キー列の昇順)。 */
+/** Keys bound to each command (key sequences in ascending order). */
 export function keysByCommand(bindings: Readonly<Record<string, string>>): Map<string, string[]> {
   const map = new Map<string, string[]>();
   for (const [sequence, command] of Object.entries(bindings)) {

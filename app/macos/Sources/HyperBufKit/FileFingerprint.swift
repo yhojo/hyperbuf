@@ -4,14 +4,14 @@
 import CryptoKit
 import Foundation
 
-/// ビューアが読んだ版のファイルの識別情報。エディタは、いまのファイルと比べて、古い表示を見つける(R3)。
+/// Identity information of the file version the viewer read. The editor compares it with the current file to detect a stale display (R3).
 public struct FileFingerprint: Sendable, Equatable {
-    /// ファイルの内容(バイト列)の SHA-256(16 進)。
+    /// SHA-256 (hex) of the file contents (bytes).
     public let sha256: String
-    /// 更新日時(エポックからのミリ秒)。
+    /// Modification time (milliseconds since the epoch).
     public let mtime: Double
     public let size: Int
-    /// 読んだ時刻(エポックからのミリ秒)。
+    /// Time of reading (milliseconds since the epoch).
     public let readAt: Double
 
     public static func sha256Hex(_ data: Data) -> String {
@@ -19,8 +19,8 @@ public struct FileFingerprint: Sendable, Equatable {
     }
 }
 
-/// Web コアに渡した(= ビューアが描画した)版の、ファイルの識別情報。パスは、`realpath` の形。
-/// Web コアは、読んだ版を描画するので、「最後に読んだ版」が、「いま見えている版」になる。
+/// Identity information of the file version handed to the Web core (= rendered by the viewer). The path is in `realpath` form.
+/// The Web core renders what it read, so "the last version read" is "the version currently visible".
 public final class FileFingerprints: @unchecked Sendable {
     private let lock = NSLock()
     private var items: [String: FileFingerprint] = [:]

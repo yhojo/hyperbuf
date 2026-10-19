@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// Mermaid の描画。DOM が要るので、HTML 文字列化の後に行う。重いので、図のある文書でだけ読み込む。
-// 描画に失敗しても文書全体は止めず、その場にエラーとソースを表示する。
+// Mermaid rendering. Needs the DOM, so it runs after conversion to an HTML string. It is heavy, so it is loaded only for documents with diagrams.
+// A rendering failure does not stop the whole document; the error and the source are shown in place.
 
 export interface DiagramStats {
   count: number;
@@ -15,7 +15,7 @@ type MermaidApi = (typeof import("mermaid"))["default"];
 let mermaidPromise: Promise<MermaidApi> | null = null;
 let diagramSeq = 0;
 
-/** いまの外観(ライト / ダーク)に合う Mermaid のテーマ。 */
+/** Mermaid theme matching the current appearance (light / dark). */
 const currentTheme = (): "dark" | "default" =>
   window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default";
 
@@ -23,9 +23,9 @@ function initializeMermaid(mermaid: MermaidApi): void {
   mermaid.initialize({
     startOnLoad: false,
     securityLevel: "strict",
-    // Mermaid 12 の既定のレイアウトは ELK(elkjs。EPL-2.0)。GitHub と同じ見た目になる dagre(Mermaid 11 までの既定)に
-    // 固定し、elkjs は同梱しない(build-options.mjs。docs/history/license-options.md)。図が `layout: elk` を指定すると、
-    // その図は、図の位置にエラーとして表示される
+    // Mermaid 12's default layout is ELK (elkjs, EPL-2.0). Pin it to dagre (the default up to Mermaid 11), which looks the same as GitHub,
+    // and do not bundle elkjs (build-options.mjs; docs/history/license-options.md). If a diagram specifies `layout: elk`,
+    // that diagram is shown as an error in its place
     layout: "dagre",
     theme: currentTheme(),
     logLevel: "fatal",
@@ -41,8 +41,8 @@ function loadMermaid(): Promise<MermaidApi> {
 }
 
 /**
- * 外観が切り替わったとき、Mermaid のテーマを、いまの外観に合わせ直す(図は、描画時に色が決まるので、
- * 呼び出し側が、表示中の図を描き直す)。まだ読み込んでいなければ、何もしない(読み込むときに、いまの外観になる)。
+ * When the appearance changes, re-fit the Mermaid theme to it (colors are fixed at render time,
+ * so the caller re-renders the displayed diagrams). Does nothing if not loaded yet (it will use the current appearance when loaded).
  */
 export async function refreshMermaidTheme(): Promise<void> {
   if (mermaidPromise) initializeMermaid(await mermaidPromise);
@@ -61,10 +61,10 @@ export async function hydrateDiagrams(root: HTMLElement): Promise<DiagramStats> 
     try {
       const { svg } = await mermaid.render(id, source);
       box.className = "mermaid-diagram";
-      box.innerHTML = svg; // mermaid が strict モードで無害化した SVG
+      box.innerHTML = svg; // SVG sanitized by mermaid in strict mode
     } catch (err) {
       errors += 1;
-      document.getElementById(`d${id}`)?.remove(); // 失敗時に body へ残る一時要素
+      document.getElementById(`d${id}`)?.remove(); // temporary element left in body on failure
       box.className = "render-error";
       const title = document.createElement("strong");
       title.textContent = "Mermaid rendering failed";

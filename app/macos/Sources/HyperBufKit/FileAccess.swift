@@ -4,27 +4,27 @@
 import Foundation
 
 public enum AccessError: Error, Equatable {
-    /// 絶対パスでない・NUL や `..` を含む。
+    /// Not an absolute path, or contains NUL or `..`.
     case invalidPath
     case notFound
     case notMarkdown
-    /// 画像以外のリソース。
+    /// A resource other than an image.
     case unsupportedResource
     case unreadable
-    /// 警告パスのため、確認が要る(リソースは、その場で確認できないので、読み込まない)。
+    /// A warn path, so confirmation is needed (resources cannot be confirmed on the spot, so they are not loaded).
     case needsConfirmation
 }
 
-/// Web コアに許すファイルアクセス。パスはすべて絶対パス(docs/dev/file-access.md)。
+/// The file access granted to the Web core. All paths are absolute (docs/dev/file-access.md).
 ///
-///  - `.md` と画像(拡張子で限る)だけを読む
-///  - シンボリックリンクは解決したうえで判定する
-///  - 判定(許可 / 警告)は `PathPolicy`。利用者が打った・選んだパス、判定済みの外部要求、復元されたセッションは、
-///    判定せずに読む(`readMarkdown`)。リソース(画像)は、読み込みのたびに、ここで必ず判定する
+///  - Reads only `.md` and images (limited by extension)
+///  - Symbolic links are resolved before judging
+///  - The judgment (allow / warn) is `PathPolicy`. Paths the user typed or chose, already-judged external requests and restored sessions
+///    are read without judging (`readMarkdown`). Resources (images) are always judged here on every load
 public struct FileAccess: Sendable {
     public let policy: PathPolicy
     public let remembered: RememberedPaths
-    /// 読んだ版の識別情報(エディタ連携で、古い表示を見つけるのに使う)。
+    /// Identity information of the version read (used by the editor integration to detect stale displays).
     public let fingerprints: FileFingerprints
 
     public init(policy: PathPolicy, remembered: RememberedPaths, fingerprints: FileFingerprints = FileFingerprints()) {
@@ -35,7 +35,7 @@ public struct FileAccess: Sendable {
 
     public var home: String { policy.home }
 
-    /// 絶対パスを、`realpath` の形にする(存在するものだけ)。
+    /// Turns an absolute path into its `realpath` form (existing ones only).
     public func canonical(_ path: String) throws -> String {
         guard path.hasPrefix("/"), !path.contains("\0"), !path.split(separator: "/").contains("..") else {
             throw AccessError.invalidPath
@@ -44,22 +44,22 @@ public struct FileAccess: Sendable {
         return real
     }
 
-    /// 判定する(存在しないパスは、`notFound`)。
+    /// Judges (a nonexistent path is `notFound`).
     public func decide(_ path: String) throws -> PathPolicy.Decision {
         policy.decide(try canonical(path), remembered: remembered)
     }
 
-    /// Markdown を読む。**判定はしない**(利用者の意思、判定済みの外部要求、復元)。
+    /// Reads Markdown. **Does not judge** (the user's intent, an already-judged external request, restoration).
     public func readMarkdown(_ path: String) throws -> String {
         guard path.hasSuffix(".md") else { throw AccessError.notMarkdown }
         let real = try canonical(path)
-        guard real.hasSuffix(".md") else { throw AccessError.notMarkdown }  // リンク先の実体も `.md` に限る
+        guard real.hasSuffix(".md") else { throw AccessError.notMarkdown }  // The link target must be `.md` too
         guard let data = try? Data(contentsOf: URL(fileURLWithPath: real)) else { throw AccessError.unreadable }
         fingerprints.record(path: real, data: data)
         return String(decoding: data, as: UTF8.self)
     }
 
-    /// 文書から参照される画像。**判定する**(警告パスなら、読み込まない)。
+    /// An image referenced from a document. **Judges** (a warn path is not loaded).
     public func readResource(_ path: String) throws -> (data: Data, mime: String) {
         let ext = (path as NSString).pathExtension.lowercased()
         guard MimeType.imageExtensions.contains(ext) else { throw AccessError.unsupportedResource }

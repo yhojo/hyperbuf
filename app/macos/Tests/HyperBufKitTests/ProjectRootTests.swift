@@ -54,7 +54,7 @@ import Testing
     @Test func doesNotAscendToOrPastTheHome() throws {
         let t = try TempProject()
         defer { t.remove() }
-        // ホスト自体が dotfiles のリポジトリでも、ルートにしない
+        // Even if the host itself is a dotfiles repository, it does not become the root
         try mkdir(t, "home/.git")
         try mkdir(t, "home/notes")
         let dir = canon(t, "home/notes")
@@ -69,7 +69,7 @@ import Testing
         try mkdir(t, "wrapper/sub/docs")
         let dir = canon(t, "wrapper/sub/docs")
         #expect(ProjectRoot.find(from: dir, home: canon(t, "home"), ignore: [canon(t, "wrapper")]) == dir)
-        // 無視するのは完全一致だけ。内側の目印は有効
+        // Only an exact match is ignored. A marker further inside is valid
         try mkdir(t, "wrapper/sub/.git")
         #expect(
             ProjectRoot.find(from: dir, home: canon(t, "home"), ignore: [canon(t, "wrapper")])

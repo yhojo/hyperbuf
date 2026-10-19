@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// Web コアを dist/ にバンドルする。設定は build-options.mjs。
+// Bundles the Web core into dist/. Settings are in build-options.mjs.
 import { copyFile, mkdir } from "node:fs/promises";
 import * as esbuild from "esbuild";
 import { buildOptions } from "./build-options.mjs";

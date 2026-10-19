@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// docs/user/keybindings.md を、コード(標準のキー割り当てと、コマンドの説明)から生成する。
-// 使い方: node scripts/gen-keybindings.ts          生成して、書き込む
-//         node scripts/gen-keybindings.ts --check  最新か、検査する(違えば、終了コード 1)
+// Generates docs/user/keybindings.md from the code (default key bindings and command descriptions).
+// Usage: node scripts/gen-keybindings.ts          generate and write
+//         node scripts/gen-keybindings.ts --check  check that it is up to date (exit code 1 if not)
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { keysByCommand } from "../src/keybindings.ts";
@@ -12,8 +12,9 @@ import { DEFAULT_BINDINGS } from "../src/ui/keymap.ts";
 
 const target = new URL("../../docs/user/keybindings.md", import.meta.url);
 
-// 利用者向けの文書では、コマンドを機能別に並べる(`C-h b` の一覧は、コマンド名順のまま)。
-// すべてのコマンドが、ちょうど 1 つのグループに属していなければならない(足し忘れると、生成が失敗する)。
+// In the user-facing document, commands are grouped by function (the `C-h b` list stays in command-name
+// order).
+// Every command must belong to exactly one group (forgetting to add one makes generation fail).
 const GROUPS: readonly { title: string; commands: readonly string[] }[] = [
   {
     title: "Files and buffers",
@@ -108,7 +109,7 @@ if (missing.length || unknown.length || repeated.length) {
   process.exit(1);
 }
 
-/** Markdown の表の中に置く文字列(`|` と改行を、壊さない形にする)。 */
+/** A string to put inside a Markdown table (made safe against `|` and newlines). */
 const cell = (s: string): string => s.replace(/\|/g, "\\|").replace(/\n/g, " ");
 
 const keys = keysByCommand(DEFAULT_BINDINGS);

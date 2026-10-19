@@ -5,7 +5,7 @@ import HyperBufKit
 import SwiftUI
 import WebKit
 
-/// WKWebView を SwiftUI に載せる。Web コアは、同梱したファイルをカスタムスキームで読む。
+/// Hosts a WKWebView in SwiftUI. The Web core is loaded from the bundled files through a custom scheme.
 struct WebShell: NSViewRepresentable {
     let frame: FrameSession
     let web: StaticFiles
@@ -29,7 +29,7 @@ struct WebShell: NSViewRepresentable {
             view.isInspectable = true
         #endif
         frame.webView = view
-        context.coordinator.bridge = bridge  // WKUserContentController は、ハンドラを強参照しない
+        context.coordinator.bridge = bridge  // WKUserContentController does not hold the handler strongly
         TestHarness.attach(to: view, bridge: bridge, slot: frame.slot)
         TestHarness.startCommandChannel(for: view, slot: frame.slot)
         view.load(URLRequest(url: URL(string: "\(ContentSecurityPolicy.scheme)://app/index.html")!))

@@ -38,7 +38,7 @@ Before sending a change:
 - Describe user-visible changes under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md), in English.
 - All text that the app itself shows (menus, messages, command descriptions, CLI output) is English and not localized. Document contents, file names and input stay fully international.
 
-Commit messages follow Conventional Commits (`type: summary`), and branches are named `<type>/<short description>` (for example `fix/scroll-restore`).
+Commit messages follow Conventional Commits (`type: summary`) and are written in English, and branches are named `<type>/<short description>` (for example `fix/scroll-restore`).
 
 ## License of contributions
 

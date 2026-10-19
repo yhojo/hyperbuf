@@ -46,7 +46,7 @@ private func cleanup(_ path: String) {
     @Test func timesOutWhenTheServerDoesNotReply() throws {
         let path = shortSocketPath()
         defer { cleanup(path) }
-        // 応答しないサーバー(確認待ちが続く状況)
+        // A server that does not respond (a situation where waiting for confirmation continues)
         let server = SocketServer(path: path) { _, _, _ in }
         try server.start()
         defer { server.stop() }

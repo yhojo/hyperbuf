@@ -3,8 +3,9 @@
 
 import Foundation
 
-/// アプリの起動(アプリが起動していないとき)。`hyperbuf://` の URL を、`open` に渡す。
-/// 起動と、最初の要求の引き渡しを、1 回で行う(アプリが、その URL の指すファイルから、プロジェクトを選んでもらう)。
+/// Launching the app (when it is not running). Passes a `hyperbuf://` URL to `open`.
+/// Launch and hand-off of the first request happen in one step (the app picks the project from the file the URL points
+/// to).
 public protocol AppLauncher: Sendable {
     func launch(url: URL, activate: Bool) throws
 }
@@ -15,7 +16,8 @@ public struct LaunchError: Error, Equatable {
 }
 
 public struct OpenCommandLauncher: AppLauncher {
-    /// 開発用: `.app` のパス(`HYPERBUF_APP`)。指定がなければ、URL スキームに登録されたアプリが起動する。
+    /// For development: path to the `.app` (`HYPERBUF_APP`). If unset, the app registered for the URL scheme is
+    /// launched.
     public let appPath: String?
 
     public init(appPath: String?) { self.appPath = appPath }
@@ -23,7 +25,7 @@ public struct OpenCommandLauncher: AppLauncher {
     public func launch(url: URL, activate: Bool) throws {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-        // 引数は配列で渡す(シェルを介さない)。URL は、HyperBufProtocol が組み立てたもの。
+        // Arguments are passed as an array (no shell involved). The URL is the one built by HyperBufProtocol.
         var arguments: [String] = []
         if !activate { arguments.append("-g") }
         if let appPath, !appPath.isEmpty { arguments += ["-a", appPath] }

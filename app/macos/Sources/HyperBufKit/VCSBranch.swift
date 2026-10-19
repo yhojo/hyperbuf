@@ -3,20 +3,20 @@
 
 import Foundation
 
-/// モードラインに出す、Git のブランチ名。外部コマンドは使わず、`HEAD` を直接読む(docs/dev/buffer-model.md §6.9)。
+/// The Git branch name shown in the mode line. Reads `HEAD` directly without external commands (docs/dev/buffer-model.md §6.9).
 ///
-/// 読むのは、プロジェクト・ルートの `.git`(ディレクトリ、または worktree・submodule の `gitdir:` ファイル)の
-/// `HEAD` の先頭 1 行だけ。リポジトリは信頼しない入力なので、サイズ・形式・長さを制限する。
+/// Reads only the first line of `HEAD` in the project root's `.git` (a directory, or the `gitdir:` file of a worktree / submodule).
+/// The repository is untrusted input, so size, format and length are limited.
 public enum VCSBranch {
-    /// 読む量の上限(バイト)。
+    /// Upper limit on the amount read (bytes).
     static let maxBytes = 4096
-    /// 表示するブランチ名の長さの上限(文字数)。超えたら、末尾を省く。
+    /// Upper limit on the length of the displayed branch name (characters). Longer ones are truncated at the end.
     static let maxLength = 80
-    /// detached HEAD のときに示す、短縮ハッシュの桁数。
+    /// Number of digits of the short hash shown for a detached HEAD.
     static let shortHashLength = 7
 
-    /// `dir` のブランチ名。Git のルートがない、`HEAD` が読めない・形が違うときは nil。
-    /// detached HEAD は、短縮ハッシュ。
+    /// The branch name for `dir`. nil if there is no Git root or `HEAD` cannot be read or has the wrong form.
+    /// A detached HEAD gives a short hash.
     public static func read(from dir: String, home: String, ignore: [String] = []) -> String? {
         guard let root = ProjectRoot.markedRoot(from: dir, home: home, ignore: ignore),
             let gitDir = gitDirectory(root)
@@ -25,7 +25,7 @@ public enum VCSBranch {
         return parse(head)
     }
 
-    /// `HEAD` の内容(先頭 1 行)から、表示名を求める。
+    /// Derives the display name from the contents of `HEAD` (the first line).
     static func parse(_ text: String) -> String? {
         let line = text.split(whereSeparator: \.isNewline).first.map(String.init) ?? ""
         if line.hasPrefix("ref:") {
@@ -42,14 +42,14 @@ public enum VCSBranch {
         return isHash ? String(line.prefix(shortHashLength)) : nil
     }
 
-    /// 制御文字を含むものは捨て、長すぎるものは省く。
+    /// Drops anything containing control characters and truncates anything too long.
     private static func sanitize(_ name: String) -> String? {
         guard !name.isEmpty, !name.unicodeScalars.contains(where: { $0.properties.generalCategory == .control })
         else { return nil }
         return name.count > maxLength ? String(name.prefix(maxLength - 1)) + "…" : name
     }
 
-    /// ルートの `.git` が、ディレクトリならそれ、`gitdir: <path>` のファイルなら、その指す先。
+    /// The root's `.git`: itself if a directory; if a `gitdir: <path>` file, what it points to.
     private static func gitDirectory(_ root: String) -> String? {
         let dotGit = root + "/.git"
         var isDirectory: ObjCBool = false
@@ -63,7 +63,7 @@ public enum VCSBranch {
         return target.hasPrefix("/") ? target : root + "/" + target
     }
 
-    /// 通常のファイルだけを、先頭 `maxBytes` まで読む(FIFO・デバイスなどで止まらないようにする)。
+    /// Reads only a regular file, up to the first `maxBytes` (so it does not hang on FIFOs, devices, etc.).
     private static func readSmallFile(_ path: String) -> String? {
         guard let attributes = try? FileManager.default.attributesOfItem(atPath: path),
             attributes[.type] as? FileAttributeType == .typeRegular,

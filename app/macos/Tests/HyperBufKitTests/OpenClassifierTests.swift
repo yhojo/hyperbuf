@@ -62,13 +62,13 @@ import Testing
     @Test func urlSchemeConfirmsEverythingExceptExplicitlyAllowedPaths() throws {
         let t = try TempProject(files: ["docs/a.md": "x", "other/b.md": "x"])
         defer { t.remove() }
-        // 許可パス(allowPaths)の中は、確認なし。それ以外は、警告パスの外でも確認する
+        // Inside an allow path (allowPaths) no confirmation. Anything else is confirmed even outside the warn paths
         #expect(
             try classify(t.url.path + "/docs/a.md", t, allow: [t.real + "/docs"], viaURL: true).get()
                 == .open(absolute: t.real + "/docs/a.md"))
         let other = try classify(t.url.path + "/other/b.md", t, allow: [t.real + "/docs"], viaURL: true).get()
         #expect(other == .confirm(absolute: t.real + "/other/b.md", remember: t.real + "/other"))
-        // ソケット経由なら、同じファイルは確認なし
+        // Via the socket, the same file needs no confirmation
         #expect(try classify(t.url.path + "/other/b.md", t).get() == .open(absolute: t.real + "/other/b.md"))
     }
 }

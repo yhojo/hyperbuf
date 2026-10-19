@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 画面の選択・クリックから、指したブロックと選択を求める(DOM の部分)。
-// 元の位置への対応づけ(純粋な部分)は、../locate.ts。
+// Derives the pointed block and selection from the on-screen selection / click (the DOM part).
+// Mapping to the source position (the pure part) is in ../locate.ts.
 
 import { locateInSource } from "../locate.ts";
 import type { SourceLocation } from "../locate.ts";
 
-/** 元の位置を持つ、最も内側のブロック。 */
+/** The innermost block that has a source position. */
 function blockOf(node: Node | null): HTMLElement | null {
   const element = node instanceof HTMLElement ? node : (node?.parentElement ?? null);
   return element?.closest<HTMLElement>("[data-source-start]") ?? null;
@@ -19,7 +19,7 @@ function range(el: HTMLElement): { start: number; end: number } | null {
   return Number.isFinite(start) && Number.isFinite(end) ? { start, end } : null;
 }
 
-/** 画面の上端にあるブロック(選択もクリックもないときの、「いま読んでいる場所」)。 */
+/** The block at the top of the screen (the "place being read" when there is neither a selection nor a click). */
 function topBlock(content: HTMLElement): HTMLElement | null {
   let best: HTMLElement | null = null;
   for (const el of content.querySelectorAll<HTMLElement>("[data-source-start]")) {
@@ -34,13 +34,13 @@ export interface LocateRequest {
   path: string;
   text: string;
   version: number;
-  /** 右クリックした要素(選択がないとき、これが指した場所になる)。 */
+  /** The right-clicked element (when there is no selection, this is the pointed location). */
   contextTarget: Element | null;
 }
 
 /**
- * ビューアで指した場所を、元の Markdown の位置にする。
- * 優先順: (1) 文書内の、空でない選択 (2) 右クリックした要素 (3) 画面の上端のブロック。
+ * Turns the location pointed at in the viewer into a position in the source Markdown.
+ * Priority: (1) a non-empty selection in the document (2) the right-clicked element (3) the block at the top of the screen.
  */
 export function locateFromDom(request: LocateRequest): SourceLocation | null {
   const { content } = request;
@@ -70,7 +70,7 @@ export function locateFromDom(request: LocateRequest): SourceLocation | null {
     path: request.path,
     text: request.text,
     version: request.version,
-    // 複数のブロックにまたがる選択は、その全体(曖昧なので、block になる)
+    // A selection spanning multiple blocks is taken as a whole (ambiguous, so it becomes a block)
     blockStart: Math.min(a.start, b.start),
     blockEnd: Math.max(a.end, b.end),
     selection: startBlock === endBlock ? selected : "",

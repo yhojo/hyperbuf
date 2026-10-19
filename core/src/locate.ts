@@ -1,61 +1,61 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// ビューアで指した場所(選択・クリック)を、元の Markdown の位置に対応づける。
-// 「表示を見ている位置」と「編集する位置」が、黙って食い違わないための土台(docs/dev/edit-location.md §4)。
+// Maps a place pointed at in the viewer (selection, click) to a position in the original Markdown.
+// The foundation that keeps "the position being viewed" and "the position to edit" from silently diverging (docs/dev/edit-location.md §4).
 //
-// 方針:
-//  - 位置は、構文木の位置情報(ブロックの開始・終了オフセット)から、確実に求める(文言の検索に頼らない)
-//  - ブロックの中の細かい位置は、選択した文字列が、ブロックの元の文章の中で「ちょうど 1 か所」に見つかるときだけ、
-//    正確(exact)とする。見つからない・複数ある・選択がないときは、ブロック全体(block)にして、曖昧さを隠さない
-//  - 照合用に、その位置にあるはずの文字列(expect)と、前後の文脈を添える
+// Policy:
+//  - Positions are derived reliably from the syntax tree's position info (block start/end offsets), not by searching for text
+//  - A fine-grained position inside a block is exact only when the selected string is found in exactly one place
+//    in the block's source text. If it is not found, found several times, or there is no selection, use the whole block (block) and do not hide the ambiguity
+//  - For verification, attach the string expected at that position (expect) and the surrounding context
 
 export interface Position {
-  /** 1 始まり。 */
+  /** 1-based. */
   line: number;
-  /** 1 始まり。コードポイント(Emacs の文字)で数える。UTF-16 の単位ではない。 */
+  /** 1-based. Counted in code points (Emacs characters), not UTF-16 units. */
   column: number;
 }
 
 export interface SourceRange {
   start: Position;
-  /** 終了位置(その位置の文字は含まない)。 */
+  /** End position (the character at that position is not included). */
   end: Position;
 }
 
 export type Precision = "exact" | "block";
 
 export interface SourceLocation {
-  /** 描画した文書のパス(プロジェクト内なら相対、信頼するルートの内側なら絶対)。 */
+  /** Path of the rendered document (relative if inside a project, absolute if inside a trusted root). */
   path: string;
   range: SourceRange;
   precision: Precision;
-  /** その範囲にあるはずの、元の Markdown の文字列(改行は LF にそろえる)。長いときは、先頭だけ。 */
+  /** The original Markdown string that should be in that range (newlines normalized to LF). If long, only the beginning. */
   expect: string;
   expectTruncated: boolean;
   context: { before: string; after: string };
-  /** ビューアで選択していた文字列(表示されているままの文字列)。選択がなければ空。 */
+  /** The string selected in the viewer (as displayed). Empty if there is no selection. */
   selection: string;
-  /** 描画した版(buffer の version)。 */
+  /** The rendered version (the buffer's version). */
   version: number;
 }
 
 export interface LocateInput {
   path: string;
-  /** 描画した版の、元の Markdown の全文。 */
+  /** The full original Markdown text of the rendered version. */
   text: string;
   version: number;
-  /** 指したブロック(選択が複数のブロックにまたがるときは、その全体)の、元の位置(UTF-16 のオフセット)。 */
+  /** The original position (UTF-16 offsets) of the pointed block (the whole span if the selection crosses several blocks). */
   blockStart: number;
   blockEnd: number;
-  /** ビューアでの選択。なければ空文字列。 */
+  /** The selection in the viewer. An empty string if none. */
   selection: string;
 }
 
 export const EXPECT_LIMIT = 500;
 export const CONTEXT_LENGTH = 40;
 
-/** 改行(CRLF・CR・LF)ごとの、各行の開始オフセット。 */
+/** Start offset of each line, split by newlines (CRLF, CR, LF). */
 export function lineStarts(text: string): number[] {
   const starts = [0];
   for (let i = 0; i < text.length; i++) {
@@ -76,7 +76,7 @@ const codePoints = (s: string): number => {
   return n;
 };
 
-/** UTF-16 のオフセットを、(行, 桁)にする。桁は、行頭からのコードポイント数 + 1。 */
+/** Converts a UTF-16 offset to (line, column). The column is the number of code points from the line start + 1. */
 export function offsetToPosition(
   starts: readonly number[],
   text: string,
@@ -95,7 +95,7 @@ export function offsetToPosition(
 
 const normalizeNewlines = (s: string): string => s.replace(/\r\n?/g, "\n");
 
-/** 前後の文脈。サロゲートペアを、途中で切らない。 */
+/** Surrounding context. Does not cut a surrogate pair in the middle. */
 function sliceSafe(text: string, from: number, to: number): string {
   return normalizeNewlines(
     text
@@ -112,7 +112,7 @@ function truncate(s: string, limit: number): { text: string; truncated: boolean 
     : { text: s, truncated: false };
 }
 
-/** 選択した文字列が、ブロックの元の文章の中に、ちょうど 1 か所あれば、そのオフセット。それ以外は null。 */
+/** The offset if the selected string appears in exactly one place in the block's source text. Otherwise null. */
 export function uniqueMatch(blockText: string, selection: string): number | null {
   if (!selection) return null;
   const first = blockText.indexOf(selection);

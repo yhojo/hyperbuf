@@ -14,7 +14,7 @@ private func cleanup(_ path: String) {
     try? FileManager.default.removeItem(atPath: (path as NSString).deletingLastPathComponent)
 }
 
-/// 受け取った要求を記録するサーバー。
+/// A server that records the requests it receives.
 private final class Recorder: @unchecked Sendable {
     private let lock = NSLock()
     private var items: [Request] = []
@@ -22,7 +22,7 @@ private final class Recorder: @unchecked Sendable {
     func add(_ r: Request) { lock.withLock { items.append(r) } }
 }
 
-/// 起動の要求を受けたら、ソケットのサーバーを立てる(アプリの起動の模擬)。
+/// On a launch request, starts a socket server (simulates launching the app).
 private final class ServerStartingLauncher: AppLauncher, @unchecked Sendable {
     private let lock = NSLock()
     private let start: @Sendable () throws -> SocketServer
@@ -137,7 +137,7 @@ private final class ServerStartingLauncher: AppLauncher, @unchecked Sendable {
             cleanup(sock)
         }
         try t.write("a.md", "x")
-        let s = try server(sock, recorder: Recorder()) { _ in nil }  // 応答しない
+        let s = try server(sock, recorder: Recorder()) { _ in nil }  // does not respond
         defer { s.stop() }
         let output = Output()
         var env = output.environment(cwd: t.path, socketPath: sock)
@@ -157,13 +157,13 @@ private final class ServerStartingLauncher: AppLauncher, @unchecked Sendable {
         }
         try t.write("docs/日本語.md", "x")
         let recorder = Recorder()
-        // アプリの起動を模す: 起動の要求(URL)を受けたら、ソケットのサーバーを立てる
+        // Simulate launching the app: on receiving the launch request (URL), start the socket server
         let launcher = ServerStartingLauncher { [self] in try server(sock, recorder: recorder) { .success(id: $0.id) } }
         let output = Output()
         let code = CLI.run(["docs/日本語.md:5"], output.environment(cwd: t.path, socketPath: sock, launcher: launcher))
         launcher.stop()
         #expect(code == 0)
-        // 起動の URL は ping(ファイルを渡さない)。要求は、ソケットで届く
+        // The launch URL is a ping (no file is passed). The request arrives over the socket
         let url = try #require(launcher.urls.first)
         #expect(url.host == "ping" && !url.absoluteString.contains("path="))
         let request = try #require(recorder.requests.first)
@@ -205,7 +205,7 @@ private final class ServerStartingLauncher: AppLauncher, @unchecked Sendable {
         let s = try server(sock, recorder: recorder) { .success(id: $0.id) }
         defer { s.stop() }
         #expect(CLI.run(["a.md", "missing.md"], Output().environment(cwd: t.path, socketPath: sock)) == 2)
-        #expect(recorder.requests.isEmpty)  // 途中まで開いてから失敗しない
+        #expect(recorder.requests.isEmpty)  // does not fail after opening some of the files
     }
 
     @Test func versionAndHelpNeedNoApp() {

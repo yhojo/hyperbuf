@@ -4,7 +4,7 @@
 import Foundation
 import HyperBufProtocol
 
-/// Web コアが求めた「指した場所」(`core/src/locate.ts` の `SourceLocation`)。
+/// The "location pointed at" requested by the Web core (`SourceLocation` in `core/src/locate.ts`).
 public struct WebLocation: Decodable, Sendable {
     public struct Range: Decodable, Sendable {
         public let start: LocationPayload.Position
@@ -26,13 +26,13 @@ public struct WebLocation: Decodable, Sendable {
     public let version: Int
 }
 
-/// Web コアの位置に、シェルだけが知っていること(絶対パス、描画した版のファイルの識別情報)を足して、
-/// エディタに渡すペイロードにする。
+/// Adds what only the shell knows (the absolute path, the identity information of the rendered version) to the Web core's location,
+/// making the payload handed to the editor.
 public enum LocationBuilder {
     public static func build(
         _ web: WebLocation, access: FileAccess, now: Date = Date()
     ) -> Result<LocationPayload, ProtocolError> {
-        // 実在する絶対パスだけを、エディタに渡す
+        // Hand only an existing absolute path to the editor
         let absolute: String
         do {
             absolute = try access.canonical(web.path)
@@ -40,7 +40,7 @@ public enum LocationBuilder {
             return .failure(ProtocolError(.notFound, "The location of this file cannot be passed to the editor"))
         }
         guard absolute.hasSuffix(".md") else { return .failure(ProtocolError(.notMarkdown, ".md files only")) }
-        // ビューアが描画した版の識別情報。読んだ記録がなければ、「描画した版」が分からないので、渡さない
+        // Identity information of the version the viewer rendered. Without a record of reading, "the rendered version" is unknown, so it is not passed
         guard let fingerprint = access.fingerprints.get(absolute) else {
             return .failure(ProtocolError(.stale, "No identity information for the rendered version of the file"))
         }

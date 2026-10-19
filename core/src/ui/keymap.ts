@@ -8,7 +8,7 @@ import type { BindingsResult, Overrides } from "../keybindings.ts";
 import { COMMAND_NAMES } from "./commands.ts";
 import type { CommandName } from "./commands.ts";
 
-/** 標準のキー割り当て。docs/dev/interaction-model.md。利用者の設定での上書きは M3。 */
+/** Default key bindings. docs/dev/interaction-model.md. Overriding by user settings is M3. */
 export const DEFAULT_BINDINGS: Readonly<Record<string, CommandName>> = {
   "C-x 2": "split-below",
   "C-x 3": "split-right",
@@ -32,18 +32,18 @@ export const DEFAULT_BINDINGS: Readonly<Record<string, CommandName>> = {
   "C-x 5 o": "other-frame",
   "C-x 5 1": "delete-other-frames",
   "M-x": "execute-command",
-  // Back / Forward は、編集における C-f/C-b が文字の流れを泳ぐのと同じく、参照の流れを泳ぐ操作
+  // Back / Forward navigate the flow of references, just as C-f/C-b move through the flow of characters in editing
   "C-f": "forward",
   "C-b": "back",
-  // 履歴の先頭・末尾(行頭・行末の C-a / C-e)
+  // Start / end of the history (like C-a / C-e at line start / end)
   "C-a": "beginning-of-history",
   "C-e": "end-of-history",
-  // カーソルキーの左右も(Emacs に不慣れな人のため)
+  // Left / right arrow keys too (for people unfamiliar with Emacs)
   left: "back",
   right: "forward",
   "s-]": "forward",
   "s-[": "back",
-  // outline-mode 風の見出し移動(C-c 系は、このために取ってある)
+  // outline-mode-style heading navigation (the C-c prefix is reserved for this)
   "C-c C-n": "next-heading",
   "C-c C-p": "previous-heading",
   "C-c C-u": "up-heading",
@@ -67,7 +67,7 @@ export const DEFAULT_BINDINGS: Readonly<Record<string, CommandName>> = {
   "M-s g": "search-project",
   "M-g g": "goto-line",
   "M-=": "count-words",
-  // ビューアで指した場所を、エディタで編集する(右クリックメニューの「Emacs で編集」と同じ)
+  // Edit the location pointed at in the viewer in the editor (same as "Edit in Emacs" in the right-click menu)
   "C-c e": "edit-in-editor",
   "C-h b": "describe-bindings",
   "C-g": "keyboard-quit",
@@ -77,7 +77,7 @@ export function defaultKeymap(): Keymap {
   return createKeymap(DEFAULT_BINDINGS);
 }
 
-/** 標準の割り当てに、利用者の設定(`keybindings`)を重ねる。問題のある設定は、無視して、理由を返す。 */
+/** Layers the user's settings (`keybindings`) over the default bindings. Problematic settings are ignored and the reason is returned. */
 export function resolveBindings(overrides: Overrides | undefined): BindingsResult {
   return applyOverrides(DEFAULT_BINDINGS, overrides ?? {}, new Set<string>(COMMAND_NAMES));
 }

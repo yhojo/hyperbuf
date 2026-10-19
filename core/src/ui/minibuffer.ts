@@ -1,87 +1,87 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// ミニバッファ。検索・候補選択・確認は、ダイアログではなく、画面下部のここで行う。
-// 入力欄にフォーカスがあるあいだは、C-f/C-b/C-a/C-e などは WebView 既定の文字移動に任せる
-// (確定・取消・候補選択のキーだけを扱う。Emacs のミニバッファと同じ振る舞い)。
+// Minibuffer. Search, candidate selection and confirmation happen here at the bottom of the screen, not in dialogs.
+// While the input field has focus, C-f/C-b/C-a/C-e etc. are left to the WebView's default character movement
+// (only confirm / cancel / candidate-selection keys are handled; same behavior as the Emacs minibuffer).
 //
-// 2 つの使い方:
-//  - prompt: 候補つきの入力(あいまい絞り込み)。M-p / M-n で、同じ種類の入力の履歴をたどる
-//  - live:   入力のたびに処理する(インクリメンタル検索)。特別なキー(C-s、C-r など)は、呼び出し側が扱う
+// Two modes of use:
+//  - prompt: input with candidates (fuzzy narrowing). M-p / M-n walk the history of inputs of the same kind
+//  - live:   process on every input (incremental search). Special keys (C-s, C-r, etc.) are handled by the caller
 
 import { fuzzyFilter, matchRanges } from "../fuzzy.ts";
 import { keyName } from "../keys.ts";
 import { byId } from "./dom.ts";
 
-/** 候補を表示する件数。 */
+/** Number of candidates displayed. */
 export const VISIBLE_CANDIDATES = 10;
-/** 入力の履歴を、種類ごとに保つ件数。 */
+/** Number of input history entries kept per kind. */
 const HISTORY_LIMIT = 50;
 
-/** 入力に応じて求める候補。`fragment` であいまい絞り込みをし、TAB は `prefix + 候補` で入力を置き換える。 */
+/** Candidates derived from the input. Fuzzy-narrowed by `fragment`; TAB replaces the input with `prefix + candidate`. */
 export interface PromptSource {
   items: readonly string[];
-  /** 入力のうち、候補の前に置く部分(ディレクトリのパスなど)。 */
+  /** Part of the input placed before the candidate (such as a directory path). */
   prefix: string;
-  /** 入力のうち、候補を絞り込む部分。 */
+  /** Part of the input that narrows the candidates. */
   fragment: string;
 }
 
-/** `RET` の結果: `done` は確定、`text` は入力欄をその文字列にして続ける(ディレクトリに入る)、null は何もしない。 */
+/** Result of `RET`: `done` confirms, `text` continues with the input field set to that string (enters a directory), null does nothing. */
 export type PromptChoice = { done: string } | { text: string } | null;
 
 export interface PromptOptions {
-  /** 候補にない自由な入力を受け付けるか。既定は true。 */
+  /** Whether free input that is not among the candidates is accepted. Default true. */
   allowFree?: boolean;
-  /** 入力の履歴の種類(M-p / M-n でたどる)。省略すると、履歴は使わない。 */
+  /** Kind of input history (walked with M-p / M-n). If omitted, no history is used. */
   history?: string;
-  /** 入力欄の初めの文字列(ファイルを開くときの、基準のディレクトリなど)。 */
+  /** Initial string of the input field (such as the base directory when opening a file). */
   initial?: string;
-  /** 入力のたびに、候補を求める(省略すると、`candidates` を使う)。 */
+  /** Derive candidates on every input (if omitted, `candidates` is used). */
   source?: (text: string) => PromptSource | Promise<PromptSource>;
-  /** `RET` の扱い(省略すると、選んでいる候補、なければ入力そのもの)。 */
+  /** Handling of `RET` (if omitted, the selected candidate, otherwise the input itself). */
   choose?: (picked: string | null, text: string, source: PromptSource) => PromptChoice;
 }
 
 export interface LiveHandlers {
-  /** 入力が変わった。 */
-  /** `composing`: 日本語入力の変換中(確定前)の入力か。 */
+  /** The input changed. */
+  /** `composing`: whether the input is mid-conversion (before confirming) in Japanese input. */
   onInput(text: string, composing: boolean): void;
   /**
-   * 特別なキー。RET(確定)と C-g / ESC(取消)以外で、呼び出し側が扱うもの(C-s、C-r など)。
-   * 扱ったら true(既定の動作を止める)。
+   * Special keys: those other than RET (confirm) and C-g / ESC (cancel) that the caller handles (C-s, C-r, etc.).
+   * Return true if handled (stops the default behavior).
    */
   onKey(name: string): boolean;
 }
 
 export interface LiveSession {
-  /** 入力欄の左の見出し(状態の表示)を変える。 */
+  /** Changes the label at the left of the input field (status display). */
   setLabel(text: string): void;
-  /** 入力欄の右の表示(一致の番号・件数など)を変える。 */
+  /** Changes the display at the right of the input field (match number / count, etc.). */
   setCount(text: string): void;
-  /** 入力欄の文字列を置き換える(入力の通知は、しない)。 */
+  /** Replaces the string of the input field (does not notify an input event). */
   setText(text: string): void;
   readonly text: string;
-  /** true: 確定(RET)、false: 取消(C-g / ESC / cancel)。 */
+  /** true: confirmed (RET), false: cancelled (C-g / ESC / cancel). */
   readonly done: Promise<boolean>;
   close(accepted: boolean): void;
 }
 
 export interface Minibuffer {
   readonly active: boolean;
-  /** 入力中なら、取り消す(`prompt` は null で終わる)。外部の要求の期限切れで閉じるときに使う。 */
+  /** If an input is in progress, cancel it (`prompt` ends with null). Used when closing on expiry of an external request. */
   cancel(): void;
-  /** 確定した文字列。取り消したら null。 */
+  /** The confirmed string. null if cancelled. */
   prompt(
     label: string,
     candidates?: readonly string[],
     options?: PromptOptions,
   ): Promise<string | null>;
-  /** 入力のたびに処理するモード(インクリメンタル検索)。 */
+  /** Mode that processes on every input (incremental search). */
   live(label: string, handlers: LiveHandlers, initial?: string): LiveSession;
 }
 
-/** 候補の文字列を、検索語に一致した部分を強調して、`parent` に入れる(textContent なので、HTML の注入はない)。 */
+/** Puts the candidate string into `parent` with the part matching the query emphasized (textContent, so no HTML injection). */
 function appendHighlighted(parent: HTMLElement, text: string, query: string): void {
   let from = 0;
   for (const [start, end] of matchRanges(text, query)) {
@@ -95,8 +95,8 @@ function appendHighlighted(parent: HTMLElement, text: string, query: string): vo
 }
 
 /**
- * 日本語入力(IME)の変換・確定のための、RET / ESC。確定のための Enter は、keyCode 229 で届く
- * (WebKit では、確定のあとに届く)。これをミニバッファの RET として扱うと、確定と終了が同時に起きる。
+ * RET / ESC for Japanese input (IME) conversion and confirmation. The Enter that confirms arrives with keyCode 229
+ * (in WebKit, after the confirmation). Treating it as the minibuffer's RET would confirm and exit at the same time.
  */
 function isImeKey(e: KeyboardEvent): boolean {
   return (e.isComposing || e.keyCode === 229) && !e.ctrlKey && !e.metaKey && !e.altKey;
@@ -121,9 +121,9 @@ export function createMinibuffer(): Minibuffer {
     mini.hidden = false;
     input.focus();
   };
-  // Mac の Option+n(˜)、Option+e(´)などは、次の文字と合成する Dead キーで、keydown の
-  // preventDefault より先に、入力欄に変換中の文字として出てしまう。Option は Meta として使うので、
-  // Option つきのキーで始まった変換は、取り消す(入力欄を、押す前の内容に戻す)
+  // Mac's Option+n (˜), Option+e (´), etc. are dead keys that combine with the next character, and they appear in the input field
+  // as conversion text before keydown's preventDefault. Option is used as Meta, so
+  // cancel a conversion started by an Option key (restore the input field to its content before the press)
   let optionBase: string | null = null;
   input.addEventListener("keydown", (e) => {
     optionBase = e.altKey && !e.ctrlKey && !e.metaKey ? input.value : null;
@@ -161,7 +161,7 @@ export function createMinibuffer(): Minibuffer {
         let current: PromptSource = { items: candidates, prefix: "", fragment: "" };
         let seq = 0;
         let finished = false;
-        // 履歴: 0 が、現在の入力。1 以上は、新しいものから順に、過去の入力。
+        // History: 0 is the current input. 1 and above are past inputs, newest first.
         const past = history ? (histories.get(history) ?? []) : [];
         let cursor = 0;
         let draft = "";
@@ -180,7 +180,7 @@ export function createMinibuffer(): Minibuffer {
             }),
           );
         };
-        // 入力が変わったとき: 候補を求め直す(`source` は非同期。古い結果は捨てる)
+        // When the input changes: derive candidates again (`source` is asynchronous; discard stale results)
         const refresh = async (): Promise<void> => {
           const token = ++seq;
           const next = source
@@ -284,7 +284,7 @@ export function createMinibuffer(): Minibuffer {
       };
       const onInput = (e: Event): void => {
         handlers.onInput(input.value, (e as InputEvent).isComposing === true);
-        // 処理の中でフォーカスが外れても(WebView による)、続けて入力できるようにする
+        // Even if focus is lost during processing (by the WebView), keep input possible
         if (document.activeElement !== input) input.focus();
       };
       const onKey = (e: KeyboardEvent): void => {

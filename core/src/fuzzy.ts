@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// ファイル名などのあいまい絞り込み。空白区切りの語をすべて含む候補を、近さの順に返す。
-// 語は、(1) ファイル名への部分一致 > (2) パス全体への部分一致 > (3) 飛び飛びの一致(文字の並びが保たれる)、の順に高く評価する。
+// Fuzzy filtering of file names and the like. Returns candidates containing all whitespace-separated terms, in order of closeness.
+// A term is ranked highest as (1) a substring of the file name > (2) a substring of the whole path > (3) a scattered match (character order preserved).
 
 function score(text: string, lower: string, tokens: string[]): number | null {
   const base = lower.slice(lower.lastIndexOf("/") + 1);
@@ -32,7 +32,7 @@ function score(text: string, lower: string, tokens: string[]): number | null {
   return total - text.length * 0.01;
 }
 
-/** 一致した文字の範囲 [開始, 終了)(候補の強調表示用)。語ごとに、`score` と同じ優先順で、最初に見つかった場所。 */
+/** Ranges [start, end) of matched characters (for highlighting candidates). Per term, the first place found, in the same priority order as `score`. */
 export function matchRanges(candidate: string, query: string): [number, number][] {
   const lower = candidate.toLowerCase();
   const base = lower.lastIndexOf("/") + 1;
@@ -44,7 +44,7 @@ export function matchRanges(candidate: string, query: string): [number, number][
       ranges.push([i, i + t.length]);
       continue;
     }
-    let pos = -1; // 飛び飛びの一致: 1 文字ずつ
+    let pos = -1; // scattered match: one character at a time
     for (const ch of t) {
       pos = lower.indexOf(ch, pos + 1);
       if (pos < 0) break;
@@ -54,7 +54,7 @@ export function matchRanges(candidate: string, query: string): [number, number][
   return mergeRanges(ranges);
 }
 
-/** 重なる・隣り合う範囲を、まとめる。 */
+/** Merges overlapping or adjacent ranges. */
 function mergeRanges(ranges: [number, number][]): [number, number][] {
   const sorted = [...ranges].sort((a, b) => a[0] - b[0]);
   const out: [number, number][] = [];
@@ -73,7 +73,7 @@ export function fuzzyFilter(candidates: readonly string[], query: string, limit 
   for (const c of candidates) {
     const s = score(c, c.toLowerCase(), tokens);
     if (s === null) continue;
-    // 上位 limit 件だけを保つ(候補が数千でも並べ替えを避ける)
+    // Keep only the top `limit` (avoids sorting even with thousands of candidates)
     const worst = top[top.length - 1];
     if (top.length < limit || (worst && s > worst[0])) {
       top.push([s, c]);

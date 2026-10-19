@@ -7,8 +7,8 @@ import { test } from "node:test";
 import * as session from "../src/session.ts";
 import * as sessionUi from "../src/ui/session.ts";
 
-// docs/dev/session-restore.md §4 の制限値の表が、コードの値とずれていないことを検査する。
-// (Swift 側の `maxBytes` / `maxFrames` は、ここでは検査しない。定義の箇所のコメントで同期を促す)
+// Checks that the limits table in docs/dev/session-restore.md §4 matches the values in the code.
+// (The Swift-side `maxBytes` / `maxFrames` are not checked here; a comment at their definition asks to keep them in sync)
 
 const doc = readFileSync(new URL("../../docs/dev/session-restore.md", import.meta.url), "utf8");
 

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// ファイルを開く入力欄。`C-x C-f`(基準のディレクトリから始まるパス補完)と、
-// `C-x p f`(基準のディレクトリ以下の再帰の一覧)。docs/dev/buffer-model.md §5・§6。
+// Input fields for opening files: `C-x C-f` (path completion starting from the base directory) and
+// `C-x p f` (recursive listing under the project root). docs/dev/buffer-model.md §5, §6.
 
 import type { DirEntry, TreeListing } from "../host.ts";
 import { abbreviateHome, joinPath, resolveInput } from "../paths.ts";
@@ -10,26 +10,26 @@ import type { PromptChoice, PromptSource } from "./minibuffer.ts";
 import type { AppContext } from "./context.ts";
 import { currentProjectRoot, defaultDirectory } from "./directory.ts";
 
-/** ディレクトリが先、名前の昇順。ディレクトリは、末尾に `/`。 */
+/** Directories first, then ascending by name. Directories get a trailing `/`. */
 function entryNames(entries: readonly DirEntry[]): string[] {
   return [...entries]
     .sort((a, b) => (a.dir === b.dir ? a.name.localeCompare(b.name) : a.dir ? -1 : 1))
     .map((e) => (e.dir ? `${e.name}/` : e.name));
 }
 
-/** 入力欄に出す、ディレクトリの文字列(`~/` で短縮し、末尾に `/`)。 */
+/** Directory string shown in the input field (shortened with `~/`, with a trailing `/`). */
 export function displayDir(dir: string, home: string): string {
   const short = abbreviateHome(dir, home);
   return short.endsWith("/") ? short : `${short}/`;
 }
 
-/** 入力が「パスの形」(基準の変更を伴う)か。 */
+/** Whether the input is "path-shaped" (involves changing the base). */
 const isPathLike = (text: string): boolean => /^(\/|~|\.\.?\/)/.test(text);
 
 /**
- * `C-x C-f`: 基準のディレクトリから始まる入力欄。候補は、入力済みのディレクトリの、
- * `.md` とサブディレクトリ(再帰しない)。ディレクトリを選んで RET で、その中に入る。
- * @returns 開くファイルの絶対パス。取り消したら null。
+ * `C-x C-f`: an input field starting from the base directory. Candidates are the `.md` files and subdirectories
+ * of the directory already typed (not recursive). Choosing a directory and pressing RET enters it.
+ * @returns absolute path of the file to open. null if cancelled.
  */
 export async function promptFindFile(ctx: AppContext): Promise<string | null> {
   const { host, minibuffer, echo } = ctx;
@@ -65,10 +65,10 @@ export async function promptFindFile(ctx: AppContext): Promise<string | null> {
 }
 
 /**
- * `C-x p f`: プロジェクト・ルート(VCS の目印をさかのぼって求める。なければ基準のディレクトリ)
- * 以下の `.md` を、再帰で一覧にして絞り込む。
- * `../`・`~/`・絶対パスを入力すると、起点がそのディレクトリに切り替わる(切り替えたあとは、さかのぼらない)(任意のファイルに届く)。
- * 基準が `~` や `/` のときは、再帰せず、1 階層の一覧にする(シェルが拒否する)。
+ * `C-x p f`: lists `.md` files recursively under the project root (found by ascending to VCS markers; the base directory if none)
+ * and narrows them down.
+ * Typing `../`, `~/` or an absolute path switches the starting point to that directory (no ascending after switching) (any file can be reached).
+ * When the base is `~` or `/`, it does not recurse and lists one level (the shell refuses).
  */
 export async function promptFindFileRecursive(ctx: AppContext): Promise<string | null> {
   const { host, minibuffer, echo } = ctx;
@@ -84,7 +84,7 @@ export async function promptFindFileRecursive(ctx: AppContext): Promise<string |
     }
     return tree;
   };
-  /** 入力から、基準のディレクトリと、候補を絞り込む部分を求める。 */
+  /** Derives from the input the base directory and the part that narrows the candidates. */
   const split = (text: string): { dir: string; prefix: string; fragment: string } => {
     if (!isPathLike(text)) return { dir: start, prefix: "", fragment: text };
     const cut = text.lastIndexOf("/") + 1;

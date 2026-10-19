@@ -3,7 +3,7 @@
 
 import Foundation
 
-/// 配信するファイルの MIME タイプ。アプリのバンドルと、プロジェクトの画像だけを扱う。
+/// MIME types of the files served. Only the app bundle and the project's images are handled.
 public enum MimeType {
     public static let imageExtensions: Set<String> = ["png", "jpg", "jpeg", "gif", "webp", "svg"]
 

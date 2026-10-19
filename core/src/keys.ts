@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// キーイベント → "C-x" 形式の名前、およびプレフィックス付きキーマップの状態機械。
+// Key event -> "C-x"-style name, and the state machine for prefixed keymaps.
 
 export interface KeyEventLike {
   key: string;
@@ -27,9 +27,9 @@ const NAMED: Record<string, string> = {
 const MODIFIER_ONLY = new Set(["Control", "Alt", "Meta", "Shift", "CapsLock"]);
 
 /**
- * 記号キー(US 配列): 物理キー → [押したときの文字, Shift を押したときの文字]。
- * macOS の Option は、`event.key` を別の文字(`≥` など)にしてしまうので、修飾キーつきの記号は、これで求める。
- * Emacs は `M-S-,` ではなく `M-<` と書く(Shift で変わる記号には、`S-` を付けない)。
+ * Symbol keys (US layout): physical key -> [character when pressed, character with Shift].
+ * macOS Option turns `event.key` into a different character (such as `≥`), so symbols with modifiers are derived from this.
+ * Emacs writes `M-<`, not `M-S-,` (no `S-` for symbols that Shift changes).
  */
 const SYMBOLS: Record<string, [string, string]> = {
   Backquote: ["`", "~"],
@@ -55,14 +55,14 @@ const SYMBOLS: Record<string, [string, string]> = {
   Digit0: ["0", ")"],
 };
 
-/** macOS の Option は文字を変えてしまうので、修飾キー付きの英数字は code から求める。 */
+/** macOS Option changes the character, so alphanumerics with modifiers are derived from code. */
 export function keyName(e: KeyEventLike): string | null {
   if (MODIFIER_ONLY.has(e.key)) return null;
   const hasMod = e.ctrlKey || e.altKey || e.metaKey;
   const code = /^Key([A-Z])$/.exec(e.code ?? "")?.[1];
   const symbol = SYMBOLS[e.code ?? ""];
   let base: string;
-  // Shift で記号が変わるキーは、変わったあとの記号(`<` など)にして、`S-` は付けない
+  // For keys whose symbol changes with Shift, use the resulting symbol (such as `<`) and do not add `S-`
   let shiftApplied = false;
   if (hasMod && code) base = code.toLowerCase();
   else if (hasMod && symbol) {
@@ -78,7 +78,7 @@ export function keyName(e: KeyEventLike): string | null {
   return mods + base;
 }
 
-/** キー列 → コマンド名 または 下位のキーマップ。 */
+/** Key sequence -> command name or sub-keymap. */
 export interface Keymap {
   [key: string]: string | Keymap;
 }

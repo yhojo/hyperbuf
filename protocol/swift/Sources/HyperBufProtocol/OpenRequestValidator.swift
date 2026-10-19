@@ -3,14 +3,16 @@
 
 import Foundation
 
-/// 構文として正しい `open` 要求。ファイルの存在・プロジェクトの範囲の判定は、アプリ側(ファイルシステムが要る)で行う。
+/// A syntactically valid `open` request. Whether the file exists and the project scope are judged by the app (it needs
+/// the file system).
 public struct ValidatedOpen: Sendable, Equatable {
     public let path: String
     public let line: Int?
     public let anchor: String?
 }
 
-/// `open` 要求の入力検証。URL 経由とソケット経由で、同じ規則を使う(docs/dev/integration-protocol.md §4.2・§3.6)。
+/// Input validation for `open` requests. The URL route and the socket route use the same rules
+/// (docs/dev/integration-protocol.md §4.2, §3.6).
 public enum OpenRequestValidator {
     public static func validate(
         path: String?, line: Int?, anchor: String?, version: Int?
@@ -26,7 +28,7 @@ public enum OpenRequestValidator {
             return .failure(ProtocolError(.notMarkdown, "Only .md files can be opened"))
         }
         if let line, line <= 0 { return .failure(ProtocolError(.badRequest, "Invalid line")) }
-        // 長さは Unicode のコードポイントで数える(JSON Schema の maxLength と同じ。書記素の数ではない)
+        // Length is counted in Unicode code points (same as JSON Schema maxLength; not the number of graphemes)
         if let anchor, anchor.unicodeScalars.count > HyperBufProtocol.maxAnchorLength {
             return .failure(ProtocolError(.badRequest, "anchor is too long"))
         }

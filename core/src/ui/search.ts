@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Yasuo Hojo
 
-// 起点のディレクトリ以下の全文検索(`M-s g` は基準のディレクトリ、`C-x p g` はプロジェクト・ルート)。結果は仮想 buffer(`*search: …*`)に Markdown として並べ、
-// リンクで該当行(行アンカー)へ飛ぶ。仮想 buffer の考え方: docs/dev/interaction-model.md §5。
+// Full-text search under a starting directory (`M-s g` is the base directory, `C-x p g` the project root). Results are listed as Markdown in a virtual buffer (`*search: …*`),
+// and links jump to the matching line (line anchor). On virtual buffers: docs/dev/interaction-model.md §5.
 
 import { openBuffer, selectedWindow, visit } from "../model.ts";
 import { virtualPath } from "../names.ts";
@@ -10,7 +10,7 @@ import { abbreviateHome } from "../paths.ts";
 import type { AppContext } from "./context.ts";
 import { defaultDirectory } from "./directory.ts";
 
-/** Markdown のリンクの宛先にするパス(`(` `)` `#` `?` もエンコードして、宛先を壊さない)。 */
+/** Path used as a Markdown link destination (`(` `)` `#` `?` are encoded too, so the destination is not broken). */
 const linkPath = (path: string): string =>
   encodeURI(path).replace(/[()#?]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
 
@@ -44,7 +44,7 @@ export async function searchProject(
   ];
   for (const r of res.results) {
     const snippet = r.text.trim().replace(/`/g, "'");
-    // 表示は、起点からの相対パス。リンクは、絶対パス
+    // Shown as a path relative to the starting point. The link is an absolute path
     const shownPath = r.path.startsWith(`${dir}/`) ? r.path.slice(dir.length + 1) : r.path;
     const label = `${shownPath.replace(/[[\]]/g, "")}:${r.line}`;
     lines.push(`- [${label}](${linkPath(r.path)}#line:${r.line}) \`${snippet}\``);

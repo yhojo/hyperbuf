@@ -35,9 +35,12 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
   });
 
   // 確認待ちの要求の id。期限切れで取り消されたら、その確認だけを閉じる。
+  // 取り消された確認は、利用者の「拒否」ではない(シェルは、期限切れとして、すでに応答している)
   let confirming: string | null = null;
+  let timedOut: string | null = null;
   host.onOpenCancel?.((id) => {
     if (confirming !== id) return;
+    timedOut = id;
     minibuffer.cancel();
     echo.message("Integration: request timed out");
   });
@@ -64,6 +67,12 @@ export function wireHostEvents(ctx: AppContext, commands: Commands): void {
         { allowFree: false },
       );
       confirming = null;
+      if (req.id && timedOut === req.id) {
+        // 期限切れで閉じられた。応答も、メッセージ(request timed out)も、すでに出ている
+        timedOut = null;
+        host.log?.(`CONFIRM ${req.path} timed out`);
+        return;
+      }
       host.log?.(`CONFIRM ${req.path} answer=${answer}`);
       // 回答は、承認でも拒否でも、シェルに伝える(承認が受理されたときだけ、読めるようになる)
       const granted = (await host.confirmOpen?.(req.id ?? "", answer === "yes")) ?? false;

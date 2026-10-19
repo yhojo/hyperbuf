@@ -252,6 +252,15 @@ def select_and_edit(text):
     )
     return page(js)
 
+print("確認の期限切れ: 拒否と区別して知らせる")
+r = call({"v": 1, "id": "t1", "op": "open", "path": f"{tmp}/wait/w.md", "timeoutMs": 700})
+check("答えがないまま期限が切れると、timeout で応答する", (not r.get("ok")) and r["error"]["code"] == "timeout", r)
+time.sleep(0.4)
+echo = page("return document.getElementById('echo').textContent;")
+check("画面には「期限切れ」と出る(拒否のメッセージで上書きされない)", "timed out" in echo and "warn path" not in echo, echo)
+hidden = page("return String(document.getElementById('minibuffer').hidden);")
+check("確認の入力欄は閉じる", hidden.strip().endswith("true"), hidden)
+
 edit_dir = f"{tmp}/approve/repoA/docs"
 edit_file = f"{edit_dir}/edit.md"
 body = "# 編集テスト\n\n一意な語 uniqueword はここにあります。\n\n重複 dup と dup がある段落です。\n"

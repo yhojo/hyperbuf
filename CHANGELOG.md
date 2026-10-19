@@ -21,6 +21,7 @@ Versions are not yet strictly semantic: 0.x releases may change behavior between
 ### Fixed
 
 - The usage text of `hyperbuf --wait` no longer says "files outside the project" (there are no projects any more); it now says "files under a warn path".
+- When a request from the command line or Emacs waits for a confirmation (a warn path) and times out, the app now shows `Integration: request timed out` and closes the prompt. Before, the message was overwritten by `Not opened because it is a warn path`, so a timeout looked like a refusal.
 
 ### Removed
 

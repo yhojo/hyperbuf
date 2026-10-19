@@ -1,26 +1,26 @@
 [
   {
-    "name": "1 行",
+    "name": "One line",
     "chunks": ["{\"op\":\"ping\"}\n"],
     "lines": ["{\"op\":\"ping\"}"]
   },
   {
-    "name": "分割して届く",
+    "name": "Arrives in pieces",
     "chunks": ["{\"op\":", "\"ping\"}\n"],
     "lines": ["{\"op\":\"ping\"}"]
   },
   {
-    "name": "1 回に複数行",
+    "name": "Several lines at once",
     "chunks": ["{\"a\":1}\n{\"b\":2}\n"],
     "lines": ["{\"a\":1}", "{\"b\":2}"]
   },
   {
-    "name": "途中の行は、改行までは返さない",
+    "name": "A partial line is not returned before its newline",
     "chunks": ["{\"a\":1}\n{\"b\":"],
     "lines": ["{\"a\":1}"]
   },
   {
-    "name": "空行は無視",
+    "name": "Empty lines are ignored",
     "chunks": ["\n\n{\"a\":1}\n"],
     "lines": ["{\"a\":1}"]
   }

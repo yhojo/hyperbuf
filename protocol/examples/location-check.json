@@ -1,6 +1,6 @@
 [
   {
-    "name": "exact: すべて一致",
+    "name": "exact: everything matches",
     "text": "# 見出し\n\nこの文には、独自の語があります。\n\n別の段落です。\n",
     "location": {
       "v": 1,
@@ -37,7 +37,7 @@
     "status": "ok"
   },
   {
-    "name": "block: 複数行のブロック全体",
+    "name": "block: a whole multi-line block",
     "text": "foo\nbar baz\n\nqux\n",
     "location": {
       "v": 1,
@@ -74,7 +74,7 @@
     "status": "ok"
   },
   {
-    "name": "絵文字を含む行の桁(コードポイント)",
+    "name": "Column in a line with an emoji (code points)",
     "text": "😀😀 target 😀\n",
     "location": {
       "v": 1,
@@ -111,7 +111,7 @@
     "status": "ok"
   },
   {
-    "name": "expect が切り詰められているときは、先頭だけを照合",
+    "name": "When expect is truncated, only its beginning is compared",
     "text": "foo\nbar baz\n\nqux\n",
     "location": {
       "v": 1,
@@ -148,7 +148,7 @@
     "status": "ok"
   },
   {
-    "name": "stale: ファイルの内容が、描画した版と違う",
+    "name": "stale: the file content differs from the rendered version",
     "text": "# 見出し\n\nこの文には、独自の語があります。\n\n別の段落です。\n",
     "location": {
       "v": 1,
@@ -185,7 +185,7 @@
     "status": "stale"
   },
   {
-    "name": "mismatch: その位置の文字列が、expect と違う",
+    "name": "mismatch: the text at the position differs from expect",
     "text": "# 見出し\n\nこの文には、独自の語があります。\n\n別の段落です。\n",
     "location": {
       "v": 1,
@@ -222,7 +222,7 @@
     "status": "mismatch"
   },
   {
-    "name": "mismatch: 前の文脈が違う",
+    "name": "mismatch: the preceding context differs",
     "text": "# 見出し\n\nこの文には、独自の語があります。\n\n別の段落です。\n",
     "location": {
       "v": 1,
@@ -259,7 +259,7 @@
     "status": "mismatch"
   },
   {
-    "name": "mismatch: 後ろの文脈が違う",
+    "name": "mismatch: the following context differs",
     "text": "# 見出し\n\nこの文には、独自の語があります。\n\n別の段落です。\n",
     "location": {
       "v": 1,
@@ -296,7 +296,7 @@
     "status": "mismatch"
   },
   {
-    "name": "mismatch: 行が、文書の範囲外",
+    "name": "mismatch: the line is outside the document",
     "text": "foo\nbar baz\n\nqux\n",
     "location": {
       "v": 1,
@@ -333,7 +333,7 @@
     "status": "mismatch"
   },
   {
-    "name": "mismatch: 桁が、行の長さを超える",
+    "name": "mismatch: the column exceeds the line length",
     "text": "foo\nbar baz\n\nqux\n",
     "location": {
       "v": 1,
@@ -370,7 +370,7 @@
     "status": "mismatch"
   },
   {
-    "name": "mismatch: block の expect が、先頭からも一致しない",
+    "name": "mismatch: the expect of a block does not match even from its start",
     "text": "foo\nbar baz\n\nqux\n",
     "location": {
       "v": 1,

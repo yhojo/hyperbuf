@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://hyperbuf.invalid/protocol/location.schema.json",
   "title": "HyperBuf edit location",
-  "description": "「エディタで編集」で指した位置。get-location の result.location。docs/dev/edit-location.md §5。エディタは、ここにある照合用の情報(file・expect・context)で、位置が正しいことを確かめてから、移動する。",
+  "description": "The location pointed at with \"Edit in editor\": the result.location of get-location. See docs/dev/edit-location.md §5. The editor verifies the location with the information for verification given here (file, expect, context) before it moves.",
   "type": "object",
   "required": [
     "v",
@@ -23,7 +23,7 @@
     "path": {
       "type": "string",
       "pattern": "^/.*\\.md$",
-      "description": "編集するファイルの絶対パス"
+      "description": "Absolute path of the file to edit"
     },
     "range": {
       "type": "object",
@@ -61,15 +61,15 @@
         }
       },
       "additionalProperties": false,
-      "description": "行・桁は 1 始まり。桁は Unicode のコードポイント(Emacs の文字)。end は、その位置の文字を含まない"
+      "description": "Lines and columns start at 1. A column counts Unicode code points (Emacs characters). end does not include the character at that position"
     },
     "precision": {
       "enum": ["exact", "block"],
-      "description": "block は、位置が曖昧で、ブロック全体しか確実でないこと"
+      "description": "block means that the position is ambiguous and only the whole block is certain"
     },
     "expect": {
       "type": "string",
-      "description": "その範囲にあるはずの、元の Markdown の文字列(改行は LF)。長いときは先頭だけ(expectTruncated)"
+      "description": "The original Markdown text that should be in that range (newlines are LF). Only the beginning when it is long (expectTruncated)"
     },
     "expectTruncated": {
       "type": "boolean"
@@ -86,7 +86,7 @@
         }
       },
       "additionalProperties": false,
-      "description": "範囲の直前・直後の文字列。エディタは、バッファの直前が before で終わり、直後が after で始まることを確かめる"
+      "description": "The text just before and just after the range. The editor checks that the buffer text just before ends with before and the text just after starts with after"
     },
     "file": {
       "type": "object",
@@ -95,11 +95,11 @@
         "sha256": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$",
-          "description": "ビューアが描画した版のファイルの内容(バイト列)の SHA-256"
+          "description": "SHA-256 of the content (bytes) of the file version that the viewer rendered"
         },
         "mtime": {
           "type": "number",
-          "description": "同、更新日時(エポックからのミリ秒)"
+          "description": "Likewise, the modification time (milliseconds since the epoch)"
         },
         "size": {
           "type": "integer",
@@ -114,7 +114,7 @@
       "properties": {
         "selection": {
           "type": "string",
-          "description": "ビューアで選択していた、表示されているままの文字列(なければ空)"
+          "description": "The text selected in the viewer, exactly as displayed (empty if none)"
         },
         "version": {
           "type": "integer",
@@ -122,14 +122,14 @@
         },
         "readAt": {
           "type": "number",
-          "description": "ビューアが、そのファイルを読んだ時刻(エポックからのミリ秒)"
+          "description": "The time when the viewer read the file (milliseconds since the epoch)"
         }
       },
       "additionalProperties": false
     },
     "markedAt": {
       "type": "number",
-      "description": "「エディタで編集」を選んだ時刻(エポックからのミリ秒)"
+      "description": "The time when \"Edit in editor\" was chosen (milliseconds since the epoch)"
     }
   },
   "additionalProperties": true

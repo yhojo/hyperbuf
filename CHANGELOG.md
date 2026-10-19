@@ -11,13 +11,12 @@ Versions are not yet strictly semantic: 0.x releases may change behavior between
 - Project roots, as in Emacs `project.el`: `C-x p f` now lists Markdown files under the nearest ancestor directory that has a VCS marker (`.git`, `.hg`, `.svn`, `.bzr`, `_darcs`, `.jj`), or under the buffer's directory if there is none. `~` and `/` are never roots. Directories that must not become a root can be listed in `projectIgnorePaths`.
 - `C-x p g` (`project-find-regexp`): search all files under the project root (plain text for now; `.gitignore` is not read). `M-s g` still searches under the buffer's directory.
 - `C-x p b` (`project-switch-to-buffer`) and `C-x p k` (`project-kill-buffers`): switch to, or kill after confirming, the buffers of the current frame that belong to the same project root.
-
 - The mode line shows the current Git branch (the short hash for a detached HEAD) to the right of `[History N/M]` when the buffer's project root is a Git repository. It reads `.git/HEAD` directly and runs no external command, so the file's modification state is not shown. Set `modeLineVcsBranch` to `false` to hide it.
+- `C-a` / `C-e` (`beginning-of-history` / `end-of-history`): jump to the first / last entry of the window's reference history.
 
 ### Changed
 
 - The `THIRD-PARTY-NOTICES.txt` shown by `Show Third-Party Licenses` is now written in English, including its header and notes, in line with the rule that all text the app itself shows is English.
-
 - When HyperBuf is not running, `hyperbuf-open` (Emacs) now launches it with `hyperbuf://ping`, waits for the socket (new setting `hyperbuf-launch-timeout`, 15 seconds by default) and sends the open request over the socket, like the `hyperbuf` command. The result (opened, refused, timed out) now comes back to Emacs, and a file outside the allowed paths is judged by the same rules as for the command line instead of asking for the extra URL-scheme confirmation.
 
 ### Fixed

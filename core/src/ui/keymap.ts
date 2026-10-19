@@ -35,6 +35,9 @@ export const DEFAULT_BINDINGS: Readonly<Record<string, CommandName>> = {
   // Back / Forward は、編集における C-f/C-b が文字の流れを泳ぐのと同じく、参照の流れを泳ぐ操作
   "C-f": "forward",
   "C-b": "back",
+  // 履歴の先頭・末尾(行頭・行末の C-a / C-e)
+  "C-a": "beginning-of-history",
+  "C-e": "end-of-history",
   // カーソルキーの左右も(Emacs に不慣れな人のため)
   left: "back",
   right: "forward",

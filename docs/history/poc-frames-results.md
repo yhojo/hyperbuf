@@ -1,5 +1,7 @@
 # PoC 結果: 複数フレームのメモリ(段階 0)
 
+> **当時の記録(複数フレームのメモリの計測)。** 書き換えない。冒頭の `docs/project-model.md` は、現在の [buffer-model.md](../dev/buffer-model.md) §7。
+
 `docs/project-model.md` §10 の「1 フレーム = 1 つの `NSWindow` + 1 つの WKWebView + 1 つの Web コア」という構成で、フレームを増やしたときのメモリを実測した。コードは `poc/frames-memory` ブランチ(main にはマージしない)。
 
 ## 結論

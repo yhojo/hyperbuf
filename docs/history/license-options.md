@@ -1,5 +1,7 @@
 # HyperBuf 自体のライセンスの選択肢
 
+> **決定の記録(2026-10-10)。** 書き換えない。現行のライセンス表記は `LICENSE`、`NOTICE`、[third-party-licenses.md](../user/third-party-licenses.md)。
+
 状態: **決定(2026-10-10)**。
 
 - **HyperBuf 本体: Apache-2.0。** 著作権者の表記は `Copyright 2026 Yasuo Hojo`。

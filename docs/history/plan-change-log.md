@@ -2,6 +2,8 @@
 
 README.md に記載した方針・計画を変更した際の記録。新しいものを上に追記する。README は自由に更新してよいが、変更理由をここに残す。
 
+> README.md の方針・計画の変更の記録。過去の項目に出る文書名と節番号は、[README.md](README.md) の対応表で、現行の場所に読み替える。
+
 ## 2026-10-19 — README を、リリース段階の入口として書き直す
 
 - **変更前**: 開発開始時点のプロダクトビジョン(NOTE つき)。「Product goals」は計画の文体で、「Initial interaction sketch」(Candidate binding)、「Architecture and technology: candidates, not decisions」(大半が決定済み)、「Development approach」(PoC の 4 段階)、解決済みを含む「Open questions」、長い「Project status」を持っていた。File monitoring は「FSEvents(決定)」と書かれていた。

@@ -1,5 +1,7 @@
 # Project navigation PoC 結果
 
+> **当時の記録(Project navigation PoC)。** 書き換えない。**この PoC で決めたファイル監視(FSEvents)は、のちに kqueue(表示中のファイルと親ディレクトリ)に変わり、プロジェクトという単位もなくなった。** 現行は [buffer-model.md](../dev/buffer-model.md)(§6 一覧と検索、§8 監視)と [file-access.md](../dev/file-access.md)。文書名と節番号の対応は [README.md](README.md)。
+
 状態: **結果報告・決定済み** — 実施日 2026-10-08。ブランチ: `poc/navigation`(`7e5c692`、`113dfc1`)。§7 の方針をユーザーと合意(2026-10-08)。
 
 ## 1. 目的と範囲

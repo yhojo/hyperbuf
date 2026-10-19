@@ -1,5 +1,7 @@
 # Rendering PoC 結果
 
+> **当時の記録(Rendering PoC)。** 書き換えない。現行の構成とセキュリティは [architecture.md](../dev/architecture.md) §3〜4。
+
 状態: **結果報告・決定済み** — 実施日 2026-10-08。ブランチ: `poc/rendering`(`78860be`、`8f3cf5a`)。§7 の構成を採用(ユーザー合意、2026-10-08)。
 
 ## 1. 目的と範囲

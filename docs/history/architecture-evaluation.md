@@ -1,6 +1,6 @@
 # アーキテクチャ評価(PoC前)
 
-状態: **Draft(PoC 前の記録)** — 本文書は PoC 前の仮説整理。macOS 向けシェルの選定は PoC を経て決定済み(`poc-interaction-results.md` §6 参照)。
+> **当時の記録(PoC 前の仮説の整理)。** 書き換えない。macOS 向けシェルの選定は PoC を経て決定済み([poc-interaction-results.md](poc-interaction-results.md) §6)。現行の構成と技術選定は [architecture.md](../dev/architecture.md)。
 
 ## 1. 優先順位
 

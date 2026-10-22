@@ -74,6 +74,18 @@ Back / Forward move backward and forward through the reference history. A buffer
 | Normal scrolling                                          | Not pushed (only the current entry's position is updated) |
 | In-document search (`C-s`)                                | Not pushed                                                |
 
+#### 4.2.1 Principle: moving around inside one document does not disturb the history
+
+The history records **references** (a link followed, a heading or line chosen by name, a buffer shown), not **reading movements**. Scrolling, `C-s` / `C-r`, and heading movement with `C-c C-n` and friends can be done freely inside a document, in any amount, and the history stays exactly as it was: no entry is added, the entries after the current one are not discarded, and `[History N/M]` does not change.
+
+This is a deliberate part of the model, because it makes Back / Forward simple to predict:
+
+- One `C-b` always means "return to the previous reference", no matter how far the reader scrolled or how many searches were made in between.
+- Searching a long document for a word is safe: it cannot bury the reference the reader came from, or throw away the entries they could go Forward to.
+- The reader only has to know one rule to know what is in the history: **a place the document itself pointed to, or the reader named, is an entry; everything else is just reading.**
+
+Anything that would record positions inside a document (a second, finer tier of history) breaks this simplicity, and was considered and not adopted ([two-tier-history-considered.md](../history/two-tier-history-considered.md)). New navigation features should follow the same principle: if a movement is a continuous reading action within the current document, it does not push an entry.
+
 ### 4.3 When a window is split
 
 The history of the original window is copied to the new window (similar to duplicating a browser tab). After that, the history is independent per window.
@@ -86,7 +98,7 @@ The history of the original window is copied to the new window (similar to dupli
 - The cursor keys `←` / `→` are also assigned as aliases (for users unfamiliar with Emacs; combinations with modifier keys are not assigned).
 - Vertical movement (`C-n` / `C-p` / `C-v` / `M-v`) is within the document (space), and `C-f` / `C-b` is the flow of references (time).
 - The `C-c` prefix is assigned to markdown-mode's outline-mode-style heading movement (`C-c C-n` / `C-c C-p` / `C-c C-f` / `C-c C-b` / `C-c C-u`), and is not used for Back / Forward.
-- **`M-f` / `M-b` are reserved (unassigned).** Idea: skip anchor movement within the same document and go forward / back to another document (as `C-f` → `M-f` in Emacs, where a modifier key widens the unit). Feedback is still being collected, and they stay unassigned until it is decided.
+- **`M-f` / `M-b` are intentionally unassigned.** A two-tier history (`C-f` / `C-b` for positions inside a document, `M-f` / `M-b` for references) was considered and not adopted, because the model became too complex for readers to predict ([two-tier-history-considered.md](../history/two-tier-history-considered.md)).
 
 ## 5. Virtual buffers and line anchors
 
@@ -134,6 +146,5 @@ Shows the number of lines, words and characters of the selection (the whole docu
 
 **Undecided:**
 
-- The assignment of `M-f` / `M-b` (§4.4).
 - The granularity of the history: whether to merge consecutive anchor movements within the same document into one entry (currently, one entry per anchor).
 - Extension mechanisms.

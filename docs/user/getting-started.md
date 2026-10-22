@@ -19,7 +19,7 @@ Requirements: macOS 14 (Sonoma) or later (both Apple silicon and Intel).
 ## Concepts
 
 - **buffer / window / frame.** An opened document is a buffer, the area that displays it is a window, and a macOS window is a frame. The same buffer can be shown in several windows, and each keeps its own reading position. A frame is an independent workspace: switch between them with `Cmd-1` to `Cmd-9`, and create one with `C-x 5 2`.
-- **Back / Forward (`C-b` / `C-f`) move through the reference history.** Following links, jumping to headings and switching buffers are all pushed onto the history.
+- **Back / Forward (`C-b` / `C-f`) move through the reference history.** Following links, jumping to headings and switching buffers are all pushed onto the history. Scrolling, searching with `C-s` and moving between headings inside a document never touch the history, so `C-b` always returns to the previous reference however much you read in between.
 - **There is no "choose a project" step.** The directory of the document you are viewing (Emacs's `default-directory`) is the base: files are opened relative to it, and everything under that directory can be listed and full-text searched.
 - Input such as searching or choosing a buffer is done not in dialogs but in the minibuffer at the bottom of the frame.
 

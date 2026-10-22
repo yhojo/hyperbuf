@@ -6,18 +6,19 @@
 
 This directory holds **records**: what was examined and decided from the start of the project, through the PoCs, to the release stage. The records are written in Japanese, as they were at the time, and are not rewritten to match the present. The current design and specification are in [docs/dev/](../dev/) (English), and the user documentation is in [docs/user/](../user/) (English).
 
-| Document | What it records |
-| --- | --- |
-| `architecture-evaluation.md` | The architecture evaluation before the PoCs (hypotheses) |
-| `poc-interaction-results.md` | Interaction PoC; the choice of SwiftUI + WKWebView for the macOS shell |
-| `poc-rendering-results.md` | Rendering PoC; the choice of the rendering stack |
-| `poc-navigation-results.md` | Project navigation PoC; search, file watching, virtual buffers |
-| `poc-integration-results.md` | Integration PoC; verification and decisions for the integration protocol |
-| `poc-frames-results.md` | Memory measurements for multiple frames |
-| `license-options.md` | The choice of the license (2026-10-10) |
-| `distribution-decisions.md` | Decisions and investigations while preparing distribution (M8) |
-| `migration-plan.md` | The plan from the PoCs to the real implementation, and the progress of the milestones (M0 to M8) |
-| `plan-change-log.md` | The log of changes to the plans and policies stated in the README |
+| Document                         | What it records                                                                                                |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `architecture-evaluation.md`     | The architecture evaluation before the PoCs (hypotheses)                                                       |
+| `poc-interaction-results.md`     | Interaction PoC; the choice of SwiftUI + WKWebView for the macOS shell                                         |
+| `poc-rendering-results.md`       | Rendering PoC; the choice of the rendering stack                                                               |
+| `poc-navigation-results.md`      | Project navigation PoC; search, file watching, virtual buffers                                                 |
+| `poc-integration-results.md`     | Integration PoC; verification and decisions for the integration protocol                                       |
+| `poc-frames-results.md`          | Memory measurements for multiple frames                                                                        |
+| `license-options.md`             | The choice of the license (2026-10-10)                                                                         |
+| `distribution-decisions.md`      | Decisions and investigations while preparing distribution (M8)                                                 |
+| `two-tier-history-considered.md` | A two-tier reference history (`C-f` / `C-b` vs `M-f` / `M-b`) that was considered and not adopted (2026-10-22) |
+| `migration-plan.md`              | The plan from the PoCs to the real implementation, and the progress of the milestones (M0 to M8)               |
+| `plan-change-log.md`             | The log of changes to the plans and policies stated in the README                                              |
 
 On 2026-10-19, before the planned publication, the author and committer e-mail address of every commit and tag was replaced by the GitHub noreply address. File contents did not change, but all commit hashes did; the hashes of the PoC branches that appear in these records were updated. The previous history is not published. (The project is finally not made public, because of the result of a trademark check; see `plan-change-log.md`.)
 
@@ -27,18 +28,19 @@ On 2026-10-19, before the planned publication, the author and committer e-mail a
 
 ## 文書の一覧
 
-| 文書                                                     | 内容                                                             | 現行の仕様                                                                                             |
-| -------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| [architecture-evaluation.md](architecture-evaluation.md) | PoC 前のアーキテクチャの評価(仮説の整理)                         | [architecture.md](../dev/architecture.md)                                                              |
-| [poc-interaction-results.md](poc-interaction-results.md) | Interaction PoC(2026-10-08)。シェルを SwiftUI + WKWebView に決定 | [interaction-model.md](../dev/interaction-model.md)、[architecture.md](../dev/architecture.md)         |
-| [poc-rendering-results.md](poc-rendering-results.md)     | Rendering PoC(2026-10-08)。レンダリング層の構成を決定            | [architecture.md](../dev/architecture.md) §3〜4                                                        |
-| [poc-navigation-results.md](poc-navigation-results.md)   | Project navigation PoC(2026-10-08)。検索・監視・仮想 buffer      | [buffer-model.md](../dev/buffer-model.md)、[file-access.md](../dev/file-access.md)                     |
-| [poc-integration-results.md](poc-integration-results.md) | Integration PoC(2026-10-08〜09)。連携プロトコルの検証と決定      | [integration-protocol.md](../dev/integration-protocol.md)、[edit-location.md](../dev/edit-location.md) |
-| [poc-frames-results.md](poc-frames-results.md)           | 複数フレームのメモリの計測                                       | [buffer-model.md](../dev/buffer-model.md) §7                                                           |
-| [license-options.md](license-options.md)                 | ライセンスの選択と決定(2026-10-10)                               | `LICENSE`、`NOTICE`、[third-party-licenses.md](../user/third-party-licenses.md)                        |
-| [distribution-decisions.md](distribution-decisions.md)   | 配布の準備(M8)の判断と調査                                       | [distribution.md](../dev/distribution.md)、[release.md](../dev/release.md)                             |
-| [migration-plan.md](migration-plan.md)                   | PoC から本実装への移行計画と、マイルストーン(M0〜M8)の進捗       | (M8 の進捗が変わるときに更新する)                                                                      |
-| [plan-change-log.md](plan-change-log.md)                 | README の方針・計画の変更の記録                                  |                                                                                                        |
+| 文書                                                             | 内容                                                                                             | 現行の仕様                                                                                             |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| [architecture-evaluation.md](architecture-evaluation.md)         | PoC 前のアーキテクチャの評価(仮説の整理)                                                         | [architecture.md](../dev/architecture.md)                                                              |
+| [poc-interaction-results.md](poc-interaction-results.md)         | Interaction PoC(2026-10-08)。シェルを SwiftUI + WKWebView に決定                                 | [interaction-model.md](../dev/interaction-model.md)、[architecture.md](../dev/architecture.md)         |
+| [poc-rendering-results.md](poc-rendering-results.md)             | Rendering PoC(2026-10-08)。レンダリング層の構成を決定                                            | [architecture.md](../dev/architecture.md) §3〜4                                                        |
+| [poc-navigation-results.md](poc-navigation-results.md)           | Project navigation PoC(2026-10-08)。検索・監視・仮想 buffer                                      | [buffer-model.md](../dev/buffer-model.md)、[file-access.md](../dev/file-access.md)                     |
+| [poc-integration-results.md](poc-integration-results.md)         | Integration PoC(2026-10-08〜09)。連携プロトコルの検証と決定                                      | [integration-protocol.md](../dev/integration-protocol.md)、[edit-location.md](../dev/edit-location.md) |
+| [poc-frames-results.md](poc-frames-results.md)                   | 複数フレームのメモリの計測                                                                       | [buffer-model.md](../dev/buffer-model.md) §7                                                           |
+| [license-options.md](license-options.md)                         | ライセンスの選択と決定(2026-10-10)                                                               | `LICENSE`、`NOTICE`、[third-party-licenses.md](../user/third-party-licenses.md)                        |
+| [distribution-decisions.md](distribution-decisions.md)           | 配布の準備(M8)の判断と調査                                                                       | [distribution.md](../dev/distribution.md)、[release.md](../dev/release.md)                             |
+| [two-tier-history-considered.md](two-tier-history-considered.md) | 参照履歴の2階層化(`C-f` / `C-b` と `M-f` / `M-b` の役割分担)の検討。採用しなかった案(2026-10-22) | [interaction-model.md](../dev/interaction-model.md) §4.4                                               |
+| [migration-plan.md](migration-plan.md)                           | PoC から本実装への移行計画と、マイルストーン(M0〜M8)の進捗                                       | (M8 の進捗が変わるときに更新する)                                                                      |
+| [plan-change-log.md](plan-change-log.md)                         | README の方針・計画の変更の記録                                                                  |                                                                                                        |
 
 ## 旧い文書名・節番号の対応表
 

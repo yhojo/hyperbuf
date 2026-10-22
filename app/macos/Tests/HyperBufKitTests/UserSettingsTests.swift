@@ -116,3 +116,18 @@ extension UserSettingsTests {
         #expect(try load(t, "{}").projectIgnorePaths.isEmpty)
     }
 }
+
+extension UserSettingsTests {
+    @Test func frameTitleFormatAcceptsTheThreeNames() throws {
+        let t = try TempProject()
+        defer { t.remove() }
+        #expect(try load(t, "{}").frameTitleFormat == .default)
+        for format in FrameTitleFormat.allCases {
+            let ok = try load(t, #"{"frameTitleFormat": "\#(format.rawValue)"}"#)
+            #expect(ok.frameTitleFormat == format && ok.problems.isEmpty)
+        }
+        let bad = try load(t, #"{"frameTitleFormat": "long"}"#)
+        #expect(bad.frameTitleFormat == .default && bad.problems.count == 1)
+        #expect(try load(t, #"{"frameTitleFormat": 3}"#).problems.count == 1)
+    }
+}

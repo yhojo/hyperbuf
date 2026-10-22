@@ -124,6 +124,11 @@ export interface HyperbufHost {
   forgetSite?(origin: string): Promise<boolean>;
   /** Frame (macOS window) operations (`C-x 5 …`). */
   frame?(action: "make" | "delete" | "other" | "delete-others"): Promise<void>;
+  /**
+   * The buffer shown in the selected window changed (absolute path; null for none or a virtual buffer such as search results).
+   * The shell builds the frame title from it (setting `frameTitleFormat`). Not called again while the path stays the same.
+   */
+  activeBuffer?(path: string | null): void;
   /** List of files being displayed (absolute paths). The shell watches only these. */
   watch?(paths: string[]): void;
   /** Notifications of changes (`changed`) and deletions (`deleted`) of displayed files. */

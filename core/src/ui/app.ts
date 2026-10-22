@@ -54,6 +54,7 @@ export async function startApp(options: {
     resolveResource: host.resolveResource?.bind(host) ?? ((path) => path),
     home: host.home,
     vcsBranch: host.vcsBranch?.bind(host),
+    onActiveBuffer: host.activeBuffer?.bind(host),
     onSelect: (win) => {
       model.selected = win.id;
       views.refresh();

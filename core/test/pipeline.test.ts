@@ -177,7 +177,7 @@ test("math: the KaTeX used for rendering matches the bundled CSS version (mismat
   const classes = new Set(
     [...out.matchAll(/class="([^"]+)"/g)].flatMap((m) => (m[1] as string).split(" ")),
   );
-  for (const c of ["sizing", "msupsub", "vlist-t", "mfrac", "reset-size6"]) {
+  for (const c of ["katex-sizing", "msupsub", "vlist-t", "mfrac", "reset-size6"]) {
     assert.ok(classes.has(c), `output lacks ${c}`);
     assert.ok(css.includes(`.${c}`), `CSS lacks .${c} (katex versions are mismatched)`);
   }

@@ -6,6 +6,10 @@ Versions are not yet strictly semantic: 0.x releases may change behavior between
 
 ## [Unreleased]
 
+### Security
+
+- Updated KaTeX 0.16.47 → 0.18.11 (fixes GHSA-238p-pmpm-9mq7, a prototype-pollution gadget that could bypass `trust`; HyperBuf already sets `trust: false` and sanitizes the output, so it was not exploitable here) and Mermaid 12.1.0 → 12.2.0.
+
 ## [0.1.2] - 2026-10-19
 
 Changes since 0.1.1.

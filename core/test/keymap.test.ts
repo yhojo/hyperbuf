@@ -47,3 +47,8 @@ test("every command has a description (COMMAND_DOCS detects omissions by type)",
     assert.ok((COMMAND_DOCS[name] ?? "").length > 5, name);
   }
 });
+
+test("Up / Down scroll by a line, so they do not depend on native scrolling and focus", () => {
+  assert.equal(DEFAULT_BINDINGS["up"], "scroll-line-up");
+  assert.equal(DEFAULT_BINDINGS["down"], "scroll-line-down");
+});

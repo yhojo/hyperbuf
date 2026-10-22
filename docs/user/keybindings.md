@@ -35,8 +35,8 @@ For an introduction to the basic operations, see [getting-started.md](getting-st
 
 | Key | Command | Description |
 | --- | --- | --- |
-| `C-n` | `scroll-line-down` | Scroll down one line |
-| `C-p` | `scroll-line-up` | Scroll up one line |
+| `C-n`, `down` | `scroll-line-down` | Scroll down one line |
+| `C-p`, `up` | `scroll-line-up` | Scroll up one line |
 | `C-v`, `SPC` | `scroll-page-down` | Scroll down one screen |
 | `DEL`, `M-v`, `S-SPC` | `scroll-page-up` | Scroll up one screen |
 | `M-<` | `beginning-of-document` | Go to the beginning of the document |

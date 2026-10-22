@@ -231,7 +231,7 @@ struct AboutView: View {
             }
             .font(.system(size: 16, design: .serif)).italic().foregroundStyle(dim)
             VStack(alignment: .leading, spacing: 12) {
-                Text(verbatim: "hyperbuf").font(.system(size: 30, weight: .bold, design: .serif))
+                Text(verbatim: "hyperbuf").font(.system(size: 24, design: .monospaced))
                 Text(verbatim: "M-x keep-hacking").font(.system(size: 17, design: .monospaced))
                 Text(verbatim: "The story continues...").font(.system(size: 16, design: .serif)).italic()
                     .foregroundStyle(dim)

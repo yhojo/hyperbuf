@@ -113,7 +113,7 @@ The source and license text of each grammar go into `THIRD-PARTY-NOTICES` (only 
 | html-void-elements | 3.0.0 | MIT |
 | internmap | 2.0.3 | ISC |
 | is-plain-obj | 4.1.0 | MIT |
-| katex | 0.16.47 | MIT |
+| katex | 0.18.11 | MIT |
 | khroma | 2.1.0 | MIT |
 | layout-base | 2.0.1 | MIT |
 | layout-base | 1.0.2 | MIT |
@@ -134,7 +134,7 @@ The source and license text of each grammar go into `THIRD-PARTY-NOTICES` (only 
 | mdast-util-to-hast | 13.2.1 | MIT |
 | mdast-util-to-markdown | 2.2.0 | MIT |
 | mdast-util-to-string | 4.0.0 | MIT |
-| mermaid | 12.1.0 | MIT |
+| mermaid | 12.2.0 | MIT |
 | micromark | 4.0.3 | MIT |
 | micromark-core-commonmark | 2.0.4 | MIT |
 | micromark-extension-gfm | 3.0.0 | MIT |

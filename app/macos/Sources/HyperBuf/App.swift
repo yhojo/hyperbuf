@@ -23,6 +23,7 @@ final class AppModel: NSObject, NSWindowDelegate {
     let urlPolicy: UrlPolicy
     let rememberedSites: RememberedOrigins
     let openFlow = OpenFlow()
+    private lazy var aboutWindow = AboutWindowController { [weak self] in self?.menuShowNotices(nil) }
     private let socketPath: String
     private var server: SocketServer?
     private(set) var frames: [Int: FrameSession] = [:]
@@ -184,14 +185,8 @@ final class AppModel: NSObject, NSWindowDelegate {
     @objc func menuOpenFile(_ sender: Any?) { runCommand("find-file") }
     @objc func menuRevealConfig(_ sender: Any?) { ConfigLocation.reveal() }
 
-    /// About: name, version and copyright (Info.plist), plus the license and where the third-party licenses are.
-    @objc func menuAbout(_ sender: Any?) {
-        let credits = NSAttributedString(
-            string:
-                "Apache License 2.0\n\nCopyright notices and licenses of third-party software are available from the menu: Show Third-Party Licenses.",
-            attributes: [.font: NSFont.systemFont(ofSize: 11)])
-        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
-    }
+    /// About: the name, version, a scrolling story and the license (AboutWindow.swift).
+    @objc func menuAbout(_ sender: Any?) { aboutWindow.show() }
 
     /// Opens the bundled third-party licenses (`THIRD-PARTY-NOTICES.txt`) in the default app.
     @objc func menuShowNotices(_ sender: Any?) {

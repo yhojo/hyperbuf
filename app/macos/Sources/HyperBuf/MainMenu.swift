@@ -39,7 +39,7 @@ enum MainMenu {
 
     private static func appMenu(model: AppModel) -> NSMenu {
         let menu = NSMenu(title: "HyperBuf")
-        entry(menu, "About HyperBuf", #selector(AppModel.menuAbout(_:)), target: model)
+        entry(menu, "About hyperbuf", #selector(AppModel.menuAbout(_:)), target: model)
         entry(menu, "Show Third-Party Licenses", #selector(AppModel.menuShowNotices(_:)), target: model)
         menu.addItem(.separator())
         entry(menu, "Show Config File in Finder", #selector(AppModel.menuRevealConfig(_:)), target: model)

@@ -6,6 +6,10 @@ Versions are not yet strictly semantic: 0.x releases may change behavior between
 
 ## [Unreleased]
 
+### Added
+
+- The frame title now shows the file name and its directory, relative to the project root when there is one (`README.md — hyperbuf/docs/user`). The new setting `frameTitleFormat` chooses `"default"`, `"simple"` (the old fixed `HyperBuf`) or `"filename"`.
+
 ### Changed
 
 - The About window is now a quiet scrolling story about Emacs, Markdown and hyperbuf, with the icon, the name (`hyperbuf`) and the version on the left and the Apache License 2.0 notice along the bottom. The text scrolls slowly and brakes to a stop at the closing lines. `SPC` starts / stops it, `C-n` / `C-f` and `C-p` / `C-b` (or Down / Up) jump to the next / previous chapter.

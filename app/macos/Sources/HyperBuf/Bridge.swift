@@ -51,6 +51,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
                 rememberSite: (url) => call({ op: "remember-site", url }),
                 listRememberedSites: () => call({ op: "list-sites" }),
                 forgetSite: (origin) => call({ op: "forget-site", origin }),
+                activeBuffer: (path) => { call({ op: "active-buffer", path }); },
                 watch: (paths) => { call({ op: "watch", paths }); },
                 onFileChanged: (cb) => { changeListeners.push(cb); },
                 // The shell judges on every load (an image under a warn path gets a 404)
@@ -137,6 +138,11 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
                 let root = await Task.detached { ProjectRoot.find(from: path, home: home, ignore: ignore) }.value
                 replyHandler(root, nil)
             }
+        case "active-buffer":
+            // nil (JSON null) when there is no buffer; otherwise only an absolute path is accepted
+            let path = body["path"] as? String
+            frame.activeBufferChanged(path.flatMap { $0.hasPrefix("/") ? $0 : nil }, model: model)
+            replyHandler(nil, nil)
         case "vcs-branch":
             guard let path = body["path"] as? String, path.hasPrefix("/") else {
                 return replyHandler(nil, "bad request")

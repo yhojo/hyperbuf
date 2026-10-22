@@ -17,6 +17,7 @@ All the settings you write live in a single file.
 | ------------------------ | ------------------- | -------------------------------- | ------------------------------------------------------------- |
 | `appearance`             | string              | `"system"`                       | [Appearance](#appearance-appearance)                          |
 | `alpha`                  | array of 2 integers | `[100, 100]`                     | [Frame opacity](#frame-opacity-alpha)                         |
+| `frameTitleFormat`       | string              | `"default"`                      | [Frame title](#frame-title-frametitleformat)                  |
 | `mathUnescapeUnderscore` | boolean             | `true`                           | [Document display](#document-display)                         |
 | `followUpdates`          | boolean             | `false`                          | [Document display](#document-display)                         |
 | `modeLineVcsBranch`      | boolean             | `true`                           | [Project root](#project-root)                                 |
@@ -46,6 +47,7 @@ All the settings you write live in a single file.
   "modeLineVcsBranch": true,
   "appearance": "system",
   "alpha": [100, 100],
+  "frameTitleFormat": "default",
   "trustedUrls": ["https://github.com/yhojo/*", "https://*.wikipedia.org/*"],
   "warnPaths": ["/usr", "/opt", "/tmp", "~/.ssh"],
   "allowPaths": ["~/work", "/usr/share/doc"],
@@ -81,6 +83,17 @@ All the settings you write live in a single file.
 - The same value is applied to all frames.
 - While the accessibility option "Reduce transparency" is on, frames are opaque regardless of this setting.
 - Out-of-range or wrongly shaped values are ignored (the frame stays opaque) and reported under "settings problems" in `C-h b`.
+
+## Frame title (`frameTitleFormat`)
+
+| Key                | Type   | Meaning                                                                                                                                                                                                                 |
+| ------------------ | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `frameTitleFormat` | string | `"default"` (the **default**; `README.md — hyperbuf/docs/user`), `"simple"` (a fixed `HyperBuf`), `"filename"` (the file name only, `README.md`) |
+
+- The title shows the buffer of the selected window. With `default`, the directory is written relative to the project root and starts with the root's name (`hyperbuf/docs/user`); outside a project it is the directory with `~` for your home. More than four components are cut from the front (`…/b/c/d`).
+- With several frames, ` [slot]` is appended (`README.md — hyperbuf/docs/user [2]`). Without a buffer, or for a virtual buffer such as search results, the title is `HyperBuf`.
+- The title appears in screen sharing and in the window lists of macOS (Mission Control, `Cmd-\``). Use `simple` to keep directory names out of them.
+- Project roots are found as in [Project root](#project-root). The title is first shown without the root and is corrected as soon as the search finishes.
 
 ## Document display
 

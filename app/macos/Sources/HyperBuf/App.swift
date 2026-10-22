@@ -197,10 +197,19 @@ final class AppModel: NSObject, NSWindowDelegate {
     @objc func menuActivateFrame(_ sender: NSMenuItem) { activate(slot: sender.tag) }
 
     private func updateTitles() {
-        for frame in frames.values {
-            frame.window?.title = frames.count > 1 ? "HyperBuf [\(frame.slot)]" : "HyperBuf"
-        }
+        for frame in frames.values { applyTitle(to: frame) }
         refreshWindowMenu()
+    }
+
+    /// Rebuilds one frame's title after its active buffer (or the root of it) changed.
+    func refreshTitle(of frame: FrameSession) { applyTitle(to: frame) }
+
+    /// `README.md — hyperbuf/docs/user`, plus ` [slot]` when there are several frames (setting `frameTitleFormat`).
+    private func applyTitle(to frame: FrameSession) {
+        let base = FrameTitle.title(
+            path: frame.activeBufferPath, root: frame.activeBufferRoot, home: frame.access.home,
+            format: UserSettings.load().frameTitleFormat)
+        frame.window?.title = frames.count > 1 ? "\(base) [\(frame.slot)]" : base
     }
 
     /// Rebuilds the frame items of the Window menu (open frames only; `Cmd-<slot>`, the frontmost is marked).

@@ -189,6 +189,13 @@ Looking at the file system is the shell's role.
 - **Not shown:** a VCS name prefix, the file's modification state (the `-` / `:` / `@` of Emacs `vc-mode`), anything other than Git (`.hg` and so on), buffers without a project root, and virtual buffers. Knowing the modification state would need a computation equivalent to `git status`, which goes against the policy of not executing external commands.
 - Updating is re-fetching only; `HEAD` is not watched. The host's `vcsBranch(dir)` is called when a buffer is displayed, switched, or reloaded, and when the app becomes active. A switch made in another tool is reflected when you return to the app.
 
+### 6.10 Frame title
+
+- The frame (window) title shows the buffer of the selected window: `<file name> — <directory>`, plus ` [slot]` with several frames. Without a buffer, or for a virtual buffer, it is `HyperBuf`. The setting `frameTitleFormat` selects `default`, `simple` (fixed `HyperBuf`) or `filename`.
+- Inside a project (a VCS marker found as in §6.3, `projectIgnorePaths` applied) the directory is written as `<root name>/<relative directory>`; outside, as an absolute path with `~` for the home. A label with more than four components is cut from the front (`…/` plus the last three).
+- The Web core only reports the path: `host.activeBuffer(path | null)` is called when the selected window's buffer changes (`Views.refresh()`, de-duplicated). The shell builds the string (`FrameTitle` in `HyperBufKit`, testable on its own) and finds the root with `ProjectRoot.markedRoot` off the main actor; the title is shown first without the root and corrected when the search finishes. Nothing is cached, because the search is a few metadata checks.
+- Not done: `NSWindow.representedURL` (the proxy icon in the title bar), which would look less like Emacs, and a title taken from the document's heading (buffers are identified by their path).
+
 ## 7. Buffers and frames
 
 Multiple Emacs frames (macOS windows) can be held. The intended use is to separate frames per parallel line of work.

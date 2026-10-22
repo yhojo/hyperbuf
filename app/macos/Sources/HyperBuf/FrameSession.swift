@@ -23,6 +23,9 @@ final class FrameSession: Identifiable {
     weak var webView: WKWebView?
     weak var window: NSWindow?
     private var watcher: FileWatcher?
+    /// The buffer shown in the selected window and its project root, for the frame title (the root is filled in asynchronously).
+    private(set) var activeBufferPath: String?
+    private(set) var activeBufferRoot: String?
     private var pageReady = false
     /// Paths proposed by the app that may be remembered (remembered only when approved; the Web side cannot add an arbitrary path).
     private var proposals: Set<String> = []
@@ -48,6 +51,25 @@ final class FrameSession: Identifiable {
         lastSnapshot = snapshot
         watcher = FileWatcher { [weak self] path, state in
             MainActor.assumeIsolated { self?.notifyChanged(path, state) }
+        }
+    }
+
+    /// The Web core reports the selected window's buffer (nil: none or virtual). Sets the title at once without a root,
+    /// then again when the project root search (file system access, off the main actor) has finished.
+    func activeBufferChanged(_ path: String?, model: AppModel) {
+        activeBufferPath = path
+        activeBufferRoot = nil
+        model.refreshTitle(of: self)
+        guard let path, UserSettings.load().frameTitleFormat == .default else { return }
+        let home = access.home
+        let ignore = UserSettings.load().projectIgnorePaths
+        Task { [weak self, weak model] in
+            let root = await Task.detached {
+                ProjectRoot.markedRoot(from: PathUtil.parent(path), home: home, ignore: ignore)
+            }.value
+            guard let self, let model, self.activeBufferPath == path, root != nil else { return }
+            self.activeBufferRoot = root
+            model.refreshTitle(of: self)
         }
     }
 

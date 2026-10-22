@@ -41,6 +41,8 @@ public struct UserSettings: Sendable, Equatable {
     public var followUpdates = false
     /// Whether to show the Git branch name in the mode line. docs/dev/buffer-model.md §6.9.
     public var modeLineVcsBranch = true
+    /// How the frame title is built (`default`: file name and directory, `simple`: fixed, `filename`: file name only).
+    public var frameTitleFormat = FrameTitleFormat.default
     /// Appearance (light / dark). Defaults to following the OS.
     public var appearance = Appearance.system
     /// Frame opacity (the default is no transparency).
@@ -77,6 +79,13 @@ public struct UserSettings: Sendable, Equatable {
                 settings.appearance = value
             } else {
                 settings.problems.append("appearance must be \"system\", \"light\" or \"dark\" (ignored)")
+            }
+        }
+        if let raw = object["frameTitleFormat"] {
+            if let name = raw as? String, let value = FrameTitleFormat(rawValue: name) {
+                settings.frameTitleFormat = value
+            } else {
+                settings.problems.append("frameTitleFormat must be \"default\", \"simple\" or \"filename\" (ignored)")
             }
         }
         if let raw = object["alpha"] {

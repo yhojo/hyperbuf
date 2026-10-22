@@ -39,6 +39,8 @@ export interface ViewsOptions {
   home: string;
   /** Git branch name of the directory (for the mode line). Not shown on shells without it. */
   vcsBranch?: (dir: string) => Promise<string | null>;
+  /** The buffer of the selected window changed (null: none or a virtual buffer). For the frame title. */
+  onActiveBuffer?(path: string | null): void;
   /** A link in a window was chosen (click). */
   onFollow(win: Win, href: string): void;
   /** A window was chosen (click). */
@@ -82,6 +84,8 @@ export class Views {
   showVcsBranch = true;
   private readonly views = new Map<number, WinView>();
   private layoutSig = "";
+  /** The last path reported through `onActiveBuffer` (undefined before the first report). */
+  private reportedBuffer: string | null | undefined;
   /** Buffer identity (absolute path) -> display name (uniquified). */
   private names = new Map<string, string>();
   private lastContextTarget: Element | null = null;
@@ -203,7 +207,18 @@ export class Views {
       if (relayout) view.lastEntry = null;
       this.update(win, view);
     }
+    this.reportActiveBuffer();
     this.opts.onChange?.();
+  }
+
+  private reportActiveBuffer(): void {
+    const { model, onActiveBuffer } = this.opts;
+    if (!onActiveBuffer) return;
+    const path = currentEntry(selectedWindow(model))?.path;
+    const active = path && !isVirtualPath(path) ? path : null;
+    if (active === this.reportedBuffer) return;
+    this.reportedBuffer = active;
+    onActiveBuffer(active);
   }
 
   /** Reflects the split ratios into the DOM (no rebuild, so scroll positions are not lost). */

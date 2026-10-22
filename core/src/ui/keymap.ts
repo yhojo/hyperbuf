@@ -56,6 +56,10 @@ export const DEFAULT_BINDINGS: Readonly<Record<string, CommandName>> = {
   "S-SPC": "scroll-page-up",
   "C-n": "scroll-line-down",
   "C-p": "scroll-line-up",
+  // Up / down arrow keys too: left unbound they fall back to native scrolling, which stops working
+  // whenever focus is not on the scrolled content (after history navigation, right after opening a document)
+  down: "scroll-line-down",
+  up: "scroll-line-up",
   "C-v": "scroll-page-down",
   "M-v": "scroll-page-up",
   TAB: "next-link",

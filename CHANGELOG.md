@@ -10,6 +10,10 @@ Versions are not yet strictly semantic: 0.x releases may change behavior between
 
 - The About window is now a quiet scrolling story about Emacs, Markdown and hyperbuf, with the icon, the name (`hyperbuf`) and the version on the left and the Apache License 2.0 notice along the bottom. The text scrolls slowly and brakes to a stop at the closing lines. `SPC` starts / stops it, `C-n` / `C-f` and `C-p` / `C-b` (or Down / Up) jump to the next / previous chapter.
 
+### Fixed
+
+- The Up / Down arrow keys now scroll the selected window by a line (like `C-p` / `C-n`). They used to be unbound and relied on native scrolling, which stopped working when focus was not on the document, for example after moving through the history or right after opening a document.
+
 ### Security
 
 - Updated KaTeX 0.16.47 → 0.18.11 (fixes GHSA-238p-pmpm-9mq7, a prototype-pollution gadget that could bypass `trust`; HyperBuf already sets `trust: false` and sanitizes the output, so it was not exploitable here) and Mermaid 12.1.0 → 12.2.0.

@@ -54,13 +54,42 @@ When an `open` with a position from an external integration (CLI, Emacs) points 
 
 Back / Forward move backward and forward through the reference history. A buffer switch is also pushed onto the history as a reference.
 
+The history has **two tiers**, like Emacs widens the unit of a motion with a modifier key (`C-f` → `M-f`):
+
+- **Entry** (coarse): a reference to a place, made by following a link, jumping to a heading, switching buffers, and so on. Moved with `M-b` / `M-f`.
+- **Stop** (fine): a position inside one entry that the reader left with a large jump (the way Emacs pushes the mark before a jump). Moved with `C-b` / `C-f`, which cross over to the neighboring entry when the stops of the current entry run out.
+
 ### 4.1 Structure
 
 - Each **window** has a "list + current position", like a browser history.
-- An entry is `{buffer, anchor, scroll offset}`.
+- An entry is `{buffer, anchor, stops, current stop}`. `stops` is a list of positions inside the entry (§4.1.1), and the entry remembers which stop is current.
 - If a new reference is made after Back, the entries beyond the current position are discarded (as in a browser).
 - A reference identical to the current entry (the same anchor of the same document) is not pushed again.
 - The history is saved in the session up to 100 entries per window (when there are more, it is cut on the older side, keeping the newer side that includes the current position).
+
+#### 4.1.1 Stops
+
+- A stop is `{line, heading, headingOffset, context, scroll}`: the source line at the top of the screen (the same value as `L40` in the mode line), the ID of the heading it is under and its distance in lines from that heading, a short **context** (§4.1.2) — both used to find that place again after the file changed — and the pixel scroll offset, used only as a fallback where there is no line mapping (virtual buffers). Lines are preferred because pixel offsets drift when the window is resized.
+- A new entry starts with a single stop (the top of its anchor). **The current stop follows the live scroll position**: ordinary scrolling only updates it, so scrolling never creates stops.
+- A **jump** (§4.2.1) freezes the current stop at the place the reader left, appends a new stop for the destination and makes it current. Stops after the current one are discarded first, but **only within this entry**; entries after the current entry are kept (so moving around inside a document never destroys the forward entries).
+- A jump that lands less than one screen away from the current stop does not create a stop; the current stop is just updated.
+- Each entry keeps at most 20 stops; the oldest are dropped first.
+
+#### 4.1.2 Following changes to the file
+
+A line number alone drifts when the file is edited elsewhere (typically in Emacs while it is read here). A stop therefore carries a **context**, and is relocated whenever the buffer's text is replaced.
+
+- **Context:** up to 3 non-blank lines starting at the stop's line, each trimmed to 80 characters. Lines too short to identify a place (fewer than 4 non-space characters, such as `---` or `}`) are skipped. A stop whose line has no usable context keeps only its line and the nearest heading ID (below).
+- **When:** in the model, at the moment a buffer's text is replaced with different content (`openBuffer`), for the stops of every window in the frame that refer to that buffer. This covers both a displayed document updated by the watcher and a hidden document re-read when it is shown again ([buffer-model.md](buffer-model.md) §8). The old text is not needed, so it is not kept; only the new text and the stored contexts are compared.
+- **How**, in order, per stop:
+  1. If the stop's context still matches at its line, nothing changes (the common case, and the cost is one comparison).
+  2. Otherwise search the new text for the context and take the match **nearest to the old line**.
+  3. If there is none, fall back to the stop's stored heading, keeping the stored distance in lines from it, clamped to the section.
+  4. If that heading is gone too, keep the old line clamped to the end of the document.
+- A relocation is silent; it never adds or removes a stop and never moves the reader's current view by itself. The currently displayed position of a window keeps being followed by the existing mechanism ([§3](#3-viewing-position)); only the stored stops are relocated, and the current stop's context is refreshed after the re-render.
+- **Saved in the session**, so a stop also survives a file edited while the app was not running, which keeping the old text could not do. It costs about 250 bytes per stop (at most 20 stops × 100 entries per window in the worst case).
+- **Known limits:** when the same lines repeat (for example a table of identical rows) step 2 can pick a neighbor; the nearest-match rule keeps the error small. A text rewritten wholesale falls to step 3 or 4. Line anchors (`#line:N`, §5) are line numbers by definition and are not relocated.
+- **Rejected alternatives:** keeping the previous text per buffer and diffing it (memory grows with every restored buffer, cannot help a hidden buffer edited while the app was closed, and needs a line diff that is more than the current `firstChangedLine`); keeping only the line number (drifts on every edit above the stop).
 
 ### 4.2 Operations that push an entry
 
@@ -72,7 +101,21 @@ Back / Forward move backward and forward through the reference history. A buffer
 | Opening from a full-text search result                    | Pushed                                                    |
 | Showing another buffer with `C-x b` / `C-x C-f`           | Pushed                                                    |
 | Normal scrolling                                          | Not pushed (only the current entry's position is updated) |
-| In-document search (`C-s`)                                | Not pushed                                                |
+| In-document search (`C-s`)                                | Not pushed as an entry (may create a stop, §4.2.1)        |
+
+#### 4.2.1 Operations that create a stop
+
+Only large movements inside the current document create a stop; the origin of the movement is what is remembered.
+
+| Operation                                                              | Creates a stop                                       |
+| ---------------------------------------------------------------------- | ---------------------------------------------------- |
+| Leaving `C-s` / `C-r` by accepting the match (`RET`, or any other key) | Yes. `C-g` restores the position and creates nothing |
+| `M-<` / `M->`                                                          | Yes                                                  |
+| `M-g g` (`goto-line`)                                                  | Yes                                                  |
+| Heading movement (`C-c C-n` / `C-p` / `C-u` / `C-f` / `C-b`)           | Yes (still not pushed as an entry)                   |
+| `C-v` / `M-v` / `SPC` / `DEL` / `C-n` / `C-p`, wheel, trackpad         | No                                                   |
+| Dragging the scroll bar, mouse-driven jumps                            | No (first version; may be added later)               |
+| A re-render caused by a file update                                    | No (the position is kept, §3)                        |
 
 ### 4.3 When a window is split
 
@@ -80,13 +123,19 @@ The history of the original window is copied to the new window (similar to dupli
 
 ### 4.4 Back / Forward keys
 
-- **`C-b` / `C-f`** are Back / Forward. Just as `C-f` / `C-b` in editing move through the "flow of characters", HyperBuf reuses them to move through the "flow of references".
-- **`C-a` / `C-e`** move to the first / last entry of the history (`beginning-of-history` / `end-of-history`). They extend `C-b` / `C-f` the way beginning / end of line extend them; if already at the first / last entry, the minibuffer says so.
-- `Cmd+[` / `Cmd+]` are also available as macOS aliases.
-- The cursor keys `←` / `→` are also assigned as aliases (for users unfamiliar with Emacs; combinations with modifier keys are not assigned).
-- Vertical movement (`C-n` / `C-p` / `C-v` / `M-v`) is within the document (space), and `C-f` / `C-b` is the flow of references (time).
+As in Emacs, the modifier key widens the unit: `C-f` / `C-b` is the fine unit, `M-f` / `M-b` the meaningful unit.
+
+- **`C-b` / `C-f`** (`back-position` / `forward-position`) move one **stop** back / forward. Just as `C-f` / `C-b` in editing move through the "flow of characters", HyperBuf uses them to move through the finest "flow of references".
+  - At the first stop of an entry, `C-b` crosses over to the previous entry and lands on its **last** stop (where the reader left it). At the last stop, `C-f` crosses over to the next entry and lands on its **first** stop. The reader never has to switch keys to get past an entry boundary.
+  - At the very beginning / end of the whole history, the echo area says `Beginning of history` / `End of history`.
+- **`M-b` / `M-f`** (`back` / `forward`, the existing commands) move one **entry** back / forward, i.e. to the previous / next document or heading reference. The destination entry is shown at the stop it remembers (the one that was current when the reader left it).
+- **`C-a` / `C-e`** keep moving to the first / last **entry** of the history (`beginning-of-history` / `end-of-history`); if already there, the minibuffer says so. They extend `M-b` / `M-f` the way beginning / end of line extend a motion.
+- `Cmd+[` / `Cmd+]` are the macOS aliases of `M-b` / `M-f` (entry unit, like a browser's Back / Forward).
+- The cursor keys `←` / `→` are aliases of `C-b` / `C-f` (stop unit; for users unfamiliar with Emacs; combinations with modifier keys are not assigned).
+- Vertical movement (`C-n` / `C-p` / `C-v` / `M-v`) is within the document (space); `C-f` / `C-b` / `M-f` / `M-b` is the flow of references (time). Forward in time is not "down": a `C-f` can land higher in the same document.
 - The `C-c` prefix is assigned to markdown-mode's outline-mode-style heading movement (`C-c C-n` / `C-c C-p` / `C-c C-f` / `C-c C-b` / `C-c C-u`), and is not used for Back / Forward.
-- **`M-f` / `M-b` are reserved (unassigned).** Idea: skip anchor movement within the same document and go forward / back to another document (as `C-f` → `M-f` in Emacs, where a modifier key widens the unit). Feedback is still being collected, and they stay unassigned until it is decided.
+- Keys bound by name in `config.json` keep their meaning: `back` / `forward` stay the entry-unit commands. Only the default bindings of `C-b` / `C-f` change (they were `back` / `forward`, an incompatible change noted in `CHANGELOG.md`).
+- The mode line `[History N/M]` still counts entries. Stops are not shown.
 
 ## 5. Virtual buffers and line anchors
 
@@ -134,6 +183,10 @@ Shows the number of lines, words and characters of the selection (the whole docu
 
 **Undecided:**
 
-- The assignment of `M-f` / `M-b` (§4.4).
-- The granularity of the history: whether to merge consecutive anchor movements within the same document into one entry (currently, one entry per anchor).
+- Whether the heading movement of `C-c C-n` and friends should also be reachable as a "chapter" step by `M-f` / `M-b` (currently they only create stops, §4.2.1).
+- Whether mouse-driven jumps (scroll bar drag) should create stops.
+- The granularity of entries: whether to merge consecutive anchor movements within the same document into one entry (currently, one entry per anchor).
+- The session format for stops (a new version with a fallback for old files; the limits go in [session-restore.md](session-restore.md) when implemented).
+- The numbers in §4.1.2 (3 context lines, 80 characters, 4-character minimum) are first guesses. Measure the relocation accuracy on `fixtures/` with edited copies, and the cost on a large document, before fixing them.
+- Whether the heading ID in step 3 is enough on its own, or the stop should also keep the heading's text (IDs derive from the text, so a renamed heading is lost either way).
 - Extension mechanisms.

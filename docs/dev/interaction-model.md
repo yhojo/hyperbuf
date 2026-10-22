@@ -86,7 +86,7 @@ The history of the original window is copied to the new window (similar to dupli
 - The cursor keys `←` / `→` are also assigned as aliases (for users unfamiliar with Emacs; combinations with modifier keys are not assigned).
 - Vertical movement (`C-n` / `C-p` / `C-v` / `M-v`) is within the document (space), and `C-f` / `C-b` is the flow of references (time).
 - The `C-c` prefix is assigned to markdown-mode's outline-mode-style heading movement (`C-c C-n` / `C-c C-p` / `C-c C-f` / `C-c C-b` / `C-c C-u`), and is not used for Back / Forward.
-- **`M-f` / `M-b` are reserved (unassigned).** Idea: skip anchor movement within the same document and go forward / back to another document (as `C-f` → `M-f` in Emacs, where a modifier key widens the unit). Feedback is still being collected, and they stay unassigned until it is decided.
+- **`M-f` / `M-b` are intentionally unassigned.** A two-tier history (`C-f` / `C-b` for positions inside a document, `M-f` / `M-b` for references) was considered and not adopted, because the model became too complex for readers to predict ([two-tier-history-considered.md](../history/two-tier-history-considered.md)).
 
 ## 5. Virtual buffers and line anchors
 
@@ -134,6 +134,5 @@ Shows the number of lines, words and characters of the selection (the whole docu
 
 **Undecided:**
 
-- The assignment of `M-f` / `M-b` (§4.4).
 - The granularity of the history: whether to merge consecutive anchor movements within the same document into one entry (currently, one entry per anchor).
 - Extension mechanisms.

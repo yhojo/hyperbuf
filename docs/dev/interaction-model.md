@@ -74,6 +74,18 @@ Back / Forward move backward and forward through the reference history. A buffer
 | Normal scrolling                                          | Not pushed (only the current entry's position is updated) |
 | In-document search (`C-s`)                                | Not pushed                                                |
 
+#### 4.2.1 Principle: moving around inside one document does not disturb the history
+
+The history records **references** (a link followed, a heading or line chosen by name, a buffer shown), not **reading movements**. Scrolling, `C-s` / `C-r`, and heading movement with `C-c C-n` and friends can be done freely inside a document, in any amount, and the history stays exactly as it was: no entry is added, the entries after the current one are not discarded, and `[History N/M]` does not change.
+
+This is a deliberate part of the model, because it makes Back / Forward simple to predict:
+
+- One `C-b` always means "return to the previous reference", no matter how far the reader scrolled or how many searches were made in between.
+- Searching a long document for a word is safe: it cannot bury the reference the reader came from, or throw away the entries they could go Forward to.
+- The reader only has to know one rule to know what is in the history: **a place the document itself pointed to, or the reader named, is an entry; everything else is just reading.**
+
+Anything that would record positions inside a document (a second, finer tier of history) breaks this simplicity, and was considered and not adopted ([two-tier-history-considered.md](../history/two-tier-history-considered.md)). New navigation features should follow the same principle: if a movement is a continuous reading action within the current document, it does not push an entry.
+
 ### 4.3 When a window is split
 
 The history of the original window is copied to the new window (similar to duplicating a browser tab). After that, the history is independent per window.

@@ -36,7 +36,7 @@ HyperBuf aims to be **a tool you can live in**, rooted in hacker culture. Not re
 ### Reading and navigation
 
 - **buffer / window / frame.** Separate the opened document (buffer) from the area that shows it (window); show the same buffer in several windows, each with its own reading position. A frame (a macOS window) is an independent workspace, switched with `Cmd-1` to `Cmd-9`. See [docs/dev/buffer-model.md](docs/dev/buffer-model.md) and [docs/dev/interaction-model.md](docs/dev/interaction-model.md).
-- **Reference history.** Back / Forward (`C-b` / `C-f`) move through the reference history; following links, heading jumps and buffer switches with `C-x b` are all pushed onto it. The history is per window and is copied when a window is split.
+- **Reference history.** Back / Forward (`C-b` / `C-f`) move through the reference history; following links, heading jumps and buffer switches with `C-x b` are all pushed onto it, while scrolling, `C-s` search and heading movement inside a document never disturb it. The history is per window and is copied when a window is split.
 - **No project to choose.** Everything is based on the directory of the current buffer (Emacs `default-directory`): files are opened from there and the tree below it is listed and searched. Some commands work on the project root (the nearest directory with `.git` or similar).
 - File list, file name filtering, heading navigation, search in the document and full-text search. Search results appear in a virtual buffer.
 - Input such as search or buffer selection is done in the minibuffer at the bottom of the frame, not in dialogs. Key bindings can be changed in `config.json`.

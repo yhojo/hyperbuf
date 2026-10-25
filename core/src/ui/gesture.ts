@@ -26,8 +26,10 @@ export const GESTURE_IDLE_MS = 200;
  * has died out is recognised by the movement speeding up again (a per-event distance of at least `RISE_MIN_PX` and
  * `RISE_RATIO` times the slowest event since the lock) or by turning around (at least `REVERSE_MIN_PX` the other way).
  */
-export const RISE_MIN_PX = 10;
-export const RISE_RATIO = 3;
+export const RISE_MIN_PX = 14;
+export const RISE_RATIO = 4;
+/** A speed-up is not taken as a new swipe within this time (ms) of the last one firing: a long swipe has uneven speed. */
+export const RISE_COOLDOWN_MS = 150;
 export const REVERSE_MIN_PX = 8;
 
 /** The scroll-related state of one element on the path from the event target up to the window content. */
@@ -60,6 +62,7 @@ export class SwipeTracker {
   private recent: { dx: number; dy: number; time: number }[] = [];
   private lock: "fired" | "blocked" | null = null;
   private lockSign = 0;
+  private firedAt = Number.NEGATIVE_INFINITY;
   /** The smallest horizontal event since the swipe fired (the bottom of its decaying tail). */
   private slowest = Number.POSITIVE_INFINITY;
 
@@ -79,7 +82,9 @@ export class SwipeTracker {
         this.lock = blocked(dx) ? "blocked" : null;
       } else if (this.lock === "fired") {
         const turned = Math.sign(dx) !== this.lockSign && size >= REVERSE_MIN_PX;
-        const sped = size >= Math.max(RISE_MIN_PX, RISE_RATIO * this.slowest);
+        const sped =
+          time - this.firedAt >= RISE_COOLDOWN_MS &&
+          size >= Math.max(RISE_MIN_PX, RISE_RATIO * this.slowest);
         if (turned || sped) {
           this.recent = [];
           this.lock = blocked(dx) ? "blocked" : null;
@@ -102,6 +107,7 @@ export class SwipeTracker {
     if (Math.abs(sumX) < SWIPE_DOMINANCE * Math.abs(sumY)) return null;
     this.lock = "fired";
     this.lockSign = Math.sign(sumX);
+    this.firedAt = time;
     this.slowest = Math.abs(dx);
     this.recent = [];
     // Fingers moving right scroll the content left (negative deltaX): that is "back", as in Safari

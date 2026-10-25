@@ -45,6 +45,29 @@ Requirements: macOS 14 (Sonoma) or later (both Apple silicon and Intel).
 Settings (key bindings, file access scope, external links and so on) are written in
 `~/Library/Application Support/HyperBuf/config.json` (you can open it in Finder from `Show Config File in Finder` in the app menu). The list of available settings is in `docs/user/configuration.md` in the repository.
 
+## Mac shortcuts, mouse and trackpad
+
+The Emacs-style keys above (`C-` / `M-`) work inside a frame. The macOS shortcuts of the menu bar use `Cmd`, so the two do not collide.
+
+| Key               | Action                                                                                                                 |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `Cmd-N` / `Cmd-W` | Open a new frame (window) / close the current one. Closing the last frame quits the app. Same as `C-x 5 2` / `C-x 5 0` |
+| `Cmd-1`…`Cmd-9`   | Switch between frames                                                                                                  |
+| `Cmd-O`           | Open a file. Same as `C-x C-f`: choose the file in the minibuffer, starting from the directory of the active buffer    |
+| `Cmd-[` / `Cmd-]` | Back / Forward in the reference history (same as `C-b` / `C-f`)                                                        |
+
+Other standard macOS shortcuts (`Cmd-C`, `Cmd-M`, `Cmd-Q`, …) work as usual.
+
+With the mouse and the trackpad:
+
+- **Click** a link to follow it. Clicking a window selects it.
+- **Swipe** left or right with two fingers on the trackpad to go back or forward in the reference history. A swipe over a table or code block that can still scroll sideways scrolls it instead.
+- **Back / forward buttons** of a mouse do the same, in the window under the pointer.
+- **Drag** the mode line of a split window to resize it.
+- **Right-click** shows the context menu (including `Edit in Emacs`, see below).
+
+The swipe and the mouse buttons can be turned off with `gestureNavigation` in `config.json` (see `docs/user/configuration.md` in the repository).
+
 ## Opening from the command line (`hyperbuf`)
 
 The `hyperbuf` command is inside `HyperBuf.app`. To use it from a terminal, create a link in a directory on your path.

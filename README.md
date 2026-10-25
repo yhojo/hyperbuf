@@ -59,29 +59,30 @@ Open the downloaded `.dmg` and move `HyperBuf.app` to `Applications`. Installati
 
 ### Main keys
 
-| Key | Command | Intent |
-| --- | --- | --- |
-| `C-x C-f` | `find-file` | Open a file (path completion starting at the base directory) |
-| `C-x p f` | `project-find-file` | List and open the documents under the project root |
-| `C-x b` | `switch-buffer` | Switch the buffer that is shown |
-| `C-b` / `C-f` | `back` / `forward` | Move back / forward in the reference history |
-| `C-a` / `C-e` | `beginning-of-history` / `end-of-history` | Jump to the first / last entry of the reference history |
-| `C-s` / `C-r` | `isearch-forward` / `isearch-backward` | Incremental search in the document |
-| `M-s g` / `C-x p g` | `search-project` / `project-find-regexp` | Full-text search under the base directory / under the project root |
-| `C-x 2` / `C-x 3` / `C-x 0` / `C-x 1` / `C-x o` | `split-below` and others | Split, close and move between windows |
-| `C-x 5 2` / `Cmd-1`…`Cmd-9` | `make-frame` and others | Create and switch frames |
-| `M-x` | `execute-command` | Run a command by name |
-| `C-h b` | `describe-bindings` | List the key bindings |
+| Key                                               | Command                                   | Intent                                                                     |
+| ------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------- |
+| `C-x C-f`                                         | `find-file`                               | Open a file (path completion starting at the base directory)               |
+| `C-x p f`                                         | `project-find-file`                       | List and open the documents under the project root                         |
+| `C-x b`                                           | `switch-buffer`                           | Switch the buffer that is shown                                            |
+| `C-b` / `C-f`                                     | `back` / `forward`                        | Move back / forward in the reference history                               |
+| `C-a` / `C-e`                                     | `beginning-of-history` / `end-of-history` | Jump to the first / last entry of the reference history                    |
+| `C-s` / `C-r`                                     | `isearch-forward` / `isearch-backward`    | Incremental search in the document                                         |
+| `M-s g` / `C-x p g`                               | `search-project` / `project-find-regexp`  | Full-text search under the base directory / under the project root         |
+| `C-x 2` / `C-x 3` / `C-x 0` / `C-x 1` / `C-x o`   | `split-below` and others                  | Split, close and move between windows                                      |
+| `C-x 5 2` / `Cmd-N` / `Cmd-1`…`Cmd-9`             | `make-frame` and others                   | Create and switch frames (`Cmd-W` closes one)                              |
+| Two-finger swipe / mouse back and forward buttons | `back` / `forward`                        | Move in the reference history (can be turned off with `gestureNavigation`) |
+| `M-x`                                             | `execute-command`                         | Run a command by name                                                      |
+| `C-h b`                                           | `describe-bindings`                       | List the key bindings                                                      |
 
-All key bindings are in [docs/user/keybindings.md](docs/user/keybindings.md) (generated from the code); how to configure them is in [docs/user/configuration.md](docs/user/configuration.md).
+All key bindings are in [docs/user/keybindings.md](docs/user/keybindings.md) (generated from the code); how to configure them is in [docs/user/configuration.md](docs/user/configuration.md). The Mac shortcuts (`Cmd-N`, `Cmd-W`, `Cmd-O`, …), the mouse and the trackpad are described in [docs/user/getting-started.md](docs/user/getting-started.md).
 
 ## Documentation
 
-| Location | Audience | Contents |
-| --- | --- | --- |
-| [docs/user/](docs/user/) | Users | Getting started, key bindings, configuration, languages supported by syntax highlighting, third-party licenses |
-| [docs/dev/](docs/dev/) | Developers | The current design and specification (architecture, buffer / window / frame, access rules, integration protocol, release) |
-| [docs/history/](docs/history/) | Development history | PoC results, the migration plan, the plan change log (mostly in Japanese) |
+| Location                       | Audience            | Contents                                                                                                                  |
+| ------------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| [docs/user/](docs/user/)       | Users               | Getting started, key bindings, configuration, languages supported by syntax highlighting, third-party licenses            |
+| [docs/dev/](docs/dev/)         | Developers          | The current design and specification (architecture, buffer / window / frame, access rules, integration protocol, release) |
+| [docs/history/](docs/history/) | Development history | PoC results, the migration plan, the plan change log (mostly in Japanese)                                                 |
 
 For the structure and the technology choices see [docs/dev/architecture.md](docs/dev/architecture.md). For the change history see [CHANGELOG.md](CHANGELOG.md).
 
@@ -130,4 +131,4 @@ Apache-2.0 ([LICENSE](LICENSE), [NOTICE](NOTICE)). `emacs/` is GPL-3.0-or-later 
 
 ---
 
-**HyperBuf** — *Read like a hacker.*
+**HyperBuf** — _Read like a hacker._

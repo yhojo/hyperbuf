@@ -3,29 +3,85 @@
 
 // Trackpad / mouse gestures for moving in the reference history (setting `gestureNavigation`).
 //
-// - Swipe between pages (trackpad, Magic Mouse): the shell enables WebKit's own back / forward gesture
-//   (`allowsBackForwardNavigationGestures`), so the direction, the animation and the macOS "Swipe between pages" setting are
-//   handled by the system. WebKit's history is only a *carrier* for the gesture: it always holds three entries
-//   `[back, here, forward]` (all the same document, made with `pushState`) and we stay on the middle one. When a swipe lands on
-//   `back` / `forward`, the real reference history moves (the Web core's `back` / `forward`) and we step back to the middle entry.
+// - Two-finger horizontal swipe: right = back, left = forward (the default macOS direction, "natural scrolling" on).
 // - Mouse back / forward buttons (button 3 / 4).
+//
+// WebKit's own history gestures are not used: the reference history is the Web core's, not WebKit's.
+// The decision logic here is pure so it can be tested without a DOM; `installGestures` does the wiring.
 
 import type { Win } from "../model.ts";
 
 export type HistoryDirection = "back" | "forward";
 
-type Marker = "back" | "here" | "forward";
+/** Horizontal distance (px) within `SWIPE_WINDOW_MS` that counts as a swipe. */
+export const SWIPE_THRESHOLD_PX = 70;
+/** Only wheel events this recent (ms) are summed, so earlier vertical scrolling or its inertia does not count against a swipe. */
+export const SWIPE_WINDOW_MS = 250;
+/** The horizontal distance must exceed this multiple of the vertical one in the window (ignores vertical / steep diagonal scrolling). */
+export const SWIPE_DOMINANCE = 1.5;
+/** Horizontal wheel events further apart than this (ms) belong to different swipes. Inertia keeps the previous swipe locked. */
+export const GESTURE_IDLE_MS = 200;
 
-/** `history.state` of the three carrier entries. */
-export function markerOf(state: unknown): Marker | null {
-  const mark = (state as { hyperbufHistory?: unknown } | null)?.hyperbufHistory;
-  return mark === "back" || mark === "here" || mark === "forward" ? mark : null;
+/** The scroll-related state of one element on the path from the event target up to the window content. */
+export interface ScrollAxisInfo {
+  overflowX: string;
+  scrollLeft: number;
+  scrollWidth: number;
+  clientWidth: number;
 }
 
-/** Which reference-history move a `popstate` state asks for (null: the middle entry or a foreign state). */
-export function swipeDirection(state: unknown): HistoryDirection | null {
-  const marker = markerOf(state);
-  return marker === "back" || marker === "forward" ? marker : null;
+/** Whether something under the pointer can still scroll horizontally in the direction of `dx` (then the swipe is a scroll, not navigation). */
+export function canScrollHorizontally(path: readonly ScrollAxisInfo[], dx: number): boolean {
+  return path.some((el) => {
+    if (el.overflowX !== "auto" && el.overflowX !== "scroll") return false;
+    const max = el.scrollWidth - el.clientWidth;
+    if (max <= 1) return false;
+    return dx < 0 ? el.scrollLeft > 0 : el.scrollLeft < max - 1;
+  });
+}
+
+/**
+ * Turns a stream of wheel events into at most one navigation per swipe.
+ * A swipe is a stretch of horizontal wheel events with no gap over `GESTURE_IDLE_MS`; once it fires (or starts over something that
+ * scrolls horizontally) it stays locked until it ends, so the inertia tail does not navigate twice. Vertical-only events neither
+ * start, end or count against a swipe, and only the last `SWIPE_WINDOW_MS` of movement is judged.
+ */
+export class SwipeTracker {
+  private lastHorizontal = Number.NEGATIVE_INFINITY;
+  private recent: { dx: number; dy: number; time: number }[] = [];
+  private locked = false;
+
+  /**
+   * Feeds one wheel event. `blocked(dx)` is asked once, when a swipe starts
+   * (true: the pointer is over horizontally scrollable content, so the whole swipe is left alone).
+   */
+  feed(
+    dx: number,
+    dy: number,
+    time: number,
+    blocked: (dx: number) => boolean,
+  ): HistoryDirection | null {
+    if (dx !== 0) {
+      if (time - this.lastHorizontal > GESTURE_IDLE_MS) this.locked = blocked(dx);
+      this.lastHorizontal = time;
+    }
+    // Vertical-only events (scrolling, its inertia) are not part of a swipe's movement
+    if (dx !== 0) this.recent.push({ dx, dy, time });
+    while (this.recent[0] && time - this.recent[0].time > SWIPE_WINDOW_MS) this.recent.shift();
+    if (this.locked || dx === 0) return null;
+    let sumX = 0;
+    let sumY = 0;
+    for (const e of this.recent) {
+      sumX += e.dx;
+      sumY += e.dy;
+    }
+    if (Math.abs(sumX) < SWIPE_THRESHOLD_PX) return null;
+    if (Math.abs(sumX) < SWIPE_DOMINANCE * Math.abs(sumY)) return null;
+    this.locked = true;
+    this.recent = [];
+    // Fingers moving right scroll the content left (negative deltaX): that is "back", as in Safari
+    return sumX < 0 ? "back" : "forward";
+  }
 }
 
 /** Maps a MouseEvent button to a direction (3: the mouse's back button, 4: forward). */
@@ -36,37 +92,43 @@ export function buttonDirection(button: number): HistoryDirection | null {
 export interface GestureOptions {
   /** Window whose content contains the element (null: not inside a window). */
   windowOf(target: Element): Win | null;
-  /** The selected window (the target of a swipe, which has no pointer position). */
-  selected(): Win;
   /** Select the window and move in its history. */
   navigate(win: Win, direction: HistoryDirection): void;
-  /** Gestures are ignored while this returns false (minibuffer input). */
+  /** Gestures are ignored while this returns false (minibuffer input, setting off). */
   enabled(): boolean;
+  /** The element that scrolls the window (the path from the target stops here). */
+  contentOf(win: Win): HTMLElement | undefined;
 }
 
-/** Sets up the three carrier entries and listens for swipes and mouse buttons. */
-export function installGestures(options: GestureOptions): void {
-  let recentering = true; // until the first step back to the middle entry has happened
-  // [back, here, forward] with the current position on `here`
-  history.replaceState({ hyperbufHistory: "back" }, "");
-  history.pushState({ hyperbufHistory: "here" }, "");
-  history.pushState({ hyperbufHistory: "forward" }, "");
-  history.go(-1);
-
-  window.addEventListener("popstate", (e) => {
-    const marker = markerOf(e.state);
-    if (marker === "here") {
-      recentering = false;
-      return;
+/** Listens for swipes and mouse buttons. Returns a function that removes the listeners. */
+export function installGestures(options: GestureOptions): () => void {
+  const tracker = new SwipeTracker();
+  const pathOf = (target: Element, content: HTMLElement): ScrollAxisInfo[] => {
+    const path: ScrollAxisInfo[] = [];
+    for (let el: Element | null = target; el; el = el.parentElement) {
+      path.push({
+        overflowX: getComputedStyle(el).overflowX,
+        scrollLeft: el.scrollLeft,
+        scrollWidth: el.scrollWidth,
+        clientWidth: el.clientWidth,
+      });
+      if (el === content) break;
     }
-    if (recentering || !marker) return;
-    recentering = true;
-    // Back to the middle entry before moving in the real history, so the next swipe has both neighbours again
-    history.go(marker === "back" ? 1 : -1);
-    const direction = swipeDirection(e.state);
-    if (direction && options.enabled()) options.navigate(options.selected(), direction);
-  });
-
+    return path;
+  };
+  const onWheel = (e: WheelEvent): void => {
+    // ctrl + wheel is pinch zoom; vertical-only events can never navigate
+    if (e.ctrlKey || e.deltaX === 0 || !options.enabled()) return;
+    if (!(e.target instanceof Element)) return;
+    const win = options.windowOf(e.target);
+    const content = win && options.contentOf(win);
+    if (!win || !content) return;
+    const target = e.target;
+    const direction = tracker.feed(e.deltaX, e.deltaY, e.timeStamp, (dx) =>
+      canScrollHorizontally(pathOf(target, content), dx),
+    );
+    if (direction) options.navigate(win, direction);
+  };
   const onMouseUp = (e: MouseEvent): void => {
     const direction = buttonDirection(e.button);
     if (!direction || !options.enabled()) return;
@@ -80,6 +142,12 @@ export function installGestures(options: GestureOptions): void {
   const onMouseDown = (e: MouseEvent): void => {
     if (buttonDirection(e.button) && options.enabled()) e.preventDefault();
   };
+  window.addEventListener("wheel", onWheel, { passive: true });
   window.addEventListener("mouseup", onMouseUp);
   window.addEventListener("mousedown", onMouseDown);
+  return () => {
+    window.removeEventListener("wheel", onWheel);
+    window.removeEventListener("mouseup", onMouseUp);
+    window.removeEventListener("mousedown", onMouseDown);
+  };
 }

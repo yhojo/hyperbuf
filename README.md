@@ -8,7 +8,7 @@ HyperBuf is a macOS document viewer for reading large numbers of Markdown docume
 
 It is more than a Markdown previewer. It combines the **buffer / window / frame** model that comes from Emacs with a browser-like reference history, so that instead of opening documents "one at a time" you can **move across them, compare them and go back and forth**.
 
-**Status:** v0.1.2 (2026-10-19). It is in a limited distribution stage and feedback is being collected. The builds are Developer ID signed and notarized Universal (arm64 + x86_64) builds, and macOS 14 or later is required. Because of the result of a trademark check on the name, the project is not made public; it is distributed only to people who ask for it (the steps needed for a public release are still carried out as preparation).
+**Status:** v1.0.0 (2026-10-25). It is in a limited distribution stage and feedback is being collected. The builds are Developer ID signed and notarized Universal (arm64 + x86_64) builds, and macOS 14 or later is required. Because of the result of a trademark check on the name, the project is not made public; it is distributed only to people who ask for it (the steps needed for a public release are still carried out as preparation).
 
 ## Where the name comes from
 

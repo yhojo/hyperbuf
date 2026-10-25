@@ -1,6 +1,6 @@
 {
   "name": "@hyperbuf/protocol",
-  "version": "0.1.2",
+  "version": "1.0.0",
   "private": true,
   "description": "JSON Schema and conformance-test examples for the HyperBuf integration protocol.",
   "type": "module",

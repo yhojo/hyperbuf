@@ -4,4 +4,4 @@
 export type * from "./host.ts";
 export type * from "./locate.ts";
 
-export const version = "0.1.2";
+export const version = "1.0.0";

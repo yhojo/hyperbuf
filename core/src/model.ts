@@ -19,6 +19,8 @@ export interface HistoryEntry {
   path: string;
   anchor: string | null;
   scroll: number;
+  /** Index of the link selected with TAB / S-TAB (in memory only; not saved in the session). */
+  link?: number;
 }
 
 export interface Win {

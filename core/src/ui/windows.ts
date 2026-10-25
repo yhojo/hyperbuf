@@ -168,8 +168,22 @@ export class Views {
     } else {
       view.linkIndex = (view.linkIndex + dir + links.length) % links.length;
     }
-    links.forEach((a, i) => a.classList.toggle("link-focus", i === view.linkIndex));
+    this.markLink(view, links);
+    const entry = currentEntry(selectedWindow(this.opts.model));
+    if (entry) entry.link = view.linkIndex;
     links[view.linkIndex]?.scrollIntoView({ block: "nearest" });
+  }
+
+  private markLink(view: WinView, links: Element[]): void {
+    links.forEach((a, i) => a.classList.toggle("link-focus", i === view.linkIndex));
+  }
+
+  /** Restores the link selected earlier in a history entry (so TAB continues after returning to it). */
+  private restoreLink(view: WinView, entry: HistoryEntry): void {
+    const links = [...view.content.querySelectorAll("a")];
+    const i = entry.link ?? -1;
+    view.linkIndex = i >= 0 && i < links.length ? i : -1;
+    if (view.linkIndex >= 0) this.markLink(view, links);
   }
 
   /** The most recently right-clicked element ("edit in editor" uses it to find the pointed location). */
@@ -528,7 +542,7 @@ export class Views {
       });
       this.stats.ms = ms;
       view.content.innerHTML = `<div class="markdown-body">${html}</div>`;
-      view.linkIndex = -1;
+      this.restoreLink(view, entry);
       const token = ++view.renderToken;
       if (reload) {
         view.computeTop = () => {
@@ -557,7 +571,7 @@ export class Views {
         : () => entry.scroll;
       this.setScroll(view, view.computeTop());
       entry.scroll = view.content.scrollTop;
-      view.linkIndex = -1;
+      this.restoreLink(view, entry);
       view.lastEntry = entry;
     }
     this.updateModeLinePosition(view);

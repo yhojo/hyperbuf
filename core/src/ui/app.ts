@@ -13,6 +13,7 @@ import type { Commands } from "./commands.ts";
 import type { AppContext } from "./context.ts";
 import { byId } from "./dom.ts";
 import { createEcho } from "./echo.ts";
+import { installGestures } from "./gesture.ts";
 import { wireHostEvents } from "./host-events.ts";
 import { installKeyboard } from "./keyboard.ts";
 import type { KeyboardHandle } from "./keyboard.ts";
@@ -144,6 +145,17 @@ export async function startApp(options: {
     });
   }
   wireHostEvents(ctx, commands);
+  if (config?.gestureNavigation !== false) {
+    installGestures({
+      windowOf: (el) => views.windowOf(el),
+      contentOf: (win) => views.contentOf(win.id),
+      enabled: () => !minibuffer.active,
+      navigate: (win, direction) => {
+        model.selected = win.id;
+        void Promise.resolve(commands[direction]()).then(() => views.refresh());
+      },
+    });
+  }
   const problemCount = bindings.problems.length + ctx.problems.length;
   if (problemCount) {
     echo.message(`Configuration: ${problemCount} problem(s) (see C-h b)`);

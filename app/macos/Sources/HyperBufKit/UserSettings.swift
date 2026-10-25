@@ -41,6 +41,8 @@ public struct UserSettings: Sendable, Equatable {
     public var followUpdates = false
     /// Whether to show the Git branch name in the mode line. docs/dev/buffer-model.md §6.9.
     public var modeLineVcsBranch = true
+    /// Whether a two-finger swipe and the mouse back / forward buttons move in the reference history.
+    public var gestureNavigation = true
     /// How the frame title is built (`default`: file name and directory, `simple`: fixed, `filename`: file name only).
     public var frameTitleFormat = FrameTitleFormat.default
     /// Appearance (light / dark). Defaults to following the OS.
@@ -74,6 +76,7 @@ public struct UserSettings: Sendable, Equatable {
         settings.mathUnescapeUnderscore = flag("mathUnescapeUnderscore", settings.mathUnescapeUnderscore)
         settings.followUpdates = flag("followUpdates", settings.followUpdates)
         settings.modeLineVcsBranch = flag("modeLineVcsBranch", settings.modeLineVcsBranch)
+        settings.gestureNavigation = flag("gestureNavigation", settings.gestureNavigation)
         if let raw = object["appearance"] {
             if let name = raw as? String, let value = Appearance(rawValue: name) {
                 settings.appearance = value

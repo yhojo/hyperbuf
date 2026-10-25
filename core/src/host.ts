@@ -29,6 +29,8 @@ export interface HostConfig {
   followUpdates?: boolean;
   /** Show the Git branch name in the mode line (default true; docs/dev/buffer-model.md §6.9). */
   modeLineVcsBranch?: boolean;
+  /** Move in the reference history with a two-finger horizontal swipe and the mouse back / forward buttons (default true). */
+  gestureNavigation?: boolean;
   /** Config problems the shell found (allow paths / warn paths, etc.). Shown under "config problems" in `C-h b`. */
   problems?: string[];
 }

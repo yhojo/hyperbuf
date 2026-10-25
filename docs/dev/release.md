@@ -51,7 +51,7 @@ Verify the notarization result on another Mac (or a new user) for real. **Also v
 
 ## 4. Publishing (GitHub Releases)
 
-**Intended procedure (never run yet; unverified).** Publishing the source and publishing to GitHub Releases are the remaining work of M8 ([migration-plan.md](../history/migration-plan.md)). Before publication, artifacts are handed over through private sharing (distribution to the people involved).
+**Procedure.** Publishing the source and the first public GitHub Release (v1.0.0) are the last steps of M8 ([migration-plan.md](../history/migration-plan.md)). The GitHub Release flow itself was already exercised with the private repository for v0.1.2. Before publication, artifacts are handed over through private sharing (distribution to the people involved).
 
 1. Tag (`v<version>`) the `main` commit from which the real build was made, and push it.
 

@@ -15,12 +15,20 @@ export type HistoryDirection = "back" | "forward";
 
 /** Horizontal distance (px) within `SWIPE_WINDOW_MS` that counts as a swipe. */
 export const SWIPE_THRESHOLD_PX = 70;
-/** Only wheel events this recent (ms) are summed, so earlier vertical scrolling or its inertia does not count against a swipe. */
+/** Only wheel events this recent (ms) are summed, so earlier scrolling does not count toward or against a swipe. */
 export const SWIPE_WINDOW_MS = 250;
-/** The horizontal distance must exceed this multiple of the vertical one in the window (ignores vertical / steep diagonal scrolling). */
-export const SWIPE_DOMINANCE = 1.5;
-/** Horizontal wheel events further apart than this (ms) belong to different swipes. Inertia keeps the previous swipe locked. */
+/** The horizontal distance must exceed this multiple of the vertical one in the window (ignores slightly tilted vertical scrolling). */
+export const SWIPE_DOMINANCE = 2;
+/** Horizontal wheel events further apart than this (ms) belong to different swipes. */
 export const GESTURE_IDLE_MS = 200;
+/**
+ * After a swipe fires, its inertia tail keeps the swipe locked so it does not navigate twice. A new swipe made before the tail
+ * has died out is recognised by the movement speeding up again (a per-event distance of at least `RISE_MIN_PX` and
+ * `RISE_RATIO` times the slowest event since the lock) or by turning around (at least `REVERSE_MIN_PX` the other way).
+ */
+export const RISE_MIN_PX = 10;
+export const RISE_RATIO = 3;
+export const REVERSE_MIN_PX = 8;
 
 /** The scroll-related state of one element on the path from the event target up to the window content. */
 export interface ScrollAxisInfo {
@@ -42,17 +50,21 @@ export function canScrollHorizontally(path: readonly ScrollAxisInfo[], dx: numbe
 
 /**
  * Turns a stream of wheel events into at most one navigation per swipe.
- * A swipe is a stretch of horizontal wheel events with no gap over `GESTURE_IDLE_MS`; once it fires (or starts over something that
- * scrolls horizontally) it stays locked until it ends, so the inertia tail does not navigate twice. Vertical-only events neither
- * start, end or count against a swipe, and only the last `SWIPE_WINDOW_MS` of movement is judged.
+ * A swipe is a stretch of horizontal wheel events with no gap over `GESTURE_IDLE_MS`. Once it fires it stays locked, so the inertia
+ * tail does not navigate twice, until the events stop or a new swipe is recognised inside the tail (see `RISE_MIN_PX`).
+ * A swipe that starts over something that scrolls horizontally is left alone until it ends. Only the last `SWIPE_WINDOW_MS`
+ * of movement is judged, and vertical movement in it counts against the swipe.
  */
 export class SwipeTracker {
   private lastHorizontal = Number.NEGATIVE_INFINITY;
   private recent: { dx: number; dy: number; time: number }[] = [];
-  private locked = false;
+  private lock: "fired" | "blocked" | null = null;
+  private lockSign = 0;
+  /** The smallest horizontal event since the swipe fired (the bottom of its decaying tail). */
+  private slowest = Number.POSITIVE_INFINITY;
 
   /**
-   * Feeds one wheel event. `blocked(dx)` is asked once, when a swipe starts
+   * Feeds one wheel event. `blocked(dx)` is asked once per swipe, when it starts
    * (true: the pointer is over horizontally scrollable content, so the whole swipe is left alone).
    */
   feed(
@@ -62,13 +74,24 @@ export class SwipeTracker {
     blocked: (dx: number) => boolean,
   ): HistoryDirection | null {
     if (dx !== 0) {
-      if (time - this.lastHorizontal > GESTURE_IDLE_MS) this.locked = blocked(dx);
+      const size = Math.abs(dx);
+      if (time - this.lastHorizontal > GESTURE_IDLE_MS) {
+        this.lock = blocked(dx) ? "blocked" : null;
+      } else if (this.lock === "fired") {
+        const turned = Math.sign(dx) !== this.lockSign && size >= REVERSE_MIN_PX;
+        const sped = size >= Math.max(RISE_MIN_PX, RISE_RATIO * this.slowest);
+        if (turned || sped) {
+          this.recent = [];
+          this.lock = blocked(dx) ? "blocked" : null;
+        } else {
+          this.slowest = Math.min(this.slowest, size);
+        }
+      }
       this.lastHorizontal = time;
     }
-    // Vertical-only events (scrolling, its inertia) are not part of a swipe's movement
-    if (dx !== 0) this.recent.push({ dx, dy, time });
+    this.recent.push({ dx, dy, time });
     while (this.recent[0] && time - this.recent[0].time > SWIPE_WINDOW_MS) this.recent.shift();
-    if (this.locked || dx === 0) return null;
+    if (this.lock || dx === 0) return null;
     let sumX = 0;
     let sumY = 0;
     for (const e of this.recent) {
@@ -77,7 +100,9 @@ export class SwipeTracker {
     }
     if (Math.abs(sumX) < SWIPE_THRESHOLD_PX) return null;
     if (Math.abs(sumX) < SWIPE_DOMINANCE * Math.abs(sumY)) return null;
-    this.locked = true;
+    this.lock = "fired";
+    this.lockSign = Math.sign(sumX);
+    this.slowest = Math.abs(dx);
     this.recent = [];
     // Fingers moving right scroll the content left (negative deltaX): that is "back", as in Safari
     return sumX < 0 ? "back" : "forward";

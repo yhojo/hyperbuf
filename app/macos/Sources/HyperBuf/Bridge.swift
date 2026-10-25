@@ -104,6 +104,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
                     "mathUnescapeUnderscore": settings.mathUnescapeUnderscore,
                     "followUpdates": settings.followUpdates,
                     "modeLineVcsBranch": settings.modeLineVcsBranch,
+                    "gestureNavigation": settings.gestureNavigation,
                     "problems": access.policy.problems + settings.problems,
                 ], nil)
         case "load-session":

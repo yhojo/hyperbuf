@@ -21,6 +21,15 @@ import Testing
         #expect(try load(t, "{}") == UserSettings())
     }
 
+    @Test func gestureNavigationDefaultsToOnAndRejectsNonBoolean() throws {
+        let t = try TempProject()
+        defer { t.remove() }
+        #expect(try load(t, "{}").gestureNavigation)
+        #expect(try !load(t, #"{"gestureNavigation": false}"#).gestureNavigation)
+        let bad = try load(t, #"{"gestureNavigation": 0}"#)
+        #expect(bad.gestureNavigation && bad.problems.count == 1)
+    }
+
     @Test func appearanceDefaultsToSystemAndAcceptsThreeValues() throws {
         let t = try TempProject()
         defer { t.remove() }

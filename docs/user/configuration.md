@@ -21,6 +21,7 @@ All the settings you write live in a single file.
 | `mathUnescapeUnderscore` | boolean             | `true`                           | [Document display](#document-display)                         |
 | `followUpdates`          | boolean             | `false`                          | [Document display](#document-display)                         |
 | `modeLineVcsBranch`      | boolean             | `true`                           | [Project root](#project-root)                                 |
+| `gestureNavigation`      | boolean             | `true`                           | [Gestures](#gestures-gesturenavigation)                       |
 | `restoreSession`         | boolean             | `true`                           | [Restoring the previous state](#restoring-the-previous-state) |
 | `warnPaths`              | array of strings    | built-in list (see below)        | [File access](#file-access)                                   |
 | `allowPaths`             | array of strings    | built-in list (see below)        | [File access](#file-access)                                   |
@@ -45,6 +46,7 @@ All the settings you write live in a single file.
   "mathUnescapeUnderscore": true,
   "followUpdates": false,
   "modeLineVcsBranch": true,
+  "gestureNavigation": true,
   "appearance": "system",
   "alpha": [100, 100],
   "frameTitleFormat": "default",
@@ -86,8 +88,8 @@ All the settings you write live in a single file.
 
 ## Frame title (`frameTitleFormat`)
 
-| Key                | Type   | Meaning                                                                                                                                                                                                                 |
-| ------------------ | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Key                | Type   | Meaning                                                                                                                                          |
+| ------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `frameTitleFormat` | string | `"default"` (the **default**; `README.md — hyperbuf/docs/user`), `"simple"` (a fixed `HyperBuf`), `"filename"` (the file name only, `README.md`) |
 
 - The title shows the buffer of the selected window. With `default`, the directory is written relative to the project root and starts with the root's name (`hyperbuf/docs/user`); outside a project it is the directory with `~` for your home. More than four components are cut from the front (`…/b/c/d`).
@@ -104,6 +106,16 @@ All the settings you write live in a single file.
 
 - `mathUnescapeUnderscore`: Marked 2 and similar tools remove Markdown backslash escapes before rendering math, so `$x\_1$` becomes the subscript `x_1`. In TeX, `\_` is "an underscore as a character", but with this compatibility, math in which `_` was written as `\_` for Markdown's sake reads as intended. A `\_` inside the arguments of `\text{…}`, `\mathrm{…}` and the like stays a literal underscore. With `false`, TeX rules apply exactly.
 - `followUpdates`: you can toggle it on the spot with `C-x x u` (`toggle-follow-updates`) (the toggle lasts until the app quits and does not change the setting). While it is on, `[Follow]` appears in the mode line. The place jumped to is briefly highlighted.
+
+## Gestures (`gestureNavigation`)
+
+| Key                 | Type    | Meaning                                                                                                                             |
+| ------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `gestureNavigation` | boolean | Whether a two-finger horizontal swipe and the mouse back / forward buttons move in the reference history. **The default is `true`** |
+
+- Swiping right goes back and swiping left goes forward (the direction with macOS "Natural scrolling" on). The mouse's back / forward buttons (buttons 4 and 5) do the same. They act on the window under the pointer, like `back` / `forward`.
+- A swipe that starts over something that can still scroll horizontally (a wide table or code block) scrolls it instead. One swipe moves one step, and the inertia after it does not move further.
+- Set it to `false` to turn the gestures off, for example if horizontal scrolling on a trackpad triggers them by accident. The keys (`C-b` / `C-f`, `←` / `→`, `Cmd+[` / `Cmd+]`) are not affected.
 
 ## Restoring the previous state
 

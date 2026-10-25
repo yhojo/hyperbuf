@@ -111,6 +111,15 @@ export class Views {
     return this.views.get(winId)?.content;
   }
 
+  /** The window whose body contains the element (null if none). */
+  windowOf(el: Element): Win | null {
+    for (const [id, view] of this.views) {
+      if (view.content.contains(el))
+        return windows(this.opts.model).find((w) => w.id === id) ?? null;
+    }
+    return null;
+  }
+
   /** Scrolls the selected window to the given position (top edge). */
   scrollTo(top: number): void {
     this.selected().content.scrollTo({ top });

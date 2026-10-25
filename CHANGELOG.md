@@ -10,7 +10,7 @@ Versions are not yet strictly semantic: 0.x releases may change behavior between
 
 - The frame title now shows the file name and its directory, relative to the project root when there is one (`README.md — hyperbuf/docs/user`). The new setting `frameTitleFormat` chooses `"default"`, `"simple"` (the old fixed `HyperBuf`) or `"filename"`.
 
-- A two-finger horizontal swipe on the trackpad (right = back, left = forward) and the mouse back / forward buttons now move in the reference history. A swipe over a horizontally scrollable table or code block scrolls it instead. The new setting `gestureNavigation` (default `true`) turns the gestures off.
+- The system "Swipe between pages" gesture on the trackpad and the mouse back / forward buttons now move in the reference history. The new setting `gestureNavigation` (default `true`) turns the gestures off.
 
 ### Changed
 

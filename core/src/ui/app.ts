@@ -5,7 +5,14 @@
 // and events from the host.
 
 import type { HostConfig, HyperbufHost } from "../host.ts";
-import { createModel, currentEntry, isVirtualPath, openBuffer, windows } from "../model.ts";
+import {
+  createModel,
+  currentEntry,
+  isVirtualPath,
+  openBuffer,
+  selectedWindow,
+  windows,
+} from "../model.ts";
 import type { Model } from "../model.ts";
 import type { Renderer } from "../pipeline.ts";
 import { createCommands } from "./commands.ts";
@@ -148,7 +155,7 @@ export async function startApp(options: {
   if (config?.gestureNavigation !== false) {
     installGestures({
       windowOf: (el) => views.windowOf(el),
-      contentOf: (win) => views.contentOf(win.id),
+      selected: () => selectedWindow(model),
       enabled: () => !minibuffer.active,
       navigate: (win, direction) => {
         model.selected = win.id;

@@ -23,6 +23,8 @@ struct WebShell: NSViewRepresentable {
                 source: Bridge.script(home: frame.access.home), injectionTime: .atDocumentStart,
                 forMainFrameOnly: true))
         let view = EditorWebView(frame: .zero, configuration: config)
+        // The Web core keeps carrier entries in WebKit's history so this gesture can drive the reference history (setting `gestureNavigation`)
+        view.allowsBackForwardNavigationGestures = UserSettings.load().gestureNavigation
         view.editMenuTitle = frame.editorConfig.menuTitle
         view.onEditRequested = { [weak frame] in frame?.requestEdit() }
         #if DEBUG

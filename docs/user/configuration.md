@@ -113,8 +113,7 @@ All the settings you write live in a single file.
 | ------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `gestureNavigation` | boolean | Whether a two-finger horizontal swipe and the mouse back / forward buttons move in the reference history. **The default is `true`** |
 
-- Swiping right goes back and swiping left goes forward (the direction with macOS "Natural scrolling" on). The mouse's back / forward buttons (buttons 4 and 5) do the same. They act on the window under the pointer, like `back` / `forward`.
-- A swipe that starts over something that can still scroll horizontally (a wide table or code block) scrolls it instead. One swipe moves one step, and the inertia after it does not move further.
+- The swipe is macOS's own "Swipe between pages" gesture, so the direction and the animation follow the system setting (System Settings → Trackpad → More Gestures). The mouse's back / forward buttons (buttons 4 and 5) also work. Both act like `back` / `forward`: a swipe acts on the selected window, a mouse button on the window under the pointer.
 - Set it to `false` to turn the gestures off, for example if horizontal scrolling on a trackpad triggers them by accident. The keys (`C-b` / `C-f`, `←` / `→`, `Cmd+[` / `Cmd+]`) are not affected.
 
 ## Restoring the previous state

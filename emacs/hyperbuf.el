@@ -18,7 +18,7 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; Version: 0.1.2
+;; Version: 1.0.0
 ;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: tools, docs
 

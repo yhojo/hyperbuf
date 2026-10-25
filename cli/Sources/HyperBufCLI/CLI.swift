@@ -5,7 +5,7 @@ import Foundation
 import HyperBufIPC
 import HyperBufProtocol
 
-public let cliVersion = "0.1.2"
+public let cliVersion = "1.0.0"
 
 /// The body of the `hyperbuf` command. I/O, environment and requests to the app are injectable, for testing.
 public struct CLI: Sendable {

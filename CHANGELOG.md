@@ -2,9 +2,13 @@
 
 All notable changes to HyperBuf are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-Versions are not yet strictly semantic: 0.x releases may change behavior between minor versions.
+This project adheres to [Semantic Versioning](https://semver.org/) from 1.0.0 on.
 
 ## [Unreleased]
+
+## [1.0.0] - 2026-10-25
+
+First stable release. Changes since 0.1.2.
 
 ### Added
 

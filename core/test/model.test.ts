@@ -233,3 +233,15 @@ test("mode line right edge boundary: in a left/right split, only the left window
   assert.equal(boundaryRight(m, right), null);
   assert.equal(boundaryBelow(m, left), null);
 });
+
+test("the selected link is kept on the history entry across back / forward", () => {
+  const m = setup();
+  const w = selectedWindow(m);
+  const a = currentEntry(w);
+  assert.ok(a);
+  a.link = 1;
+  visit(m, w, "b.md");
+  assert.equal(currentEntry(w)?.link, undefined);
+  back(m, w);
+  assert.equal(currentEntry(w)?.link, 1);
+});

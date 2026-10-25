@@ -18,6 +18,8 @@ Versions are not yet strictly semantic: 0.x releases may change behavior between
 
 ### Fixed
 
+- TAB / S-TAB now continue from the link you selected before following a link and coming back (`C-b`). The selected link is remembered per history entry; it used to be forgotten, so TAB jumped to the first link on screen.
+
 - The Up / Down arrow keys now scroll the selected window by a line (like `C-p` / `C-n`). They used to be unbound and relied on native scrolling, which stopped working when focus was not on the document, for example after moving through the history or right after opening a document.
 
 ### Security

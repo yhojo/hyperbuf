@@ -6,10 +6,12 @@
 //
 //  - On every input, recount matches and select the first match at or after the reference position
 //  - C-s goes next, C-r previous (at an end, wraps to the opposite end: "Wrapped"). C-s with an empty query uses the previous query
+//  - C-w adds the word after the current match to the query; M-< / M-> go to the first / last match;
+//    M-p / M-n recall earlier queries. Other keys edit the query (the minibuffer's line editing)
 //  - RET: stay at that position (the match stays selected). C-g / ESC: return to where the search started
 //  - A query containing uppercase is case-sensitive (otherwise case-insensitive)
 
-import { findAll, firstMatch, isCaseSensitive, step } from "../isearch.ts";
+import { findAll, firstMatch, isCaseSensitive, step, wordAfter } from "../isearch.ts";
 import type { AppContext } from "./context.ts";
 
 export interface TextIndex {
@@ -167,29 +169,52 @@ export async function startIsearch(ctx: AppContext, direction: 1 | -1): Promise<
     show(first.wrapped);
   };
 
-  const session = minibuffer.live(labelOf(), {
-    onInput(text, composing) {
-      // For input that does not change the query (e.g. confirming Japanese input), do not search again (the selected match would move)
-      if (text === query && current !== null) return;
-      // When the input changes, search again from the reference position
-      search(text, anchor, composing);
-    },
-    onKey(name) {
-      if (name !== "C-s" && name !== "C-r") return false;
-      dir = name === "C-s" ? 1 : -1;
-      if (!query && lastQuery) {
-        // When the query is empty, use the previous query
-        session.setText(lastQuery);
-        search(lastQuery, anchor);
+  const session = minibuffer.live(
+    labelOf(),
+    {
+      onInput(text, composing) {
+        // For input that does not change the query (e.g. confirming Japanese input), do not search again (the selected match would move)
+        if (text === query && current !== null) return;
+        // When the input changes, search again from the reference position
+        search(text, anchor, composing);
+      },
+      onKey(name) {
+        if (name === "C-w") {
+          // Nothing to extend while failing. With an empty query, start from where the search started
+          if (query && current === null) return true;
+          const match = current === null ? undefined : matches[current];
+          const added = wordAfter(index.text, match === undefined ? anchor : match + query.length);
+          if (!added) return true;
+          // As in Emacs: adding a word does not turn the search case-sensitive
+          const next = query + (isCaseSensitive(query) ? added : added.toLowerCase());
+          session.setText(next);
+          search(next, anchor);
+          return true;
+        }
+        if (name === "M-<" || name === "M->") {
+          if (!matches.length) return true;
+          current = name === "M-<" ? 0 : matches.length - 1;
+          remember();
+          show(false);
+          return true;
+        }
+        if (name !== "C-s" && name !== "C-r") return false;
+        dir = name === "C-s" ? 1 : -1;
+        if (!query && lastQuery) {
+          // When the query is empty, use the previous query
+          session.setText(lastQuery);
+          search(lastQuery, anchor);
+          return true;
+        }
+        const next = step(matches.length, current, dir);
+        current = next.index;
+        remember();
+        show(next.wrapped);
         return true;
-      }
-      const next = step(matches.length, current, dir);
-      current = next.index;
-      remember();
-      show(next.wrapped);
-      return true;
+      },
     },
-  });
+    { history: "isearch" },
+  );
 
   const accepted = await session.done;
   clearHighlights();

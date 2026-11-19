@@ -8,7 +8,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) from 1.0.0 on
 
 ### Added
 
-- The minibuffer's input line is now edited with the Emacs keys: `M-f` / `M-b` (word movement), `C-d`, `M-d` / `M-DEL` (kill a word; `M-DEL` in a path stops at `/`), `C-k`, `C-u`, `C-w` / `M-w` (kill / copy the selected text), `C-y` and `M-y`, with a kill ring. As in Emacs.app, kills go to the system clipboard and `C-y` yanks what another application copied (its first line). The keys are fixed and do not apply to incremental search (`C-s` / `C-r`) yet. Option + letter used to type a character such as `ƒ`.
+- The minibuffer's input line is now edited with the Emacs keys: `M-f` / `M-b` (word movement), `C-d`, `M-d` / `M-DEL` (kill a word; `M-DEL` in a path stops at `/`), `C-k`, `C-u`, `C-w` / `M-w` (kill / copy the selected text), `C-y` and `M-y`, with a kill ring. As in Emacs.app, kills go to the system clipboard and `C-y` yanks what another application copied (its first line). The keys are fixed. Option + letter used to type a character such as `ƒ`.
+
+- Incremental search (`C-s` / `C-r`): the search term is edited with the same Emacs keys as other minibuffer input, so `C-y` searches for what another application copied. `C-w` adds the word after the current match to the term, `M-<` / `M->` go to the first / last match, and `M-p` / `M-n` recall earlier search terms (the history used to hold only the last term).
 
 ### Fixed
 

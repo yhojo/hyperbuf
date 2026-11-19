@@ -226,6 +226,59 @@ check("C-s repeated then RET: the highlighted match stays selected (it does not 
 check("Even after leaving with C-g, the next C-s C-s uses that search term", r2["reused"]["text"] == "参照", r2["reused"])
 check("Only search terms containing uppercase are case-sensitive", r["lower"].startswith("[1/") and r["upper"] == "Failing", r)
 
+print("Incremental search: editing the term, C-w, M-< / M->, history")
+r = run("""
+await hb.open(P + '/long.md'); await sleep(300); content().scrollTop = 0; await sleep(50);
+const state = () => ({ text: input().value, at: input().selectionStart, ...mini() });
+await fire('s','KeyS',{ctrlKey:true}); typeIn('セクション 2'); await sleep(80);
+const before = state();
+pressIn('Backspace','Backspace',{altKey:true}); await sleep(80); const wordKilled = state();
+pressIn('y','KeyY',{ctrlKey:true}); await sleep(250); const yanked = state();
+pressIn('a','KeyA',{ctrlKey:true}); pressIn('k','KeyK',{ctrlKey:true}); await sleep(80); const cleared = state();
+typeIn('セクション'); await sleep(80);
+pressIn('.','Period',{altKey:true, shiftKey:true}); await sleep(80); const last = state();
+pressIn(',','Comma',{altKey:true, shiftKey:true}); await sleep(80); const first = state();
+pressIn('w','KeyW',{ctrlKey:true}); await sleep(80); const extended = state();
+const extendedHl = String(CSS.highlights.get('hb-search-current')?.values().next().value ?? '');
+pressIn('w','KeyW',{ctrlKey:true}); await sleep(80); const atBlockEnd = state();
+pressIn('s','KeyS',{ctrlKey:true}); await sleep(80);
+pressIn('w','KeyW',{ctrlKey:true}); await sleep(80); const extendedTwice = state();
+typeIn('存在しない語zzz'); await sleep(80);
+pressIn('w','KeyW',{ctrlKey:true}); await sleep(80); const failing = state();
+pressIn('g','KeyG',{ctrlKey:true}); await sleep(80);
+await fire('s','KeyS',{ctrlKey:true}); typeIn('本文'); await sleep(80); pressIn('Enter','Enter'); await sleep(80);
+await fire('s','KeyS',{ctrlKey:true});
+pressIn('π','KeyP',{altKey:true}); await sleep(80); const recalled1 = state();
+pressIn('π','KeyP',{altKey:true}); await sleep(80); const recalled2 = state();
+pressIn('˜','KeyN',{altKey:true}); pressIn('˜','KeyN',{altKey:true}); await sleep(80); const back = state();
+pressIn('g','KeyG',{ctrlKey:true}); await sleep(80);
+// With a Japanese input source M-p starts a conversion holding π, which is cancelled before the key is handled
+const imeMetaP = async () => {
+  input().dispatchEvent(new CompositionEvent('compositionstart')); input().value += 'π';
+  input().dispatchEvent(new InputEvent('input', { isComposing: true }));
+  pressIn('π','KeyP',{altKey:true, isComposing:true}); await sleep(100);
+};
+await fire('s','KeyS',{ctrlKey:true}); await imeMetaP(); await imeMetaP(); const imeRecalled = state();
+pressIn('g','KeyG',{ctrlKey:true}); await sleep(80);
+content().scrollTop = 0; await sleep(50);
+await fire('s','KeyS',{ctrlKey:true}); pressIn('w','KeyW',{ctrlKey:true}); await sleep(80); const fromEmpty = state();
+const top = content().textContent.trim().slice(0, fromEmpty.text.length).toLowerCase();
+pressIn('g','KeyG',{ctrlKey:true}); await sleep(80);
+return JSON.stringify({ before, wordKilled, yanked, cleared, last, first, extended, extendedHl, atBlockEnd, extendedTwice, failing, recalled1, recalled2, back, imeRecalled, fromEmpty, top });
+""")
+total = r["first"]["count"].split("/")[-1].rstrip("]")
+check("M-DEL kills the last word of the term and the search follows", r["wordKilled"]["text"] == "セクション " and r["wordKilled"]["count"] != r["before"]["count"], (r["before"], r["wordKilled"]))
+check("C-y yanks it back and the search follows", r["yanked"]["text"] == "セクション 2" and r["yanked"]["count"] == r["before"]["count"], r["yanked"])
+check("C-a C-k empties the term (no match count)", r["cleared"]["text"] == "" and r["cleared"]["count"] == "", r["cleared"])
+check("M-> goes to the last match and M-< to the first", r["last"]["count"] == f"[{total}/{total}]" and r["first"]["count"] == f"[1/{total}]", (r["last"], r["first"]))
+check("C-w adds the word after the current match, which stays the current match", r["extended"]["text"].startswith("セクション") and len(r["extended"]["text"]) > 5 and r["extended"]["count"].startswith("[1/") and r["extendedHl"] == r["extended"]["text"], (r["extended"], r["extendedHl"]))
+check("C-w at the end of a block (the heading) adds nothing", r["atBlockEnd"]["text"] == r["extended"]["text"], r["atBlockEnd"])
+check("C-w on the next match (in a paragraph) adds the next word", len(r["extendedTwice"]["text"]) > len(r["extended"]["text"]) and r["extendedTwice"]["text"].startswith(r["extended"]["text"]) and r["extendedTwice"]["count"].startswith("[1/"), r["extendedTwice"])
+check("C-w does nothing while the search is failing", r["failing"]["text"] == "存在しない語zzz" and r["failing"]["count"] == "Failing", r["failing"])
+check("M-p recalls earlier search terms (cancelled ones too), M-n comes back", r["recalled1"]["text"] == "本文" and r["recalled2"]["text"] == "存在しない語zzz" and r["back"]["text"] == "" and r["recalled1"]["count"].startswith("["), (r["recalled1"], r["recalled2"], r["back"]))
+check("M-p pressed twice with a Japanese input source walks the history two steps (the cancelled conversion does not restart it)", r["imeRecalled"]["text"] == r["recalled2"]["text"], r["imeRecalled"])
+check("C-w with an empty term takes the first word at the top of the window", len(r["fromEmpty"]["text"]) > 0 and r["fromEmpty"]["text"] == r["top"] and r["fromEmpty"]["count"].startswith("[1/"), (r["fromEmpty"], r["top"]))
+
 print("Outline-style heading navigation and scrolling")
 r = run("""
 await hb.open(P + '/long.md'); await sleep(300);

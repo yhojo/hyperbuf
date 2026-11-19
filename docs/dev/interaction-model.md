@@ -170,8 +170,38 @@ HyperBuf has no editing mode: documents are never edited, and a buffer has no cu
 - **Clipboard:** as in Emacs.app, a kill or copy also writes the system clipboard, and `C-y` first takes the clipboard's text into the ring when another application changed it. The Web core reads and writes the clipboard only through the host contract ([architecture.md](architecture.md) §4). Only the first non-empty line of clipboard text is used, because the input is a single line.
 - **No undo and no mark:** `C-/` and `C-SPC` are not provided. The region for `C-w` / `M-w` is the selection made with Shift + arrow keys or the mouse; without a selection they do nothing. `Cmd-C` / `Cmd-V` / `Cmd-X` / `Cmd-Z` keep their macOS behavior.
 - **IME:** no line-editing key is handled while a conversion is in progress (§6.1).
-- **Incremental search is not covered yet.** In Emacs, isearch gives several of these keys a different meaning (`C-w` adds the word at point to the search term), so the keys for `C-s` / `C-r` are to be decided separately. Until then the search input keeps the WebView's default behavior.
+- **Incremental search** uses the same keys, except that `C-w` has the isearch meaning there (§6.4).
 - Implementation: `core/src/lineedit.ts` (no DOM; the keys, the kill ring) and `core/src/ui/minibuffer.ts` (applies the result to the input field).
+
+### 6.4 Incremental search (`C-s` / `C-r`)
+
+Searches the document shown in the selected window while the search term is typed in the minibuffer.
+
+**The search term is a line that is edited**, unlike Emacs isearch, where editing keys leave the search. A text field is needed for Japanese input, and a buffer has no cursor to return to, so the model is the one of the other minibuffer input: type and edit the term, and the matches follow.
+
+- **What is searched:** the displayed text (after rendering), not the original Markdown. The MathML copy of math and diagrams (SVG) are skipped. A match never spans blocks (paragraphs, list items, headings, table cells, …).
+- **Matching:** the term as a literal string. It is case-sensitive only when it contains an uppercase letter.
+- **Where the search starts:** the first text visible at the top of the window. Each change of the term selects the first match at or after the current match (or the start position).
+- **Display:** the count as `[3/12]`, `Wrapped` after passing an end, `Failing` when nothing matches. All matches are highlighted (up to 2000), the current one distinctly.
+- **Ending:** `RET` stays there and leaves the match selected (it becomes the target of "edit in editor"). `C-g` / `ESC` return to the position where the search started.
+- **The reference history is not touched** (§4.2.1).
+- **Keys:**
+
+  | Key           | Operation                                                                               |
+  | ------------- | --------------------------------------------------------------------------------------- |
+  | `C-s` / `C-r` | Next / previous match (wraps at the ends). With an empty term, recalls the previous one |
+  | `M-<` / `M->` | First / last match                                                                      |
+  | `C-w`         | Add the word that follows the current match to the term                                 |
+  | `M-p` / `M-n` | Recall earlier / later search terms                                                     |
+  | `RET`         | End the search at the match                                                             |
+  | `C-g` / `ESC` | Cancel and return to the start                                                          |
+
+  The line-editing keys of §6.3 apply to the term, except `C-w`. Search keys take priority over line-editing keys.
+
+- **`C-w`** extends the term with the document text from the end of the current match to the end of the next word (with an empty term, from the start position). Words follow `Intl.Segmenter` word segmentation, as in `count-words` (§6.2), so Japanese text is taken a word at a time. It stops at the end of the block and does nothing when the search is failing. The added text is lowercased unless the term already contains an uppercase letter, so adding a word does not turn the search case-sensitive. It does not use the kill ring; to remove part of the term use `C-k`, `C-u`, `M-DEL` or `Cmd-X`.
+- **`C-y`** inserts the newest kill or the clipboard's text into the term (§6.3), which is how a word copied in another application is searched for.
+- **History:** search terms are kept like other minibuffer input history (50 entries, in memory, not saved in the session). A term is remembered when the search ends, by `RET` or by `C-g`.
+- Implementation: `core/src/isearch.ts` (matching, stepping; no DOM) and `core/src/ui/isearch-dom.ts` (text index, highlighting, scrolling).
 
 ## 7. Design decisions and open questions
 

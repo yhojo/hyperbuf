@@ -6,6 +6,14 @@ This project adheres to [Semantic Versioning](https://semver.org/) from 1.0.0 on
 
 ## [Unreleased]
 
+### Added
+
+- The minibuffer's input line is now edited with the Emacs keys: `M-f` / `M-b` (word movement), `C-d`, `M-d` / `M-DEL` (kill a word; `M-DEL` in a path stops at `/`), `C-k`, `C-u`, `C-w` / `M-w` (kill / copy the selected text), `C-y` and `M-y`, with a kill ring. As in Emacs.app, kills go to the system clipboard and `C-y` yanks what another application copied (its first line). The keys are fixed and do not apply to incremental search (`C-s` / `C-r`) yet. Option + letter used to type a character such as `ƒ`.
+
+### Fixed
+
+- With a Japanese input source, Option + letter in the minibuffer (`M-p` / `M-n`, and the new word keys) no longer starts a conversion holding a symbol such as `∫`; the key works as Meta. Cancelling a dead key's conversion (`M-n`, `M-e`) now keeps the cursor where it was.
+
 ## [1.0.0] - 2026-10-25
 
 First stable release. Changes since 0.1.2.

@@ -120,7 +120,7 @@ The history of the original window is copied to the new window (similar to dupli
 - Every operation is defined as a **named command**, and a keymap is a mapping from key sequences to commands. `M-x` runs a command by name.
 - Prefixes (such as `C-x`) are handled by a state machine. While waiting for input, the intermediate state is shown on screen.
 - Input for search, `C-x b` candidate selection, `M-x` and the like is done **in the minibuffer at the bottom of the frame, without showing a dialog**.
-- When the minibuffer has focus, its input keymap takes priority. `C-f` / `C-b` and the like go back to character movement, so command keys do not conflict with text input (the same behavior as the Emacs minibuffer).
+- When the minibuffer has focus, its input keymap takes priority. `C-f` / `C-b` and the like go back to character movement, so command keys do not conflict with text input (the same behavior as the Emacs minibuffer). The keys are listed in §6.3.
 - Users can change the keymap (`keybindings` in `config.json`; [configuration.md](../user/configuration.md)).
 
 ### 6.1 The minibuffer and Japanese input (IME)
@@ -130,6 +130,8 @@ Notes for using incremental search while converting Japanese in a WKWebView inpu
 - **The confirming Enter arrives with `keyCode 229`** (in WebKit, it comes after the composition has been committed). Treating it as `RET` makes confirmation and exit happen at once. In the minibuffer, Enter / ESC with `isComposing` or `keyCode 229` is ignored (except with Ctrl, Meta or Alt). An Enter during conversion only confirms, and the next Enter exits.
 - **On confirmation, the input arrives twice, as "empty → confirmed string"**. If the memory of the "current match" is tied to the search term, it is lost at the empty moment and returns to the first match. The base position for searching again is kept separately from the search term.
 - **During composition input (`InputEvent.isComposing`), the base position is not moved.** If it were dragged by the match for an intermediate "さ" in the middle of romaji input, the converted word would be searched from after that position.
+- **Option + key starts a conversion that `preventDefault` cannot stop.** Option is Meta, but macOS also types with it: dead keys (`M-n` is `˜`, `M-e` is `´`) and, with a Japanese input source, every Option + letter (`M-b` holds `∫`). The minibuffer cancels such a conversion and puts the line back as it was. The events arrive in either order: `keydown` then `compositionstart` (the key has already been handled), or `compositionstart` then a `keydown` marked as composing (`keyCode 229`; the key is delivered again as a plain one after the cancellation).
+- **A text field does not scroll to a cursor moved by script.** After a line-editing key (§6.3) the minibuffer measures the cursor position and scrolls the field itself.
 - **Creating or clearing a selection in the document takes focus away from the input field** (WKWebView). The highlight during input is drawn only with the CSS Custom Highlight API, and the selection is made after confirmation.
 
 ### 6.2 `count-words` (`M-=`)
@@ -140,6 +142,36 @@ Shows the number of lines, words and characters of the selection (the whole docu
 - **What is counted is the displayed text (after rendering)**, not the original Markdown. As a viewer, appearance takes priority. Markdown symbols, URLs, images and diagrams (SVG) are not counted; code blocks, table cells, link text and math are counted. To measure the original Markdown, use Emacs `count-words`.
 - Lines are the number of non-empty lines (a paragraph, a list item, a table row and a line of code each count as one line). Words follow `Intl.Segmenter` word segmentation (dictionary-based for Japanese and similar). Characters are the number of code points, including one newline for each line break between lines and excluding blank lines. The number in parentheses counts the characters with all whitespace (newlines included) removed.
 - **Showing the character count of the selection in the mode line in real time is not implemented.** This follows the Emacs culture that a minimal UI is enough. Count with `M-=` when needed.
+
+### 6.3 Line editing in the minibuffer
+
+HyperBuf has no editing mode: documents are never edited, and a buffer has no cursor. **The one place where text is edited is the single line typed into the minibuffer** (a command name, a file name, a search term). This is not an exception to the non-goal "Markdown editing"; it is the scope of that non-goal made explicit.
+
+- **Scope:** the minibuffer's input line only. No line-editing key acts on a buffer or a window.
+- **Not commands:** the line-editing keys are a fixed input keymap. They are not named commands, do not appear in `M-x` or `C-h b`, and cannot be changed with `keybindings` in `config.json`. This keeps one meaning per key in the global keymap (`C-f` is `forward` there, and character movement only in the input line).
+- **Keys:**
+
+  | Key             | Operation                                                                            |
+  | --------------- | ------------------------------------------------------------------------------------ |
+  | `C-a` / `C-e`   | Beginning / end of the line                                                          |
+  | `C-f` / `C-b`   | Forward / backward one character                                                     |
+  | `M-f` / `M-b`   | Forward / backward one word                                                          |
+  | `C-d`           | Delete the next character (or the selection); not a kill                             |
+  | `M-d` / `M-DEL` | Kill the next / previous word                                                        |
+  | `C-k`           | Kill to the end of the line                                                          |
+  | `C-u`           | Kill to the beginning of the line                                                    |
+  | `C-w`           | Kill the text selected in the input line                                             |
+  | `M-w`           | Copy the text selected in the input line                                             |
+  | `C-y`           | Yank                                                                                 |
+  | `M-y`           | Replace the text just yanked with the previous kill (only right after `C-y` / `M-y`) |
+
+- **Words** are runs of letters and digits (Unicode). Everything else separates words, so `M-DEL` in a path deletes back to the previous `/`.
+- **Kill ring:** one ring for all minibuffer input in a frame, kept in memory only (not saved in the session), up to 20 entries. Consecutive kills are joined into one entry, as in Emacs.
+- **Clipboard:** as in Emacs.app, a kill or copy also writes the system clipboard, and `C-y` first takes the clipboard's text into the ring when another application changed it. The Web core reads and writes the clipboard only through the host contract ([architecture.md](architecture.md) §4). Only the first non-empty line of clipboard text is used, because the input is a single line.
+- **No undo and no mark:** `C-/` and `C-SPC` are not provided. The region for `C-w` / `M-w` is the selection made with Shift + arrow keys or the mouse; without a selection they do nothing. `Cmd-C` / `Cmd-V` / `Cmd-X` / `Cmd-Z` keep their macOS behavior.
+- **IME:** no line-editing key is handled while a conversion is in progress (§6.1).
+- **Incremental search is not covered yet.** In Emacs, isearch gives several of these keys a different meaning (`C-w` adds the word at point to the search term), so the keys for `C-s` / `C-r` are to be decided separately. Until then the search input keeps the WebView's default behavior.
+- Implementation: `core/src/lineedit.ts` (no DOM; the keys, the kill ring) and `core/src/ui/minibuffer.ts` (applies the result to the input field).
 
 ## 7. Design decisions and open questions
 

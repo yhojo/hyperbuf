@@ -162,6 +162,13 @@ export interface HyperbufHost {
    * @returns whether the approval was accepted (if accepted, it can be read)
    */
   confirmOpen?(id: string, accepted: boolean): Promise<boolean>;
+  /**
+   * The system clipboard's plain text (null if it holds no text). The shell limits the length.
+   * Used only by the minibuffer's line editing (`C-y`; docs/dev/interaction-model.md §6.3). When absent, the kill ring works on its own.
+   */
+  readClipboard?(): Promise<string | null>;
+  /** Puts plain text on the system clipboard (a kill or copy in the minibuffer). The shell limits the length. */
+  writeClipboard?(text: string): void;
   /** Signal that the Web core is ready. Requests that arrived before this are delivered after it. */
   ready?(): void;
   /** Diagnostic log (for development). */

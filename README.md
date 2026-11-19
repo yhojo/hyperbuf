@@ -88,7 +88,7 @@ For the structure and the technology choices see [docs/dev/architecture.md](docs
 
 ## Non-goals
 
-- Building a full-featured Markdown editor. Editing is left to existing editors such as Emacs.
+- Building a full-featured Markdown editor. Editing is left to existing editors such as Emacs. (The only text edited inside HyperBuf is the line typed into the minibuffer.)
 - Requiring a proprietary note format, a sync service or a cloud account.
 - Fully supporting every Markdown dialect and plugin from day one.
 - Including whole Git clients, IDEs or knowledge-management services.

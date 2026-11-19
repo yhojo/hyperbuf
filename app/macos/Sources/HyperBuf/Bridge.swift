@@ -65,6 +65,8 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
                 respond: (id, result) => { call({ op: "respond", id, result }); },
                 confirmOpen: (id, accepted) => call({ op: "confirm-open", id, accepted }),
                 frame: (action) => call({ op: "frame", action }),
+                readClipboard: () => call({ op: "read-clipboard" }),
+                writeClipboard: (text) => { call({ op: "write-clipboard", text }); },
                 ready: () => { call({ op: "ready" }); },
                 log: (text) => { call({ op: "log", text }); },
               };
@@ -218,6 +220,12 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
         case "frame":
             model.handleFrameAction(body["action"] as? String ?? "", from: frame)
             replyHandler(nil, nil)
+        case "read-clipboard":
+            // Plain text only, for the minibuffer's line editing (docs/dev/interaction-model.md §6.3)
+            replyHandler(ClipboardText.read(from: Bridge.pasteboard) ?? NSNull(), nil)
+        case "write-clipboard":
+            guard let text = body["text"] as? String else { return replyHandler(nil, "bad request") }
+            replyHandler(nil, ClipboardText.write(text, to: Bridge.pasteboard) ? nil : "cannot write")
         case "ready":
             frame.pageDidBecomeReady()
             onReady?()
@@ -232,6 +240,17 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
         default:
             replyHandler(nil, "unknown op")
         }
+    }
+
+    /// The pasteboard the Web core's clipboard operations use: the system clipboard.
+    /// Debug builds use the pasteboard named by `HYPERBUF_TEST_PASTEBOARD` instead, so tests leave the user's clipboard alone.
+    private static var pasteboard: NSPasteboard {
+        #if DEBUG
+            if let name = ProcessInfo.processInfo.environment["HYPERBUF_TEST_PASTEBOARD"], !name.isEmpty {
+                return NSPasteboard(name: NSPasteboard.Name(name))
+            }
+        #endif
+        return .general
     }
 
     #if DEBUG

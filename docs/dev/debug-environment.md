@@ -8,17 +8,18 @@ The user-written settings (`config.json`) are described in [configuration.md](..
 
 Release builds do not read these (so that a user's environment variables cannot redirect storage locations).
 
-| Environment variable     | What it redirects / behavior                                                                                                                                |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `HYPERBUF_CONFIG`        | Location of the settings file (`config.json`)                                                                                                               |
-| `HYPERBUF_SOCKET_PATH`   | Location of the app's socket                                                                                                                                |
-| `HYPERBUF_TRUSTED_ROOTS` | Storage for remembered paths (`trusted-roots.json`; [file-access.md](file-access.md) §4)                                                                    |
-| `HYPERBUF_TRUSTED_SITES` | Storage for remembered sites (`trusted-sites.json`)                                                                                                         |
-| `HYPERBUF_SESSION_DIR`   | Storage for the session (the directory that holds `session.json`; [session-restore.md](session-restore.md))                                                 |
-| `HYPERBUF_TEST_LOG`      | Appends the Web core's diagnostic log to this file                                                                                                          |
-| `HYPERBUF_TEST_OPEN_LOG` | Appends URLs that would have been opened in the browser to this file, without actually opening them                                                         |
-| `HYPERBUF_TEST_COMMANDS` | Runs the `N.js` files placed in this directory in order inside the WebView, and writes the result to `N.result` (used by `scripts/integration-test-ipc.sh`) |
-| `HYPERBUF_TEST_SCRIPT`   | After launch, runs this JavaScript inside the WebView and prints `RESULT: …`. The script must resolve (do not return a pending Promise)                     |
+| Environment variable       | What it redirects / behavior                                                                                                                                |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `HYPERBUF_CONFIG`          | Location of the settings file (`config.json`)                                                                                                               |
+| `HYPERBUF_SOCKET_PATH`     | Location of the app's socket                                                                                                                                |
+| `HYPERBUF_TRUSTED_ROOTS`   | Storage for remembered paths (`trusted-roots.json`; [file-access.md](file-access.md) §4)                                                                    |
+| `HYPERBUF_TRUSTED_SITES`   | Storage for remembered sites (`trusted-sites.json`)                                                                                                         |
+| `HYPERBUF_SESSION_DIR`     | Storage for the session (the directory that holds `session.json`; [session-restore.md](session-restore.md))                                                 |
+| `HYPERBUF_TEST_LOG`        | Appends the Web core's diagnostic log to this file                                                                                                          |
+| `HYPERBUF_TEST_PASTEBOARD` | Name of a pasteboard used instead of the system clipboard for the minibuffer's kill and yank, so tests leave the user's clipboard alone                     |
+| `HYPERBUF_TEST_OPEN_LOG`   | Appends URLs that would have been opened in the browser to this file, without actually opening them                                                         |
+| `HYPERBUF_TEST_COMMANDS`   | Runs the `N.js` files placed in this directory in order inside the WebView, and writes the result to `N.result` (used by `scripts/integration-test-ipc.sh`) |
+| `HYPERBUF_TEST_SCRIPT`     | After launch, runs this JavaScript inside the WebView and prints `RESULT: …`. The script must resolve (do not return a pending Promise)                     |
 
 ## 2. All builds
 

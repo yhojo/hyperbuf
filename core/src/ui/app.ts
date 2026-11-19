@@ -46,7 +46,13 @@ export async function startApp(options: {
   const { host, renderer } = options;
   const model = createModel();
   const echo = createEcho(byId("echo"), byId("status"));
-  const minibuffer = createMinibuffer();
+  // The clipboard is reached only through the host, and only for the minibuffer's line editing
+  const { readClipboard, writeClipboard } = host;
+  const minibuffer = createMinibuffer(
+    readClipboard && writeClipboard
+      ? { read: () => readClipboard.call(host), write: (text) => writeClipboard.call(host, text) }
+      : undefined,
+  );
 
   const views: Views = new Views({
     frame: byId("frame"),

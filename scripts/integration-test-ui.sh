@@ -44,6 +44,7 @@ open -a "$app" \
   --env "HYPERBUF_TRUSTED_SITES=$tmp/sites.json" \
   --env "HYPERBUF_CONFIG=$tmp/config.json" \
   --env "HYPERBUF_TEST_COMMANDS=$tmp/cmd" \
+  --env "HYPERBUF_TEST_PASTEBOARD=com.yhojo.hyperbuf.integration-test.$$" \
   --args "$project"
 
 python3 - <<'PY'
@@ -185,13 +186,25 @@ r6 = run("""
 await hb.open(P + '/long.md'); await sleep(300);
 await fire('x','KeyX',{ctrlKey:true}); await fire('b','KeyB');
 const before = input().value;
-typeIn('ab'); pressIn('Dead','KeyN',{altKey:true}); input().value = 'ab˜';
-input().dispatchEvent(new CompositionEvent('compositionstart')); await sleep(100);
+// The order seen in a real WKWebView: compositionstart, the conversion text, then a keydown marked as composing
+typeIn('ab'); input().dispatchEvent(new CompositionEvent('compositionstart')); input().value = 'ab˜';
+pressIn('Dead','KeyN',{altKey:true, isComposing:true}); await sleep(100);
 const restored = input().value;
+// The opposite order (keydown first) is cancelled too
+typeIn('ab cd'); input().setSelectionRange(2, 2); pressIn('Dead','KeyN',{altKey:true});
+input().dispatchEvent(new CompositionEvent('compositionstart')); input().value = 'ab˜ cd'; await sleep(100);
+const keydownFirst = { text: input().value, at: input().selectionStart };
+// With a Japanese input source every Option+letter starts a conversion; the key still works as Meta
+typeIn('ab cd'); input().setSelectionRange(5, 5);
+input().dispatchEvent(new CompositionEvent('compositionstart')); input().value = 'ab cd∫';
+pressIn('∫','KeyB',{altKey:true, isComposing:true}); await sleep(100);
+const metaKey = { text: input().value, at: input().selectionStart };
 pressIn('g','KeyG',{ctrlKey:true}); await sleep(50);
-return JSON.stringify({ restored });
+return JSON.stringify({ restored, keydownFirst, metaKey });
 """)
 check("Composition started by an Option dead key (such as ˜ of M-n) is cancelled and the input is restored", r6["restored"] == "ab", r6)
+check("The same when the keydown comes before the composition; the cursor stays where it was", r6["keydownFirst"] == {"text": "ab cd", "at": 2}, r6)
+check("M-b during a composition it started itself (Japanese input source) cancels the symbol and moves back a word", r6["metaKey"] == {"text": "ab cd", "at": 3}, r6)
 r2 = run("""
 await hb.open(P + '/long.md'); await sleep(300); content().scrollTop = 0; await sleep(50);
 await fire('s','KeyS',{ctrlKey:true}); typeIn('セクション'); await sleep(80);
@@ -421,6 +434,34 @@ sp = "fixtures/sample-project/"
 check("C-x p f: lists everything under the project root (the top with .git) recursively (paths relative to the root)", r["label"].startswith("Find file in ~/") and r["label"].endswith(r["repoName"] + "/: ") and "README.md" in r["listed"] and sp + "long.md" in r["narrowed"], (r["label"], r["listed"][:8], r["narrowed"][:5]))
 check("Narrow down and open with RET", r["filtered"] and r["filtered"][0].startswith(sp + "rendering/") and "long.md" not in r["header"] and ".md" in r["header"], (r["filtered"], r["header"]))
 check("Typing ../ switches the base and lists files outside the old base too", r["outer"] and "README.md" not in r["outer"] and all("/" in x for x in r["outer"]), r["outer"][:8])
+
+print("Minibuffer line editing (kill ring, clipboard through the shell)")
+r = run("""
+await hb.open(P + '/long.md'); await sleep(300);
+await fire('x','KeyX',{ctrlKey:true}); await fire('b','KeyB');
+typeIn('docs/notes read'); input().setSelectionRange(15, 15);
+const prevented = !pressIn('∫','KeyB',{altKey:true});
+const wordBack = input().selectionStart;
+pressIn('Backspace','Backspace',{altKey:true});
+const killed = { text: input().value, at: input().selectionStart };
+pressIn('e','KeyE',{ctrlKey:true}); pressIn('y','KeyY',{ctrlKey:true}); await sleep(200);
+const yanked = input().value;
+const clip = await window.hyperbufHost.readClipboard();
+typeIn(''); window.hyperbufHost.writeClipboard('other app\\nsecond line'); await sleep(100);
+pressIn('y','KeyY',{ctrlKey:true}); await sleep(200);
+const fromClipboard = input().value;
+pressIn('¥','KeyY',{altKey:true}); await sleep(50);
+const popped = input().value;
+pressIn('a','KeyA',{ctrlKey:true}); pressIn('k','KeyK',{ctrlKey:true}); await sleep(100);
+const lineKilled = { text: input().value, clip: await window.hyperbufHost.readClipboard() };
+pressIn('g','KeyG',{ctrlKey:true}); await sleep(50);
+return JSON.stringify({ prevented, wordBack, killed, yanked, clip, fromClipboard, popped, lineKilled, hidden: mini().hidden });
+""")
+check("M-b moves back a word instead of typing a character", r["prevented"] and r["wordBack"] == 11, r)
+check("M-DEL kills the previous word and stops at the path separator", r["killed"] == {"text": "docs/read", "at": 5}, r["killed"])
+check("C-y yanks the kill, and the kill is on the clipboard", r["yanked"] == "docs/readnotes " and r["clip"] == "notes ", r)
+check("C-y takes the first line of what another app copied; M-y goes back to the previous kill", r["fromClipboard"] == "other app" and r["popped"] == "notes ", r)
+check("C-k kills to the end of the line and writes the clipboard", r["lineKilled"] == {"text": "", "clip": "notes "}, r["lineKilled"])
 
 print("Buffer name uniquify and the origin of virtual buffers (search results)")
 r = run("""

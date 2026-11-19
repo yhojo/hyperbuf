@@ -82,6 +82,7 @@ The policy of treating input as untrusted is realized as follows.
 - **CSP:** `ContentSecurityPolicy` does not allow external communication. The starry-night WASM is bundled, and fetching from the default CDN is disabled.
 - **Diagrams:** Mermaid renders in strict mode. A diagram error does not stop the whole document and is shown in place.
 - **External links:** the shell decides whether to open them in the browser ([configuration.md](../user/configuration.md)).
+- **Clipboard:** the Web core has no direct clipboard access. Reading and writing plain text goes through the host contract (`readClipboard` / `writeClipboard`), and the Web core calls it only from the minibuffer's line-editing keys ([interaction-model.md](interaction-model.md) §6.3). Rendered documents cannot reach it: scripts in documents do not run. The shell passes plain text only, limited in length.
 - **External commands:** only fixed commands configured by the user are run ([edit-location.md](edit-location.md) §7).
 
 ## 5. Main design documents

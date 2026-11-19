@@ -4,11 +4,12 @@
 // Minibuffer. Search, candidate selection and confirmation happen here at the bottom of the screen, not in dialogs.
 // While the input field has focus, C-f/C-b/C-a/C-e etc. edit the input line instead of running commands
 // (same behavior as the Emacs minibuffer). The line-editing keys are a fixed keymap (`../lineedit.ts`,
-// docs/dev/interaction-model.md §6.3), handled in `prompt`; `live` (incremental search) still leaves them to the WebView.
+// docs/dev/interaction-model.md §6.3) in both modes; in `live` the caller's special keys come first.
 //
 // Two modes of use:
 //  - prompt: input with candidates (fuzzy narrowing). M-p / M-n walk the history of inputs of the same kind
-//  - live:   process on every input (incremental search). Special keys (C-s, C-r, etc.) are handled by the caller
+//  - live:   process on every input (incremental search). Special keys (C-s, C-r, etc.) are handled by the caller.
+//            M-p / M-n walk the history here too
 
 import { fuzzyFilter, matchRanges } from "../fuzzy.ts";
 import { keyName } from "../keys.ts";
@@ -86,8 +87,15 @@ export interface Minibuffer {
     candidates?: readonly string[],
     options?: PromptOptions,
   ): Promise<string | null>;
-  /** Mode that processes on every input (incremental search). */
-  live(label: string, handlers: LiveHandlers, initial?: string): LiveSession;
+  /**
+   * Mode that processes on every input (incremental search).
+   * `history`: kind of input history (walked with M-p / M-n); the text is remembered when the session closes, confirmed or not.
+   */
+  live(
+    label: string,
+    handlers: LiveHandlers,
+    options?: { initial?: string; history?: string },
+  ): LiveSession;
 }
 
 /** Puts the candidate string into `parent` with the part matching the query emphasized (textContent, so no HTML injection). */
@@ -206,6 +214,13 @@ export function createMinibuffer(clipboard?: Clipboard): Minibuffer {
   let uncommitted = false;
   /** Undoing a conversion started by an Option key: what it does to the line is not typing. */
   let cancelling = false;
+  /** The `input` event reports the line put back after such a conversion. */
+  let restoring = false;
+  /**
+   * Whether an `input` event is the user changing the line (which ends a walk through the input history).
+   * Not text still in a conversion (it may be an Option key's symbol, cancelled right after), nor the line being put back.
+   */
+  const isTyping = (e: Event): boolean => !restoring && (e as InputEvent).isComposing !== true;
   const cancelComposition = (line: LineState, again: KeyboardEventInit | null): void => {
     cancelling = true;
     setTimeout(() => {
@@ -217,7 +232,9 @@ export function createMinibuffer(clipboard?: Clipboard): Minibuffer {
       cancelling = false;
       // The conversion text went through the `input` handlers: let them see the line as it is again
       applying = true;
+      restoring = true;
       input.dispatchEvent(new Event("input"));
+      restoring = false;
       applying = false;
       if (!again) return;
       redelivering = true;
@@ -290,6 +307,11 @@ export function createMinibuffer(clipboard?: Clipboard): Minibuffer {
     mini.hidden = false;
     input.focus();
   };
+  /** Puts `value` at the front of the input history of `kind`. */
+  const remember = (kind: string, value: string): void => {
+    const kept = [value, ...(histories.get(kind) ?? []).filter((h) => h !== value)];
+    histories.set(kind, kept.slice(0, HISTORY_LIMIT));
+  };
   const close = (): void => {
     active = false;
     cancelCurrent = null;
@@ -347,15 +369,12 @@ export function createMinibuffer(clipboard?: Clipboard): Minibuffer {
           close();
           input.removeEventListener("keydown", onKey);
           input.removeEventListener("input", onInput);
-          if (history && value) {
-            const kept = [value, ...(histories.get(history) ?? []).filter((h) => h !== value)];
-            histories.set(history, kept.slice(0, HISTORY_LIMIT));
-          }
+          if (history && value) remember(history, value);
           resolve(value);
         };
-        const onInput = (): void => {
+        const onInput = (e: Event): void => {
           on = 0;
-          cursor = 0;
+          if (isTyping(e)) cursor = 0;
           void refresh();
         };
         const recall = (step: 1 | -1): void => {
@@ -418,8 +437,19 @@ export function createMinibuffer(clipboard?: Clipboard): Minibuffer {
         void refresh();
       });
     },
-    live(label, handlers, initial = "") {
+    live(label, handlers, { initial = "", history } = {}) {
       open(label, initial);
+      // History: 0 is the current input. 1 and above are past inputs, newest first.
+      const past = history ? (histories.get(history) ?? []) : [];
+      let cursor = 0;
+      let draft = "";
+      const recall = (step: 1 | -1): void => {
+        if (!past.length) return;
+        if (cursor === 0) draft = input.value;
+        cursor = Math.min(Math.max(cursor + step, 0), past.length);
+        input.value = cursor === 0 ? draft : (past[cursor - 1] ?? "");
+        handlers.onInput(input.value, false);
+      };
       let finished = false;
       let finish!: (accepted: boolean) => void;
       const done = new Promise<boolean>((resolve) => {
@@ -428,12 +458,15 @@ export function createMinibuffer(clipboard?: Clipboard): Minibuffer {
       const closeSession = (accepted: boolean): void => {
         if (finished) return;
         finished = true;
+        const text = input.value;
         close();
         input.removeEventListener("keydown", onKey);
         input.removeEventListener("input", onInput);
+        if (history && text) remember(history, text);
         finish(accepted);
       };
       const onInput = (e: Event): void => {
+        if (isTyping(e)) cursor = 0;
         handlers.onInput(input.value, (e as InputEvent).isComposing === true);
         // Even if focus is lost during processing (by the WebView), keep input possible
         if (document.activeElement !== input) input.focus();
@@ -449,7 +482,10 @@ export function createMinibuffer(clipboard?: Clipboard): Minibuffer {
           closeSession(false);
         } else if (name && handlers.onKey(name)) {
           e.preventDefault();
-        }
+        } else if (history && (name === "M-p" || name === "M-n")) {
+          e.preventDefault();
+          recall(name === "M-p" ? 1 : -1);
+        } else if (name) editKey(e, name);
       };
       input.addEventListener("keydown", onKey);
       input.addEventListener("input", onInput);

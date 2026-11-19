@@ -58,3 +58,19 @@ export function firstMatch(matches: readonly number[], from: number, direction: 
   }
   return { index: matches.length - 1, wrapped: true };
 }
+
+const words = new Intl.Segmenter(undefined, { granularity: "word" });
+
+/**
+ * The text `C-w` adds to the search term: from `from` to the end of the next word, without leaving the block
+ * (blocks are separated by a newline in the indexed text). Words follow `Intl.Segmenter`, so Japanese is taken a word
+ * at a time. If no word is left in the block, the rest of the block (punctuation and the like). "" at the end of a block.
+ */
+export function wordAfter(text: string, from: number): string {
+  const end = text.indexOf("\n", from);
+  const rest = text.slice(from, end < 0 ? text.length : end);
+  for (const s of words.segment(rest)) {
+    if (s.isWordLike) return rest.slice(0, s.index + s.segment.length);
+  }
+  return rest;
+}

@@ -56,3 +56,15 @@ export function isInside(path: string, dir: string): boolean {
   if (dir === "/") return true;
   return path === dir || path.startsWith(`${dir}/`);
 }
+
+/**
+ * The name of a buffer as a print job title, which the print dialog proposes as the PDF file name: the file name
+ * without its extension (`/docs/README.md` -> `README`), or a virtual buffer's name without the asterisks
+ * (`*search: x*` -> `search: x`). The shell makes it safe as a file name.
+ */
+export function printTitle(path: string): string {
+  if (!path.startsWith("/")) return path.replace(/^\*+|\*+$/g, "").trim();
+  const name = basename(path);
+  const dot = name.lastIndexOf(".");
+  return dot > 0 ? name.slice(0, dot) : name;
+}

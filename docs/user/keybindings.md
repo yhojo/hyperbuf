@@ -91,6 +91,7 @@ For an introduction to the basic operations, see [getting-started.md](getting-st
 | Key | Command | Description |
 | --- | --- | --- |
 | `M-=` | `count-words` | Count the lines, words and characters of the selected text (or of the whole document) as displayed |
+| (unbound; use `M-x`) | `print-buffer` | Print the document of the selected window in full, or save it as a PDF (also File > Print…, `Cmd-P`) |
 | `C-x x u` | `toggle-follow-updates` | Toggle jumping to the first changed place when a file is updated externally (off by default; [Follow] in the mode line) |
 | `C-c e` | `edit-in-editor` | Record the location at point (selection, right-click or top of the screen) for editing in the editor |
 

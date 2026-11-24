@@ -10,6 +10,7 @@ import {
   expandHome,
   isInside,
   joinPath,
+  printTitle,
   normalizePath,
   resolveInput,
 } from "../src/paths.ts";
@@ -51,4 +52,13 @@ test("isInside: judged at separator boundaries", () => {
   assert.equal(isInside("/tmp", "/tmp"), true);
   assert.equal(isInside("/tmp2/a.md", "/tmp"), false);
   assert.equal(isInside("/anything", "/"), true);
+});
+
+test("printTitle: file name without the extension; virtual buffer name without asterisks", () => {
+  assert.equal(printTitle("/docs/README.md"), "README");
+  assert.equal(printTitle("/docs/設計.メモ.md"), "設計.メモ");
+  assert.equal(printTitle("/docs/.hidden"), ".hidden");
+  assert.equal(printTitle("/docs/Makefile"), "Makefile");
+  assert.equal(printTitle("*search: Mermaid*"), "search: Mermaid");
+  assert.equal(printTitle("*Help: keybindings*"), "Help: keybindings");
 });

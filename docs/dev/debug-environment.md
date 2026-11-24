@@ -18,6 +18,7 @@ Release builds do not read these (so that a user's environment variables cannot 
 | `HYPERBUF_TEST_LOG`        | Appends the Web core's diagnostic log to this file                                                                                                          |
 | `HYPERBUF_TEST_PASTEBOARD` | Name of a pasteboard used instead of the system clipboard for the minibuffer's kill and yank, so tests leave the user's clipboard alone                     |
 | `HYPERBUF_TEST_OPEN_LOG`   | Appends URLs that would have been opened in the browser to this file, without actually opening them                                                         |
+| `HYPERBUF_TEST_PRINT_PDF`  | Printing (`print-buffer`) writes the print job to this PDF file instead of showing the print dialog (used by `scripts/integration-test-print.sh`)           |
 | `HYPERBUF_TEST_COMMANDS`   | Runs the `N.js` files placed in this directory in order inside the WebView, and writes the result to `N.result` (used by `scripts/integration-test-ipc.sh`) |
 | `HYPERBUF_TEST_SCRIPT`     | After launch, runs this JavaScript inside the WebView and prints `RESULT: …`. The script must resolve (do not return a pending Promise)                     |
 

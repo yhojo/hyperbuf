@@ -64,6 +64,8 @@ enum MainMenu {
         entry(menu, "Open File…", #selector(AppModel.menuOpenFile(_:)), "o", target: model)
         menu.addItem(.separator())
         entry(menu, "Close Frame", #selector(NSWindow.performClose(_:)), "w")
+        menu.addItem(.separator())
+        entry(menu, "Print…", #selector(AppModel.menuPrint(_:)), "p", target: model)
         return menu
     }
 

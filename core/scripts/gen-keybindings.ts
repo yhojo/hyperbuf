@@ -86,7 +86,7 @@ const GROUPS: readonly { title: string; commands: readonly string[] }[] = [
   },
   {
     title: "Document tools",
-    commands: ["count-words", "toggle-follow-updates", "edit-in-editor"],
+    commands: ["count-words", "print-buffer", "toggle-follow-updates", "edit-in-editor"],
   },
   {
     title: "Remembered locations",

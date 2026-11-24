@@ -42,6 +42,7 @@ scripts/integration-test-ui.sh                        # needs a GUI session: C-s
 scripts/integration-test-session.sh                   # needs a GUI session: quit → relaunch restores frames / window layout / history / scroll / selection (session v2, restoreSession setting, broken/missing data, closing frames)
 scripts/integration-test-project.sh                   # needs a GUI session: project roots in a real WKWebView (C-x p f / g / b / k: VCS marker ascent, default-directory fallback, projectIgnorePaths, per-project buffers; M-s g stays on the buffer's directory)
 scripts/integration-test-ipc.sh                       # needs a GUI session: real .app + socket client + `hyperbuf` CLI + hyperbuf:// URL (open / warn-path confirm / URL-scheme confirm / timeout / errors)
+scripts/integration-test-print.sh                     # needs a GUI session: print-buffer (File > Print…, Cmd-P) in a real WKWebView, written to a PDF instead of the dialog (selected window only, dark appearance, minibuffer open)
 (cd cli && swift run hyperbuf docs/history/migration-plan.md:20)   # opens a file at a line in a running HyperBuf (launches it if needed)
 ```
 

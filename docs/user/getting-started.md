@@ -54,6 +54,7 @@ The Emacs-style keys above (`C-` / `M-`) work inside a frame. The macOS shortcut
 | `Cmd-N` / `Cmd-W` | Open a new frame (window) / close the current one. Closing the last frame quits the app. Same as `C-x 5 2` / `C-x 5 0` |
 | `Cmd-1`…`Cmd-9`   | Switch between frames                                                                                                  |
 | `Cmd-O`           | Open a file. Same as `C-x C-f`: choose the file in the minibuffer, starting from the directory of the active buffer    |
+| `Cmd-P`           | Print the document of the selected window (or save it as a PDF from the print dialog). Same as `M-x print-buffer`      |
 | `Cmd-[` / `Cmd-]` | Back / Forward in the reference history (same as `C-b` / `C-f`)                                                        |
 
 Other standard macOS shortcuts (`Cmd-C`, `Cmd-M`, `Cmd-Q`, …) work as usual.

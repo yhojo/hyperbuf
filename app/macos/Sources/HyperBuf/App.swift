@@ -183,6 +183,7 @@ final class AppModel: NSObject, NSWindowDelegate {
 
     @objc func menuNewFrame(_ sender: Any?) { newFrame() }
     @objc func menuOpenFile(_ sender: Any?) { runCommand("find-file") }
+    @objc func menuPrint(_ sender: Any?) { runCommand("print-buffer") }
     @objc func menuRevealConfig(_ sender: Any?) { ConfigLocation.reveal() }
 
     /// About: the name, version, a scrolling story and the license (AboutWindow.swift).

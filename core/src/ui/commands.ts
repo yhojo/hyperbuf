@@ -36,7 +36,7 @@ import { displayedText } from "./count-dom.ts";
 import { pinDiagramTheme } from "./diagrams.ts";
 import { locateFromDom } from "./locate-dom.ts";
 import { ensureBuffer, errorMessage, follow, openAt } from "./navigation.ts";
-import { abbreviateHome } from "../paths.ts";
+import { abbreviateHome, printTitle } from "../paths.ts";
 import { bufferNames, currentProjectRoot } from "./directory.ts";
 import { projectBuffers } from "./project.ts";
 import { displayDir, promptFindFile, promptFindFileRecursive } from "./files.ts";
@@ -401,13 +401,14 @@ export function createCommands(ctx: AppContext): Commands {
     // minibuffer, so it can run from the menu (Cmd-P) while a prompt is open: the prompt stays as it is.
     // Diagrams drawn for a dark appearance are drawn in the light theme while printing (paper is white)
     "print-buffer": async () => {
-      if (!currentEntry(sel())) {
+      const entry = currentEntry(sel());
+      if (!entry) {
         echo.message("No document to print");
         return;
       }
       await pinDiagramTheme("default", views.selected().content);
       try {
-        if (host.print) await host.print();
+        if (host.print) await host.print({ title: printTitle(entry.path) });
         else window.print();
       } finally {
         await pinDiagramTheme(null, document);

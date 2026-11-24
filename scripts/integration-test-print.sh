@@ -26,7 +26,7 @@ mkdir -p "$tmp/cmd" "$tmp/sock"
 # A dark appearance is the hard case: paper is white whatever the screen looks like
 echo '{ "appearance": "dark" }' > "$tmp/config.json"
 
-# Prints the page count and the text of a PDF (PDFKit)
+# Prints the page count, the text and the title of a PDF (PDFKit)
 cat > "$tmp/pdf-text.swift" <<'SWIFT'
 import Foundation
 import PDFKit
@@ -35,7 +35,8 @@ guard let document = PDFDocument(url: URL(fileURLWithPath: CommandLine.arguments
     print("{}")
     exit(1)
 }
-let result: [String: Any] = ["pages": document.pageCount, "text": document.string ?? ""]
+let title = document.documentAttributes?[PDFDocumentAttribute.titleAttribute] as? String
+let result: [String: Any] = ["pages": document.pageCount, "text": document.string ?? "", "title": title ?? ""]
 print(String(data: try! JSONSerialization.data(withJSONObject: result), encoding: .utf8)!)
 SWIFT
 swiftc -O -o "$tmp/pdf-text" "$tmp/pdf-text.swift"
@@ -139,6 +140,7 @@ check("The frame has two windows and long.md is selected", r["before"]["windows"
 check("A PDF of several pages is written", pdf is not None and pdf["pages"] > 1, pdf and pdf["pages"])
 text = (pdf or {}).get("text", "")
 check("It holds the document from its first to its last section, not just the visible part", "セクション 1 " in text and "セクション 40 の本文" in text, text[:200])
+check("The job is named after the buffer, so the dialog saves long.pdf, not HyperBuf.pdf", (pdf or {}).get("title") == "long", pdf and pdf["title"])
 check("The other window's document is not printed", "サンプルプロジェクト" not in text, text[:200])
 check("The mode line and the echo area are not printed", "[History" not in text and "long.md" not in text, text[:200])
 check("The screen is left as it was (windows, reading position)", r["windows"] == 2 and r["top"] == r["before"]["top"], r)

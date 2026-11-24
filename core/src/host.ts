@@ -172,8 +172,9 @@ export interface HyperbufHost {
   /**
    * Prints the page through the system's print dialog. What is printed is decided by the print style sheet:
    * the document of the selected window (`print-buffer`). When absent, `window.print()` is used.
+   * `title` names the print job (the dialog proposes `<title>.pdf` when saving as a PDF); the shell makes it safe as a file name.
    */
-  print?(): Promise<void>;
+  print?(options?: { title?: string }): Promise<void>;
   /** Signal that the Web core is ready. Requests that arrived before this are delivered after it. */
   ready?(): void;
   /** Diagnostic log (for development). */

@@ -12,7 +12,7 @@ This project adheres to [Semantic Versioning](https://semver.org/) from 1.0.0 on
 
 - Incremental search (`C-s` / `C-r`): the search term is edited with the same Emacs keys as other minibuffer input, so `C-y` searches for what another application copied. `C-w` adds the word after the current match to the term, `M-<` / `M->` go to the first / last match, and `M-p` / `M-n` recall earlier search terms (the history used to hold only the last term).
 
-- Printing: `File > Print…` (`Cmd-P`, or `M-x print-buffer`) prints the document of the selected window in full, or saves it as a PDF from the print dialog. Only the document is printed (no other windows, mode line or minibuffer), on a light page whatever the appearance; long code lines wrap. It also works while the minibuffer is open, which is left as it is.
+- Printing: `File > Print…` (`Cmd-P`, or `M-x print-buffer`) prints the document of the selected window in full, or saves it as a PDF from the print dialog. Only the document is printed (no other windows, mode line or minibuffer), on a light page whatever the appearance; long code lines wrap. Saving as a PDF proposes the buffer's name (`README.pdf` for `README.md`). It also works while the minibuffer is open, which is left as it is.
 
 ### Fixed
 

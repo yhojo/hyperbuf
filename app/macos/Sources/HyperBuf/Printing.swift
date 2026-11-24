@@ -9,9 +9,11 @@ import WebKit
 /// system print dialog as a sheet of the frame.
 @MainActor
 enum Printing {
-    /// Runs the print dialog for `webView` on `window`. `completion` is called when the sheet has closed (printed or cancelled).
+    /// Runs the print dialog for `webView` on `window`. `title` names the job: the dialog proposes `<title>.pdf` when saving as a PDF. `completion` is called when the sheet has closed (printed or cancelled).
     /// Does nothing (and completes at once) while another sheet, e.g. a print dialog, is already open on the window.
-    static func run(webView: WKWebView, window: NSWindow, completion: @escaping @MainActor () -> Void) {
+    static func run(
+        webView: WKWebView, window: NSWindow, title: String, completion: @escaping @MainActor () -> Void
+    ) {
         guard window.attachedSheet == nil else { return completion() }
         let info = NSPrintInfo(dictionary: NSPrintInfo.shared.dictionary() as! [NSPrintInfo.AttributeKey: Any])
         // The defaults (72 / 90 pt) are for plain text; documents carry their own spacing
@@ -31,6 +33,8 @@ enum Printing {
             }
         #endif
         let operation = webView.printOperation(with: info)
+        // Without it the job is named after the page (`HyperBuf`), and so is the PDF the dialog saves
+        operation.jobTitle = title
         operation.showsPrintPanel = showsPanel
         operation.showsProgressPanel = showsPanel
         // Without a frame the operation's view is empty and WebKit prints blank pages

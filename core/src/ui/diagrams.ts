@@ -15,11 +15,21 @@ type MermaidApi = (typeof import("mermaid"))["default"];
 let mermaidPromise: Promise<MermaidApi> | null = null;
 let diagramSeq = 0;
 
+type Theme = "dark" | "default";
+
 /** Mermaid theme matching the current appearance (light / dark). */
-const currentTheme = (): "dark" | "default" =>
+const currentTheme = (): Theme =>
   window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default";
 
+/** A theme fixed regardless of the appearance (while printing: paper is white). */
+let pinnedTheme: Theme | null = null;
+/** The theme Mermaid was last initialized with. */
+let appliedTheme: Theme | null = null;
+/** Source of each rendered diagram, to draw it again in another theme without rendering the document again. */
+const sources = new WeakMap<HTMLElement, string>();
+
 function initializeMermaid(mermaid: MermaidApi): void {
+  appliedTheme = pinnedTheme ?? currentTheme();
   mermaid.initialize({
     startOnLoad: false,
     securityLevel: "strict",
@@ -27,7 +37,7 @@ function initializeMermaid(mermaid: MermaidApi): void {
     // and do not bundle elkjs (build-options.mjs; docs/history/license-options.md). If a diagram specifies `layout: elk`,
     // that diagram is shown as an error in its place
     layout: "dagre",
-    theme: currentTheme(),
+    theme: appliedTheme,
     logLevel: "fatal",
   });
 }
@@ -42,10 +52,38 @@ function loadMermaid(): Promise<MermaidApi> {
 
 /**
  * When the appearance changes, re-fit the Mermaid theme to it (colors are fixed at render time,
- * so the caller re-renders the displayed diagrams). Does nothing if not loaded yet (it will use the current appearance when loaded).
+ * so the caller re-renders the displayed diagrams when this returns true). Does nothing and returns false if Mermaid is
+ * not loaded yet (it will use the current appearance when loaded), or if the theme stays the same: while printing,
+ * the page is laid out as light for a moment and the theme is pinned (`pinDiagramTheme`).
  */
-export async function refreshMermaidTheme(): Promise<void> {
-  if (mermaidPromise) initializeMermaid(await mermaidPromise);
+export async function refreshMermaidTheme(): Promise<boolean> {
+  if (!mermaidPromise) return false;
+  const mermaid = await mermaidPromise;
+  if ((pinnedTheme ?? currentTheme()) === appliedTheme) return false;
+  initializeMermaid(mermaid);
+  return true;
+}
+
+/**
+ * Fixes the diagram theme to `theme` (null: follow the appearance again) and, if that changes the theme, draws the
+ * diagrams under `root` again in place. Only the drawings are replaced, so reading positions, selections and the
+ * rest of the document are left alone. Used for printing: a dark diagram is unreadable on white paper.
+ */
+export async function pinDiagramTheme(theme: Theme | null, root: ParentNode): Promise<void> {
+  pinnedTheme = theme;
+  if (!(await refreshMermaidTheme())) return;
+  const mermaid = await loadMermaid();
+  for (const box of root.querySelectorAll<HTMLElement>(".mermaid-diagram")) {
+    const source = sources.get(box);
+    if (source === undefined) continue;
+    const id = `mmd-${++diagramSeq}`;
+    try {
+      const { svg } = await mermaid.render(id, source);
+      box.innerHTML = svg; // SVG sanitized by mermaid in strict mode
+    } catch {
+      document.getElementById(`d${id}`)?.remove(); // keep the previous drawing
+    }
+  }
 }
 
 export async function hydrateDiagrams(root: HTMLElement): Promise<DiagramStats> {
@@ -62,6 +100,7 @@ export async function hydrateDiagrams(root: HTMLElement): Promise<DiagramStats> 
       const { svg } = await mermaid.render(id, source);
       box.className = "mermaid-diagram";
       box.innerHTML = svg; // SVG sanitized by mermaid in strict mode
+      sources.set(box, source);
     } catch (err) {
       errors += 1;
       document.getElementById(`d${id}`)?.remove(); // temporary element left in body on failure

@@ -67,6 +67,7 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
                 frame: (action) => call({ op: "frame", action }),
                 readClipboard: () => call({ op: "read-clipboard" }),
                 writeClipboard: (text) => { call({ op: "write-clipboard", text }); },
+                print: () => call({ op: "print" }),
                 ready: () => { call({ op: "ready" }); },
                 log: (text) => { call({ op: "log", text }); },
               };
@@ -226,6 +227,12 @@ final class Bridge: NSObject, WKScriptMessageHandlerWithReply {
         case "write-clipboard":
             guard let text = body["text"] as? String else { return replyHandler(nil, "bad request") }
             replyHandler(nil, ClipboardText.write(text, to: Bridge.pasteboard) ? nil : "cannot write")
+        case "print":
+            // Replies when the print dialog has closed (printed or cancelled)
+            guard let webView = frame.webView, let window = frame.window else {
+                return replyHandler(nil, "no window")
+            }
+            Printing.run(webView: webView, window: window) { replyHandler(nil, nil) }
         case "ready":
             frame.pageDidBecomeReady()
             onReady?()

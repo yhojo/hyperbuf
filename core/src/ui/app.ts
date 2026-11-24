@@ -133,7 +133,9 @@ export async function startApp(options: {
   // When the OS appearance (light / dark) changes while the app is running, re-render diagrams (Mermaid) whose colors are fixed at render time.
   // Documents, code, math and the UI follow automatically via CSS (`prefers-color-scheme`)
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-    void refreshMermaidTheme().then(() => views.redrawDiagrams());
+    void refreshMermaidTheme().then((changed) => {
+      if (changed) views.redrawDiagrams();
+    });
   });
   // When the app becomes active, check the displayed files (a safety net for cases the watcher misses)
   window.addEventListener("focus", () => {

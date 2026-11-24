@@ -234,3 +234,90 @@ body {
     background-color: transparent;
   }
 }
+
+/* Printing (print-buffer, Cmd-P): only the document of the selected window, in full, on a white page.
+   The frame's chrome (other windows, mode lines, minibuffer, echo area) is not printed. A dark appearance does not
+   apply to print media (`prefers-color-scheme: dark` does not match there), so the light colors above are used */
+@media print {
+  html,
+  body {
+    height: auto;
+  }
+  body,
+  #frame,
+  .split,
+  .win {
+    display: block;
+  }
+  .win {
+    border: 0;
+  }
+  .win:not(.selected),
+  .mode-line,
+  #minibuffer,
+  #echo,
+  #status {
+    display: none;
+  }
+  .content {
+    overflow: visible;
+    padding: 0;
+  }
+  /* The scroll margin below the document would add an empty page */
+  .content .markdown-body::after {
+    display: none;
+  }
+  /* Nothing can be scrolled on paper: wrap long lines instead */
+  .markdown-body pre,
+  .markdown-body pre code {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .markdown-body .mermaid-diagram,
+  .markdown-body .katex-display {
+    overflow: visible;
+  }
+  .markdown-body h1,
+  .markdown-body h2,
+  .markdown-body h3,
+  .markdown-body h4,
+  .markdown-body h5,
+  .markdown-body h6 {
+    break-after: avoid;
+    break-inside: avoid;
+  }
+  /* WebKit ignores `break-after: avoid`. Keep a heading with what follows by making its unbreakable box taller
+     than it looks: with less room than this left on the page, the heading moves to the next page */
+  .markdown-body h1::after,
+  .markdown-body h2::after,
+  .markdown-body h3::after,
+  .markdown-body h4::after,
+  .markdown-body h5::after,
+  .markdown-body h6::after {
+    content: "";
+    display: block;
+    height: 5em;
+    margin-bottom: -5em;
+    break-inside: avoid;
+  }
+  .markdown-body pre,
+  .markdown-body blockquote,
+  .markdown-body tr,
+  .markdown-body img,
+  .markdown-body .mermaid-diagram,
+  .markdown-body .katex-display {
+    break-inside: avoid;
+  }
+  /* Marks of the screen: link selection (TAB), search matches (C-s), the flash of an external update */
+  .content a.link-focus {
+    outline: 0;
+  }
+  ::highlight(hb-search),
+  ::highlight(hb-search-current) {
+    background-color: transparent;
+    color: inherit;
+  }
+  .changed-flash {
+    animation: none;
+  }
+}

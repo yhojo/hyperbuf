@@ -33,6 +33,7 @@ import { openBuffer } from "../model.ts";
 import { startIsearch } from "./isearch-dom.ts";
 import { countText, formatCounts } from "../count.ts";
 import { displayedText } from "./count-dom.ts";
+import { pinDiagramTheme } from "./diagrams.ts";
 import { locateFromDom } from "./locate-dom.ts";
 import { ensureBuffer, errorMessage, follow, openAt } from "./navigation.ts";
 import { abbreviateHome } from "../paths.ts";
@@ -85,6 +86,7 @@ export const COMMAND_NAMES = [
   "goto-heading",
   "goto-line",
   "count-words",
+  "print-buffer",
   "isearch-forward",
   "isearch-backward",
   "search-project",
@@ -160,6 +162,8 @@ export const COMMAND_DOCS: Readonly<Record<CommandName, string>> = {
     "Search all files under the project root (the nearest ancestor with .git/.hg/…, or the base directory) and show the results in a virtual buffer (plain text, case-insensitive for ASCII; .gitignore is not read)",
   "search-project":
     "Search all files under the base directory and show the results in a virtual buffer",
+  "print-buffer":
+    "Print the document of the selected window in full, or save it as a PDF (also File > Print…, `Cmd-P`)",
   "edit-in-editor":
     "Record the location at point (selection, right-click or top of the screen) for editing in the editor",
   "execute-command": "Execute a command chosen by name",
@@ -392,6 +396,22 @@ export function createCommands(ctx: AppContext): Commands {
     "search-project": async () => {
       const query = await minibuffer.prompt("Search: ");
       if (query) await searchProject(ctx, query);
+    },
+    // Prints the document of the selected window (the print style sheet hides everything else). It does not touch the
+    // minibuffer, so it can run from the menu (Cmd-P) while a prompt is open: the prompt stays as it is.
+    // Diagrams drawn for a dark appearance are drawn in the light theme while printing (paper is white)
+    "print-buffer": async () => {
+      if (!currentEntry(sel())) {
+        echo.message("No document to print");
+        return;
+      }
+      await pinDiagramTheme("default", views.selected().content);
+      try {
+        if (host.print) await host.print();
+        else window.print();
+      } finally {
+        await pinDiagramTheme(null, document);
+      }
     },
     // Records the location pointed at in the viewer (selection / right-click / current reading position) as the source position, for editor integration
     "edit-in-editor": async () => {

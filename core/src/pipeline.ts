@@ -12,7 +12,8 @@
 // History of the verification: docs/history/poc-rendering-results.md
 
 import type { Element, ElementContent, Root as HastRoot } from "hast";
-import type { Root as MdastRoot } from "mdast";
+import type { Root as MdastRoot, Yaml } from "mdast";
+import type { State } from "mdast-util-to-hast";
 import { createStarryNight } from "@wooorm/starry-night";
 import type { Grammar } from "@wooorm/starry-night";
 import { EAGER, LAZY, fenceFlags } from "./grammars.ts";
@@ -23,6 +24,7 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import type { Options as SanitizeSchema } from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
+import remarkFrontmatter from "remark-frontmatter";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import remarkParse from "remark-parse";
@@ -31,6 +33,7 @@ import { unified } from "unified";
 import type { Plugin } from "unified";
 import { visit } from "unist-util-visit";
 import type { VFile } from "vfile";
+import { FRONT_MATTER_CLASS, FRONT_MATTER_ERROR_CLASS, renderFrontMatter } from "./frontmatter.ts";
 import { unescapeMathUnderscores } from "./math.ts";
 import { resolveLink } from "./model.ts";
 
@@ -126,6 +129,16 @@ const remarkMathDoubleDollar: Plugin<[], MdastRoot> = () => (tree, file) => {
     data.hProperties = { ...data.hProperties, className: ["language-math", "math-display"] };
   });
 };
+
+/**
+ * YAML front matter -> a table, like GitHub (frontmatter.ts). Each top-level element keeps the position of the
+ * whole block, so "open at line N" and the edit location work on it as on any other block.
+ */
+function frontMatterHandler(state: State, node: Yaml): ElementContent[] {
+  const elements = renderFrontMatter(node.value);
+  for (const element of elements) state.patch(node, element);
+  return elements;
+}
 
 /** Gives headings ids the GitHub way (github-slugger). Duplicates get a sequence number. */
 const rehypeHeadingIds: Plugin<[], HastRoot> = () => (tree) => {
@@ -275,6 +288,9 @@ const schema: SchemaWithAttributes = {
     code: [["className", /^language-./, "math-inline", "math-display"]],
     div: [...(attributes["div"] ?? []), ["className", "math", "math-display"]],
     span: [...(attributes["span"] ?? []), ["className", "math", "math-inline"]],
+    // Our own front matter output (frontmatter.ts). Only these fixed class names pass
+    table: [...(attributes["table"] ?? []), ["className", FRONT_MATTER_CLASS]],
+    p: [...(attributes["p"] ?? []), ["className", FRONT_MATTER_ERROR_CLASS]],
   },
 };
 type SchemaWithAttributes = SchemaWithAttributesBase;
@@ -295,13 +311,19 @@ export async function createRenderer(options: { onigUrl?: URL } = {}): Promise<R
   const settings: RenderSettings = { mathUnescapeUnderscore: true };
   const processor = unified()
     .use(remarkParse)
+    // Only YAML (`---`) at the very start of the document; TOML (`+++`) is left as ordinary Markdown
+    .use(remarkFrontmatter, ["yaml"])
     .use(remarkGfm)
     .use(remarkMath)
     .use(remarkMathGithubCompat)
     .use(remarkMathDoubleDollar)
     .use(remarkMathUnescape(settings))
     // Footnote ids get a prefix from sanitize. Adding it here too would double it and break the links
-    .use(remarkRehype, { allowDangerousHtml: true, clobberPrefix: "" })
+    .use(remarkRehype, {
+      allowDangerousHtml: true,
+      clobberPrefix: "",
+      handlers: { yaml: frontMatterHandler },
+    })
     .use(rehypeRaw)
     .use(rehypeHeadingIds)
     .use(rehypeSourceLines)

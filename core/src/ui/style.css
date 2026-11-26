@@ -181,6 +181,23 @@ body {
   padding: 0 0.4em;
   font-size: 12px;
 }
+/* YAML front matter (frontmatter.ts): nested tables sit inside a cell without the block margin */
+.markdown-body .front-matter table {
+  margin: 0;
+}
+.markdown-body .front-matter td,
+.markdown-body .front-matter tbody th {
+  vertical-align: top;
+}
+/* Vertical layout: the key column */
+.markdown-body .front-matter tbody th {
+  text-align: left;
+  white-space: nowrap;
+}
+.markdown-body .front-matter-error {
+  color: #cf222e;
+  margin-bottom: 4px;
+}
 .markdown-body .render-error {
   border: 1px solid #cf222e;
   border-radius: 6px;

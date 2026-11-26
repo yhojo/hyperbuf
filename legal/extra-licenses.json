@@ -29,6 +29,11 @@
       "license": "MIT",
       "copyright": "Junyoung Choi <fluke8259@gmail.com> (https://rokt33r.github.io)",
       "reason": "The package has no license file. The standard MIT text is supplied from the license in package.json, the author, and \"MIT © Junyoung Choi\" in the README (no year is written because the package does not state one)."
+    },
+    "format": {
+      "license": "MIT",
+      "copyright": "Copyright 2010 - 2014 Sami Samhuri <sami@samhuri.net>",
+      "reason": "The package has no license file (a dependency of remark-frontmatter through fault). The standard MIT text is supplied from the license in package.json and \"Copyright 2010 - 2014 Sami Samhuri\" / \"MIT license\" in the README."
     }
   }
 }

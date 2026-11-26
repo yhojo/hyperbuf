@@ -78,6 +78,7 @@ The following will be evaluated when they become necessary. For anything involvi
 The policy of treating input as untrusted is realized as follows.
 
 - **HTML:** sanitized with rehype-sanitize. ids get the prefix `user-content-` (it must not be removed; it prevents collisions with the app's DOM). Script execution is not allowed.
+- **Front matter:** YAML at the very start of a document is parsed (remark-frontmatter, `yaml`) and shown as a table (`core/src/frontmatter.ts`; one row per key, where GitHub puts the keys in a header row — that layout is kept in the code as `"horizontal"`). Values only become text nodes, the output passes through rehype-sanitize like everything else, nesting is cut at a fixed depth, and YAML that cannot be parsed is shown in place as its source with the error.
 - **Images:** only `<img>` is allowed. The scheme handler (`SchemeHandler`) **checks access at every load** ([file-access.md](file-access.md) §5).
 - **CSP:** `ContentSecurityPolicy` does not allow external communication. The starry-night WASM is bundled, and fetching from the default CDN is disabled.
 - **Diagrams:** Mermaid renders in strict mode. A diagram error does not stop the whole document and is shown in place.

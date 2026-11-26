@@ -4,6 +4,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import type { Element } from "hast";
+import { renderFrontMatter } from "../src/frontmatter.ts";
 import { createRenderer } from "../src/pipeline.ts";
 
 const renderer = await createRenderer();
@@ -189,4 +191,78 @@ test("math: a single-line $$ … $$ is also display math (centered); $ … $ sta
   const inline = html("文中の $x_1$ です");
   assert.ok(!inline.includes("katex-display"));
   assert.ok(html("a $$x$$ b").includes("katex-display"));
+});
+
+test("front matter: YAML at the start becomes a table (one row per key, nested values as nested tables)", () => {
+  const out = html(
+    "---\ntitle: Hello\ntags: [a, b]\nmeta:\n  author: me\n  n: 3\ndraft: true\nnone:\n---\n\n# H\n",
+  );
+  assert.match(
+    out,
+    /^<table class="front-matter" data-source-line="1" data-source-start="0" data-source-end="[0-9]+" data-source-end-line="9"><tbody>/,
+  );
+  assert.match(out, /<tr><th>title<\/th><td>Hello<\/td><\/tr>/);
+  // A sequence of plain values stays on one line
+  assert.match(
+    out,
+    /<tr><th>tags<\/th><td><table><tbody><tr><td>a<\/td><td>b<\/td><\/tr><\/tbody><\/table><\/td><\/tr>/,
+  );
+  assert.match(out, /<th>meta<\/th><td><table><tbody><tr><th>author<\/th><td>me<\/td><\/tr>/);
+  assert.match(out, /<tr><th>draft<\/th><td>true<\/td><\/tr><tr><th>none<\/th><td><\/td><\/tr>/);
+  // The body keeps its source lines and is not swallowed (no setext heading from the closing fence)
+  assert.match(out, /<h1 id="user-content-h" data-source-line="11"/);
+  assert.doesNotMatch(out, /<h2|<hr|<thead/);
+});
+
+test("front matter: a sequence of mappings becomes one row per item with a column per key", () => {
+  const out = html("---\n- name: Alice\n  role: writer\n- name: Bob\n  team: [x, y]\n---\n");
+  assert.match(out, /<thead><tr><th>name<\/th><th>role<\/th><th>team<\/th><\/tr><\/thead>/);
+  assert.match(
+    out,
+    /<tbody><tr><td>Alice<\/td><td>writer<\/td><td><\/td><\/tr><tr><td>Bob<\/td><td><\/td><td><table>/,
+  );
+  // Mixed items get a row each
+  assert.match(html("---\n- a\n- [b, c]\n---\n"), /<tbody><tr><td>a<\/td><\/tr><tr><td><table>/);
+});
+
+test("front matter: the horizontal layout puts the keys in the header row (GitHub's)", () => {
+  const [table] = renderFrontMatter("a: 1\nb: [x, y]\n", "horizontal");
+  const tags = (e: Element | undefined): unknown =>
+    e && [
+      e.tagName,
+      ...e.children.map((c) => (c.type === "element" ? tags(c) : c.type === "text" ? c.value : "")),
+    ];
+  assert.deepEqual(tags(table), [
+    "table",
+    ["thead", ["tr", ["th", "a"], ["th", "b"]]],
+    ["tbody", ["tr", ["td", "1"], ["td", ["table", ["tbody", ["tr", ["td", "x"], ["td", "y"]]]]]]],
+  ]);
+});
+
+test("front matter: values are text only (no HTML or Markdown from YAML)", () => {
+  const out = html('---\nx: "<script>alert(1)</script> <img src=x onerror=alert(1)> **b**"\n---\n');
+  assert.doesNotMatch(out, /<script|<img|<strong/);
+  assert.match(out, /&#x3C;script>/);
+});
+
+test("front matter: invalid YAML is shown in place as source with the error; the document continues", () => {
+  const out = html("---\na: [1\n---\n\ntext\n");
+  assert.match(
+    out,
+    /<p class="front-matter-error"[^>]*>Front matter: .* at line 2, column \d+<\/p>/,
+  );
+  assert.match(out, /<pre[^>]*><code class="language-yaml">/);
+  assert.match(out, /<p [^>]*>text<\/p>/);
+  assert.match(html("---\njust text\n---\n"), /expected a mapping or a sequence/);
+});
+
+test("front matter: only at the very start; an empty block shows nothing; deep nesting is cut", () => {
+  assert.doesNotMatch(html("text\n\n---\na: 1\n---\n"), /front-matter/);
+  assert.doesNotMatch(html("\n---\na: 1\n---\n"), /front-matter/);
+  assert.equal(html("---\n---\n\ntext\n").match(/<(table|pre|hr|h2)/), null);
+  const deep = html(`---\na: ${"[".repeat(40)}1${"]".repeat(40)}\n---\n`);
+  assert.equal(deep.match(/<table/g)?.length, 9);
+  assert.match(deep, /<td>…<\/td>/);
+  // The class cannot be used to pass other class names through raw HTML
+  assert.doesNotMatch(html('<table class="front-matter evil"><tr><td>x</td></tr></table>'), /evil/);
 });

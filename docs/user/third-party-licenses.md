@@ -6,18 +6,19 @@ This is a list of the licenses of the third-party software that HyperBuf bundles
 
 It covers what actually goes into the Web core bundle (`core/dist`). The Swift side (app, CLI, protocol) has no third-party dependencies.
 
-## Summary (149 npm packages)
+## Summary (155 npm packages)
 
 | License | Count |
 | --- | --- |
-| MIT | 116 |
-| ISC | 22 |
+| MIT | 121 |
+| ISC | 23 |
 | Apache-2.0 | 5 |
 | BSD-3-Clause | 5 |
 | BSD-2-Clause | 1 |
 
 - Permissive licenses such as **MIT / ISC / BSD / Apache-2.0** only require the copyright notice and the license text to be included in the distribution.
 - **dompurify**(Apache-2.0): Dual-licensed (MPL-2.0 OR Apache-2.0). Apache-2.0 is chosen (the user may choose).
+- **format**(MIT): The package has no license file (a dependency of remark-frontmatter through fault). The standard MIT text is supplied from the license in package.json and "Copyright 2010 - 2014 Sami Samhuri" / "MIT license" in the README.
 - **khroma**(MIT): package.json has no license field, but the bundled license file is MIT.
 - **rehype-katex**(MIT): The package has no license file. The standard MIT text is supplied from the license in package.json, the author, and "MIT © Junyoung Choi" in the README (no year is written because the package does not state one).
 - **remark-math**(MIT): The package has no license file. The standard MIT text is supplied from the license in package.json, the author, and "MIT © Junyoung Choi" in the README (no year is written because the package does not state one).
@@ -95,6 +96,8 @@ The source and license text of each grammar go into `THIRD-PARTY-NOTICES` (only 
 | es-toolkit | 1.52.0 | MIT |
 | escape-string-regexp | 5.0.0 | MIT |
 | extend | 3.0.2 | MIT |
+| fault | 2.0.1 | MIT |
+| format | 0.2.2 | MIT |
 | github-markdown-css | 5.9.0 | MIT |
 | github-slugger | 2.0.0 | ISC |
 | hast-util-from-dom | 5.0.1 | ISC |
@@ -123,6 +126,7 @@ The source and license text of each grammar go into `THIRD-PARTY-NOTICES` (only 
 | marked | 16.4.2 | MIT |
 | mdast-util-find-and-replace | 3.0.3 | MIT |
 | mdast-util-from-markdown | 2.1.0 | MIT |
+| mdast-util-frontmatter | 2.0.1 | MIT |
 | mdast-util-gfm | 3.1.0 | MIT |
 | mdast-util-gfm-autolink-literal | 2.0.1 | MIT |
 | mdast-util-gfm-footnote | 2.1.0 | MIT |
@@ -137,6 +141,7 @@ The source and license text of each grammar go into `THIRD-PARTY-NOTICES` (only 
 | mermaid | 12.2.0 | MIT |
 | micromark | 4.0.3 | MIT |
 | micromark-core-commonmark | 2.0.4 | MIT |
+| micromark-extension-frontmatter | 2.0.0 | MIT |
 | micromark-extension-gfm | 3.0.0 | MIT |
 | micromark-extension-gfm-autolink-literal | 2.1.0 | MIT |
 | micromark-extension-gfm-footnote | 2.1.0 | MIT |
@@ -167,6 +172,7 @@ The source and license text of each grammar go into `THIRD-PARTY-NOTICES` (only 
 | rehype-raw | 7.0.0 | MIT |
 | rehype-sanitize | 6.0.0 | MIT |
 | rehype-stringify | 10.0.1 | MIT |
+| remark-frontmatter | 5.0.0 | MIT |
 | remark-gfm | 4.0.1 | MIT |
 | remark-math | 6.0.0 | MIT |
 | remark-parse | 11.0.0 | MIT |
@@ -192,4 +198,5 @@ The source and license text of each grammar go into `THIRD-PARTY-NOTICES` (only 
 | vscode-oniguruma | 2.0.1 | MIT |
 | vscode-textmate | 9.3.2 | MIT |
 | web-namespaces | 2.0.1 | MIT |
+| yaml | 2.9.1 | ISC |
 | zwitch | 2.0.4 | MIT |

@@ -9,5 +9,6 @@ GitHub 上で同じファイルを開いた表示と見比べて、差を確認�
 5. [画像と SVG](05-images.md) — ローカル画像、SVG、外部画像のブロック
 6. [HTML とセキュリティ](06-html-security.md) — 不信任入力の無害化
 7. [大きな文書](07-large.md) — 描画時間の計測用
+8. [YAML front matter](09-front-matter.md) — 文書先頭の YAML を表として表示
 
 戻る: [サンプルのトップ](../index.md)

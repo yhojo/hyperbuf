@@ -14,7 +14,7 @@ This project adheres to [Semantic Versioning](https://semver.org/) from 1.0.0 on
 
 - Printing: `File > Print…` (`Cmd-P`, or `M-x print-buffer`) prints the document of the selected window in full, or saves it as a PDF from the print dialog. Only the document is printed (no other windows, mode line or minibuffer), on a light page whatever the appearance; long code lines wrap. Saving as a PDF proposes the buffer's name (`README.pdf` for `README.md`). It also works while the minibuffer is open, which is left as it is.
 
-- YAML front matter (the `---` block at the very start of a document) is now shown as a table, as on GitHub: keys in the header row, values below, nested mappings and lists as nested tables. It used to be rendered as a horizontal rule and a heading. Values are shown as plain text; YAML that cannot be parsed is shown as its source with the error.
+- YAML front matter (the `---` block at the very start of a document) is now shown as a table with one row per key (GitHub shows the same data with the keys in a header row); nested mappings and lists become nested tables, and a list of mappings a table with one row per item. It used to be rendered as a horizontal rule and a heading. Values are shown as plain text; YAML that cannot be parsed is shown as its source with the error.
 
 ### Fixed
 

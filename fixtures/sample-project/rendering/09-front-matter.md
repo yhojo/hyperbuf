@@ -20,8 +20,9 @@ empty:
 
 # YAML front matter
 
-The block at the start of this file is shown as a table, as on GitHub: the keys are in the header row,
-the values in the row below, and nested mappings and lists become nested tables.
+The block at the start of this file is shown as a table with one row per key. Nested mappings become nested
+tables, a list of mappings (`authors`) becomes a table with one row per item, and a list of plain values
+(`tags`) stays on one line.
 
 - `html` shows its value as text (nothing in front matter is interpreted as HTML or Markdown).
 - `empty` has no value and shows an empty cell.

@@ -46,7 +46,7 @@ HyperBuf aims to be **a tool you can live in**, rooted in hacker culture. Not re
 
 - GitHub Flavored Markdown (GFM) with a GitHub-like style.
 - Local images (including SVG), math with KaTeX, Mermaid diagrams, and syntax highlighting for about 90 languages ([docs/user/syntax-highlighting.md](docs/user/syntax-highlighting.md)).
-- YAML front matter at the start of a document is shown as a table, as on GitHub.
+- YAML front matter at the start of a document is shown as a table (one row per key).
 - A diagram error does not stop the whole document; it is shown in place.
 
 ### Integration with the development workflow
